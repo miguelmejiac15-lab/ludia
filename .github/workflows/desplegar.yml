@@ -117,7 +117,9 @@ jobs:
             echo "el despliegue habrá que lanzarlo desde Coolify."
             exit 1
           fi
-          codigo=$(curl -s -o /tmp/respuesta.txt -w '%{http_code}' -X GET \
+          # POST, no GET: Coolify 4.3 responde 405 a un GET aquí con el
+          # mensaje «This endpoint has changed to a POST request».
+          codigo=$(curl -s -o /tmp/respuesta.txt -w '%{http_code}' -X POST \
             -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK")
           echo "Coolify respondió $codigo"
           cat /tmp/respuesta.txt

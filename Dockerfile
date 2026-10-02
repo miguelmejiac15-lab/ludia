@@ -81,6 +81,21 @@ RUN set -eux; \
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Sacar del directorio web los archivos de construcción.
+#
+# Ya cumplieron su papel: `php.ini` está en conf.d y `entrypoint.sh` en
+# /usr/local/bin. Las copias que quedan bajo /var/www/html las SIRVE Apache en
+# texto plano —comprobado en producción: https://ludia.click/Dockerfile
+# devolvía 200—. No llevan credenciales, pero regalan la versión de PHP, las
+# rutas internas y que las migraciones corren al arrancar. Eso es información
+# para quien vaya a sondear el sitio, y no cuesta nada no dársela.
+RUN rm -rf \
+      /var/www/html/Dockerfile \
+      /var/www/html/docker \
+      /var/www/html/.gitattributes \
+      /var/www/html/.dockerignore \
+      /var/www/html/.github
+
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \

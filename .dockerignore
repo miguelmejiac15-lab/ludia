@@ -1,0 +1,34 @@
+# Lo que NO entra en la imagen.
+#
+# No es solo por tamaño: todo lo que se copia dentro es código que acaba
+# publicado en un servidor. Cuanto menos haya, menos superficie hay.
+
+.git
+.github
+.gitignore
+.dockerignore
+
+# La configuración LOCAL con las credenciales de la máquina de desarrollo.
+# Nunca debe viajar: en el servidor la configuración la pone `config.env.php`
+# leyendo variables de entorno.
+config/config.php
+
+# Documentación interna. El masterplan describe decisiones, trampas y la
+# estructura de la base: no tiene nada que hacer en producción.
+docs/
+ludia-documento-maestro.md
+
+# Scripts de la máquina de desarrollo.
+copia-seguridad.ps1
+
+# Imágenes ya subidas en local: en el servidor `uploads` es un volumen aparte.
+uploads/*
+!uploads/.gitkeep
+!uploads/.htaccess
+
+# Basura de editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

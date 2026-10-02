@@ -1,0 +1,154 @@
+/* =====================================================================
+   Informes — el resultado de una sesión, presentado para mirarlo de un
+   vistazo (y para imprimirlo, que es lo que acaba haciendo un profesor).
+
+   Regla de color en todo el archivo: menta = bien, sol = regular, coral =
+   flojo. Nunca solo color: cada barra lleva además su número, porque un
+   semáforo sin cifra no se puede leer en blanco y negro ni con daltonismo.
+   ===================================================================== */
+
+/* ludia.css da a TODO <section> un `padding-block: 64px` (pensado para las
+   franjas de la portada). En esta página las secciones son bloques de informe,
+   y ese relleno abría un hueco muerto de 64 px bajo las cifras. Se neutraliza
+   aquí; `.cuenta .panel` mantiene su propio relleno porque gana en
+   especificidad. */
+.cuenta section { padding-block: 0; }
+
+/* ---------- La caja de las secciones ----------
+   OJO: `.panel` se define en crear.css, que esta página no carga. Sin esto las
+   secciones salen sin borde ni fondo, flotando con huecos enormes entre ellas
+   —que es exactamente como se veía la primera versión—. */
+.cuenta .panel {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 14px);
+  padding: 18px 20px;
+}
+.cuenta .panel + .panel { margin-top: 14px; }
+.cuenta .panel-title {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 14px;
+}
+
+/* ---------- Cabecera ---------- */
+.inf-cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.inf-cabecera h1 { font-size: clamp(1.4rem, 3.2vw, 1.9rem); margin: 10px 0 4px; }
+
+/* ---------- Cifras grandes ---------- */
+.inf-cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.inf-cifra {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--violet);
+  border-radius: var(--radius-md, 14px);
+  padding: 14px 16px;
+}
+.inf-cifra span { display: block; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-soft); }
+.inf-cifra b { display: block; font-family: var(--font-title); font-size: 1.9rem; line-height: 1.1; margin: 4px 0 2px; }
+.inf-cifra small {
+  display: block;
+  color: var(--text-soft);
+  font-size: .8rem;
+  /* Una sola línea. Si el texto de "la más difícil" se parte en dos, esa
+     tarjeta crece y toda la fila de cifras queda descuadrada. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inf-cifra.alto  { border-left-color: var(--mint); }
+.inf-cifra.alto b  { color: var(--mint); }
+.inf-cifra.medio { border-left-color: var(--sun); }
+.inf-cifra.medio b { color: #B07400; }          /* el sol puro no contrasta sobre blanco */
+.inf-cifra.bajo  { border-left-color: var(--coral); }
+.inf-cifra.bajo b  { color: var(--coral); }
+
+/* ---------- Barra de proporción, reutilizada en podio y preguntas ---------- */
+.inf-barra {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.inf-barra > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--violet);
+  transition: width .35s ease;
+}
+.inf-barra.alto  > span { background: var(--mint); }
+.inf-barra.medio > span { background: var(--sun); }
+.inf-barra.bajo  > span { background: var(--coral); }
+
+/* ---------- Podio ---------- */
+.inf-podio { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.inf-puesto {
+  display: grid;
+  grid-template-columns: 34px 1fr 96px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface, #fff);
+}
+.inf-puesto.top { border-color: var(--sun); background: #FFF8E9; }
+.inf-medalla { font-size: 1.3rem; text-align: center; }
+.inf-quien { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.inf-nombre { font-weight: 700; }
+.inf-avatar { font-size: 1.1rem; }
+.inf-detalle { font-size: .78rem; color: var(--text-soft); }
+.inf-puntos { text-align: right; font-family: var(--font-title); font-weight: 700; color: var(--violet); }
+.inf-puntos small { display: block; font-weight: 500; font-size: .72rem; color: var(--text-soft); }
+
+/* ---------- Pregunta por pregunta ---------- */
+.inf-actividad + .inf-actividad { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.inf-actividad-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.inf-tipo { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-soft); }
+
+.inf-pregunta { display: grid; gap: 6px; padding: 9px 0; }
+.inf-pregunta + .inf-pregunta { border-top: 1px dashed var(--border); }
+.inf-pregunta-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.inf-pregunta-texto { font-weight: 600; }
+.inf-dato { white-space: nowrap; font-weight: 700; font-size: .85rem; }
+.inf-dato.alto { color: var(--mint); }
+.inf-dato.medio { color: #B07400; }
+.inf-dato.bajo { color: var(--coral); }
+.inf-sin-datos { font-size: .8rem; color: var(--text-soft); }
+
+/* Aportes de mural, encuesta y pregunta abierta: no puntúan, se leen. */
+.inf-aportes { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+.inf-aportes li {
+  background: var(--bg-soft);
+  border-left: 3px solid var(--violet);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: .9rem;
+}
+.inf-aportes b { color: var(--violet); }
+
+/* ---------- Al imprimir ---------- */
+@media print {
+  .topbar, .btn, .link-btn, form { display: none !important; }
+  .panel, .inf-cifra, .inf-puesto { box-shadow: none; break-inside: avoid; }
+  .inf-barra { border: 1px solid #999; }        /* los fondos de color no se imprimen */
+  .inf-barra > span { background: #444 !important; }
+}
+
+@media (prefers-reduced-motion: reduce) { .inf-barra > span { transition: none; } }

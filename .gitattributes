@@ -1,0 +1,33 @@
+# Finales de línea.
+#
+# Esto no es cosmética. El proyecto se desarrolla en Windows y se despliega en
+# un contenedor Linux: si `docker/entrypoint.sh` viaja con finales de línea de
+# Windows (CRLF), el contenedor muere al arrancar con
+# «bad interpreter: /bin/sh^M» — un error que no dice nada sobre la causa real
+# y que no se puede reproducir en local.
+#
+# Regla: todo se guarda con finales de línea de Unix. La única excepción son
+# los scripts de PowerShell, que se quedan como Windows porque solo corren ahí.
+
+* text=auto eol=lf
+
+*.sh      text eol=lf
+*.php     text eol=lf
+*.sql     text eol=lf
+*.yml     text eol=lf
+*.css     text eol=lf
+*.js      text eol=lf
+.htaccess text eol=lf
+Dockerfile text eol=lf
+
+*.ps1 text eol=crlf
+
+# Binarios: que Git no los toque.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.xlsx binary
+*.zip  binary
+*.ppk  binary

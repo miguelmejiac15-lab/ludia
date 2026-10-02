@@ -1,0 +1,133 @@
+/* =====================================================================
+   Ludia — colegio y cursos (licencia de institución).
+
+   Se apoya en cuenta.css: esta hoja solo añade lo propio del colegio.
+   Como en el resto del producto, los colores salen de las fichas y el
+   color nunca va solo: siempre acompaña a una cifra.
+   ===================================================================== */
+
+/* ---------- Estado de la licencia ---------- */
+/* Va arriba del todo y con números: si está por vencer, es lo primero
+   que el coordinador tiene que saber al entrar. */
+.licencia {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+  border-left: 4px solid var(--border);
+}
+.licencia-ok { border-left-color: var(--mint); }
+.licencia-fin { border-left-color: var(--coral); }
+
+.licencia-dato { display: grid; gap: 2px; }
+.licencia-etiqueta {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.licencia-dato b {
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.bloque-colegio { margin-bottom: 18px; }
+
+/* ---------- Cursos ---------- */
+.lista-cursos { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
+.curso-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+}
+.curso-datos { display: grid; gap: 2px; min-width: 0; }
+.curso-datos b { overflow-wrap: anywhere; }
+
+/* ---------- Altas en una línea ---------- */
+/* Un formulario corto que no merece una pantalla propia: crear un curso o
+   agregar un profesor son dos datos y un botón. */
+.alta-linea {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.alta-linea .field { margin: 0; flex: 1 1 160px; }
+.alta-linea .btn { flex: 0 0 auto; }
+
+/* ---------- Envíos ---------- */
+.lista-envios { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.envio-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+}
+.chip-abierto {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--mint);
+  background: var(--mint-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* ---------- Lista del salón ---------- */
+.lista-estudiantes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px;
+}
+.lista-estudiantes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+  font-size: .92rem;
+}
+.lista-estudiantes form { margin: 0; }
+
+/* ---------- Semáforo del progreso ----------
+   Mismos cortes que en los informes: menta desde 70, sol entre 40 y 69,
+   coral por debajo. La cifra SIEMPRE está al lado; el color es el atajo,
+   no el dato, porque quien no distingue los colores tiene el mismo
+   derecho a leer esta tabla. */
+.nota {
+  display: inline-block;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: .85rem;
+}
+.nota-bien  { background: var(--mint-soft);   color: var(--mint); }
+.nota-medio { background: color-mix(in srgb, var(--sun) 26%, transparent); color: var(--coral-ink); }
+.nota-mal   { background: color-mix(in srgb, var(--coral) 14%, transparent); color: var(--coral-ink); }
+
+@media (max-width: 640px) {
+  .alta-linea { align-items: stretch; }
+  .alta-linea .btn { width: 100%; }
+}

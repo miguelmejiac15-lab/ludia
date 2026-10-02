@@ -1,0 +1,287 @@
+/* =====================================================================
+   Ludia — panel de administración: cifras, tablas y acciones por fila.
+   ===================================================================== */
+
+.admin .wrap { max-width: 1120px; }
+
+/* .sr-only vive ahora en ludia.css: la usan varias pantallas. */
+
+/* ---------- Cifras ---------- */
+.admin-cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+/* Las <section> del sitio traen padding vertical para separar las franjas de la
+   portada. Dentro del panel eso deja 64px muertos arriba de cada bloque: aquí
+   quien separa es el margen, no el relleno. (Medido: 64px de padding-top en
+   .admin-cifras y en cada .admin-bloque.) */
+.admin .admin-cifras,
+.admin .admin-bloque { padding-block: 0; margin-top: 0; }
+.admin .admin-bloque { padding: 20px 22px; }
+.cifra {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: grid;
+  gap: 2px;
+}
+.cifra-label {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.cifra-valor {
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.cifra-pie { font-size: .78rem; color: var(--text-soft); }
+
+/* ---------- Bloques ---------- */
+.admin-bloque { margin-bottom: 18px; }
+.admin-bloque-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.admin-buscar { display: flex; align-items: center; gap: 8px; margin: 0; }
+.admin-buscar .input { height: 38px; min-width: 240px; }
+
+/* ---------- Tablas ---------- */
+/* La tabla scrollea dentro de su caja: la página nunca se mueve a los lados. */
+.tabla-scroll { overflow-x: auto; }
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .88rem;
+  min-width: 720px;
+}
+.tabla th {
+  text-align: left;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: 0 10px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.tabla td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.tabla tr:last-child td { border-bottom: 0; }
+.tabla td b { display: block; overflow-wrap: anywhere; }
+.tabla td.num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.celda-sub { display: block; font-size: .76rem; color: var(--text-soft); overflow-wrap: anywhere; }
+.celda-vacia { text-align: center; color: var(--text-soft); padding: 26px 10px; }
+
+.es-tu-cuenta { background: color-mix(in srgb, var(--violet) 5%, transparent); }
+.tu-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--violet-soft);
+  color: var(--violet);
+  font-size: .66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  vertical-align: middle;
+}
+
+.fila-form { margin: 0; display: flex; align-items: center; gap: 6px; }
+.select-sm { height: 36px; padding-block: 0; font-size: .84rem; min-width: 130px; }
+
+.acciones-fila { display: flex; align-items: center; gap: 12px; }
+.acciones-fila form { margin: 0; }
+
+.codigo-chip {
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--coral);
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+/* ---------- Catálogo por plan ---------- */
+.admin-formatos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.admin-formatos li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.admin-formatos b { font-family: var(--font-title); font-size: 1.2rem; }
+
+.plan-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ---------- Editar precios y topes ---------- */
+.planes-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.plan-editable {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  background: var(--bg);
+}
+.plan-editable h3 {
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.plan-editable .field { margin-bottom: 10px; }
+.plan-editable label {
+  display: block;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 4px;
+}
+.plan-editable .input { height: 38px; }
+.plan-editable .hint { font-size: .72rem; }
+.campos-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.interruptores { display: grid; gap: 6px; margin: 12px 0; }
+.interruptores label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* ---------- Métricas ---------- */
+/* ---------- Barra lateral ----------
+   El panel dejó de ser una sola página larga: cada sección se pide al servidor
+   y consulta solo lo suyo. La barra se queda fija al desplazar, y en pantalla
+   estrecha se convierte en una fila de pestañas que se desliza. */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 208px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.admin-nav {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: .88rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-nav-item:hover { background: var(--bg-soft); color: var(--text); }
+.admin-nav-item.activo { background: var(--violet-soft); color: var(--violet); }
+.admin-nav-icono { font-size: 1rem; }
+.admin-contenido { min-width: 0; }   /* deja que las tablas anchas hagan scroll */
+
+@media (max-width: 860px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-nav {
+    position: static;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+  }
+}
+
+.grafica {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  padding: 10px 0;
+  overflow-x: auto;
+}
+.grafica-dia {
+  flex: 1 0 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+}
+.grafica-barras { display: flex; align-items: flex-end; gap: 2px; height: 100%; width: 100%; justify-content: center; }
+.grafica-barra {
+  width: 9px;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: height .3s ease;
+}
+.barra-cuentas  { background: var(--violet); }
+.barra-paquetes { background: var(--mint); }
+.grafica-fecha { font-size: .6rem; color: var(--text-soft); white-space: nowrap; }
+.grafica-leyenda { display: flex; gap: 16px; font-size: .76rem; color: var(--text-soft); margin-top: 6px; }
+.grafica-leyenda span { display: flex; align-items: center; gap: 6px; }
+.grafica-punto { width: 10px; height: 10px; border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) { .grafica-barra { transition: none; } }
+
+.uso-lista { display: grid; gap: 10px; }
+.uso-fila { display: grid; grid-template-columns: minmax(0, 140px) 1fr auto; gap: 12px; align-items: center; font-size: .85rem; }
+.uso-barra { height: 10px; border-radius: 999px; background: var(--bg-soft); overflow: hidden; }
+.uso-barra span { display: block; height: 100%; background: linear-gradient(90deg, var(--mint), var(--violet)); }
+.uso-dato { font-variant-numeric: tabular-nums; color: var(--text-soft); font-size: .78rem; }
+.plan-gratis   { background: var(--mint-soft); color: var(--mint); }
+.plan-estandar { background: var(--violet-soft); color: var(--violet); }
+.plan-pro      { background: color-mix(in srgb, var(--sun) 26%, transparent); color: var(--coral-ink); }
+
+@media (max-width: 640px) {
+  .admin-buscar { width: 100%; }
+  .admin-buscar .input { flex: 1; min-width: 0; }
+}

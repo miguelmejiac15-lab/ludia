@@ -1,0 +1,364 @@
+/* =====================================================================
+   Ludia — sala del anfitrión (sesion.php) y entrada del participante (unirse.php)
+   ===================================================================== */
+
+.sala { padding: 28px 0 120px; }
+.sala-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) { .sala-grid { grid-template-columns: 1fr; } }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.panel-head .panel-title { margin: 0; }
+.contador {
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--violet);
+  background: var(--violet-soft);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.acceso h1 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin-top: 12px; }
+.sala-sub { color: var(--text-soft); font-size: .9rem; margin-top: 6px; }
+
+/* Código de entrada */
+.codigo-caja {
+  margin-top: 20px;
+  text-align: center;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+}
+.codigo-label {
+  display: block;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.codigo {
+  display: block;
+  font-family: var(--font-title);
+  font-size: clamp(2.4rem, 8vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--coral);
+  line-height: 1.1;
+  margin: 6px 0;
+}
+.codigo-pie { font-size: .8rem; color: var(--text-soft); overflow-wrap: anywhere; }
+
+/* QR */
+.qr-caja { margin-top: 16px; text-align: center; }
+.qr {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 8px;
+  padding: 10px;
+  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+.qr svg { width: 100%; height: 100%; display: block; }
+
+.enlace-fila { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 16px; }
+.enlace-fila .input { font-size: .82rem; }
+
+/* Participantes */
+.participantes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 12px;
+  min-height: 160px;
+}
+.participante {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  text-align: center;
+}
+.participante.ausente { opacity: .5; }
+
+/* ---------- Equipos ----------
+   Seis colores con valor propio, no variables del tema: "cielo" y "uva" no
+   existen en la paleta y prefiero definirlos aquí a inventar variables que
+   nadie más usa. El nombre del color viaja desde la base (equipos.color), así
+   que cambiar la paleta es cambiar este bloque y nada más. */
+.eq-coral    { --eq: #FF6A4D; }
+.eq-violeta  { --eq: #5B3DF5; }
+.eq-menta    { --eq: #1FA98A; }
+.eq-sol      { --eq: #E0A21B; }
+.eq-cielo    { --eq: #2E90C4; }
+.eq-uva      { --eq: #9B4DCA; }
+.eq-sueltos  { --eq: #9A93A8; }
+
+.equipos-caja { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 16px; }
+.equipos-barra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.equipos-titulo { font-family: var(--font-title); font-weight: 600; margin-right: auto; }
+.equipos-cuantos { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-soft); }
+
+.equipos-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.equipo-tarjeta {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--eq, var(--violet));
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 10px 12px;
+}
+.equipo-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.equipo-cab b { color: var(--eq, var(--violet)); }
+.equipo-cuenta {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--eq, var(--violet));
+  background: var(--bg-soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.equipo-gente { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.equipo-gente li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px; }
+.equipo-quien { font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipo-vacio { font-size: .82rem; color: var(--text-soft); margin: 0; }
+
+/* El color del equipo tiñe también el marcador en vivo y el podio final. */
+.marcador-fila.eq-coral, .marcador-fila.eq-violeta, .marcador-fila.eq-menta,
+.marcador-fila.eq-sol, .marcador-fila.eq-cielo, .marcador-fila.eq-uva,
+.podio-fila.eq-coral, .podio-fila.eq-violeta, .podio-fila.eq-menta,
+.podio-fila.eq-sol, .podio-fila.eq-cielo, .podio-fila.eq-uva {
+  border-left: 4px solid var(--eq);
+}
+.marcador-sub { font-weight: 500; color: var(--text-soft); }
+.podio-equipos { display: grid; gap: 8px; margin-bottom: 18px; }
+.podio-subtitulo {
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-soft);
+  margin: 0 0 8px;
+}
+
+/* La insignia que ve el estudiante en su propia pantalla. */
+.mi-equipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: .82rem;
+  color: var(--eq, var(--violet));
+  background: var(--bg-soft);
+  border: 1px solid var(--eq, var(--violet));
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+.participante-nombre { font-size: .82rem; font-weight: 700; overflow-wrap: anywhere; }
+.participante-nota { font-size: .68rem; color: var(--text-soft); }
+.participantes-vacio {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 30px 12px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-soft);
+  font-size: .88rem;
+  text-align: center;
+}
+.participantes-vacio b { font-size: 1.8rem; }
+.acciones-sala { display: flex; gap: 10px; align-items: center; }
+
+/* ---------- Avance de un paquete enviado ---------- */
+.progreso-lista { display: grid; gap: 10px; }
+.progreso-fila {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.progreso-fila.ausente { opacity: .55; }
+.progreso-fila.listo { border-color: var(--mint); }
+.progreso-nombre { display: block; font-weight: 700; font-size: .88rem; overflow-wrap: anywhere; }
+.progreso-barra {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progreso-barra span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--mint), var(--violet));
+  border-radius: inherit;
+  transition: width .3s ease;
+}
+.progreso-dato { font-size: .8rem; color: var(--text-soft); white-space: nowrap; }
+.progreso-fila.listo .progreso-dato { color: var(--mint); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .progreso-barra span { transition: none; } }
+
+/* ---------- Avatares (compartidos con unirse.php) ---------- */
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--avatar-color, var(--violet));
+  flex: none;
+}
+.avatar-cara { line-height: 1; }
+.avatar-extra {
+  position: absolute;
+  top: -6%;
+  right: -10%;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35));
+}
+.avatar-sm { width: 32px; height: 32px; font-size: 1.05rem; }
+.avatar-sm .avatar-extra { font-size: .7rem; }
+.avatar-md { width: 52px; height: 52px; font-size: 1.7rem; }
+.avatar-md .avatar-extra { font-size: 1rem; }
+.avatar-xl { width: 128px; height: 128px; font-size: 4.2rem; }
+.avatar-xl .avatar-extra { font-size: 2.2rem; }
+
+/* ---------- Entrada del participante (unirse.php) ---------- */
+.unirse { padding: 32px 0 110px; }
+.unirse .wrap { max-width: 560px; }
+.unirse-card { text-align: center; }
+.unirse-card h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); margin-top: 12px; }
+.unirse-card > p { color: var(--text-soft); margin-top: 8px; }
+
+.codigo-input {
+  font-family: var(--font-title);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: .3em;
+  text-align: center;
+  height: auto;
+  padding: 14px 10px;
+}
+
+.avatar-escena {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 18px 0;
+}
+.avatar-nombre { font-family: var(--font-title); font-weight: 600; font-size: 1.15rem; }
+
+.selector { margin-top: 16px; text-align: left; }
+.selector > span {
+  display: block;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.opcion {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.opcion:hover { border-color: var(--violet); }
+.opcion[aria-pressed="true"] {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-soft);
+}
+.opcion.color { border: 2px solid transparent; }
+.opcion.color[aria-pressed="true"] { border-color: var(--text); box-shadow: 0 0 0 3px var(--violet-soft); }
+.opcion.vacia { font-size: .7rem; font-weight: 700; color: var(--text-soft); }
+
+.nombre-fila { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+
+/* .mensaje vive en ludia.css: lo usan la entrada del participante y las cuentas. */
+
+/* Sala de espera del participante */
+.espera { text-align: center; }
+.espera .avatar-escena { margin-top: 10px; }
+.espera-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.espera-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px 4px 4px;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.puntos-espera {
+  display: inline-flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+.puntos-espera span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--violet);
+  animation: latido 1.2s infinite ease-in-out;
+}
+.puntos-espera span:nth-child(2) { animation-delay: .2s; }
+.puntos-espera span:nth-child(3) { animation-delay: .4s; }
+@keyframes latido {
+  0%, 100% { opacity: .3; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .puntos-espera span { animation: none; opacity: .7; }
+}

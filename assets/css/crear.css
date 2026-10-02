@@ -1,0 +1,901 @@
+/* =====================================================================
+   Ludia — editor de sesión (app/crear.php)
+   Usa los tokens de ludia.css.
+   ===================================================================== */
+
+/* ---------- Barra de pasos ---------- */
+.pasos {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.pasos-lista {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 12px 24px;
+  overflow-x: auto;
+}
+.paso-chip button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  background: none;
+  border: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.paso-chip button:disabled { opacity: .45; cursor: not-allowed; }
+.paso-chip.actual button { background: var(--violet-soft); color: var(--violet); }
+.paso-chip.hecho button { color: var(--mint); }
+.paso-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .78rem;
+  flex: none;
+}
+.paso-chip.actual .paso-num { background: var(--violet); border-color: var(--violet); color: #fff; }
+.paso-chip.hecho .paso-num { background: var(--mint-soft); border-color: var(--mint); color: var(--mint); }
+
+/* ---------- Pasos 1, 2 y 4 ---------- */
+.paso { padding-block: 34px 120px; }
+.paso-head { max-width: 680px; margin-bottom: 26px; }
+.paso-head h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); margin-top: 12px; }
+.paso-head p { margin-top: 10px; color: var(--text-soft); }
+.paso-form { max-width: 560px; }
+.opcional { font-weight: 500; color: var(--text-soft); font-size: .84em; }
+
+/* Resumen del tema en el paso de actividades */
+.resumen-tema { padding-top: 20px; }
+.tema-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+}
+.tema-chip b { font-family: var(--font-title); font-size: 1.1rem; }
+.tema-datos { font-size: .82rem; color: var(--text-soft); }
+.tema-chip .link-btn { margin-left: auto; }
+
+/* Revisión final */
+.revision-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.revision-dato { display: grid; gap: 4px; }
+.revision-dato span { font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-soft); }
+.revision-dato b { font-family: var(--font-title); font-size: 1.15rem; overflow-wrap: anywhere; }
+.revision-lista { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+.revision-fila {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+.revision-fila b { display: block; overflow-wrap: anywhere; }
+.revision-fila .slot-meta { display: block; margin-top: 2px; }
+.tema-chip b { margin-inline: 4px; }
+.acciones-paso { display: flex; gap: 10px; align-items: center; }
+
+/* ---------- Imagen de la pregunta ---------- */
+.img-miniatura {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  line-height: 0;
+}
+.img-miniatura img { max-width: 100%; max-height: 160px; display: block; }
+.img-miniatura .icon-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--surface);
+  line-height: 1;
+}
+#img-estado.subiendo { color: var(--violet); font-weight: 700; }
+#img-estado.error { color: var(--coral-ink); font-weight: 700; }
+
+/* ---------- Cargar desde Excel ---------- */
+label.btn { cursor: pointer; }
+#excel-estado { margin-top: 12px; }
+.importar-avisos {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--sun) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sun) 40%, var(--border));
+  font-size: .82rem;
+}
+.importar-avisos ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-soft); display: grid; gap: 3px; }
+#dialog-importar .revision-lista { max-height: 260px; overflow-y: auto; }
+#dialog-importar .revision-fila { grid-template-columns: 44px 1fr; }
+
+.builder {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 24px 120px;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .builder { grid-template-columns: 280px minmax(0, 1fr); }
+  .preview-col { grid-column: 1 / -1; }
+}
+@media (max-width: 820px) {
+  .builder { grid-template-columns: 1fr; padding-top: 20px; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+.panel + .panel { margin-top: 16px; }
+.panel-title {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 14px;
+}
+.side-col { position: sticky; top: 16px; }
+.preview-col { position: sticky; top: 16px; }
+@media (max-width: 1180px) { .side-col, .preview-col { position: static; } }
+
+/* Los estilos de formulario (.field, .input, .select, .textarea, .hint) viven en
+   ludia.css: los comparten el editor, las pantallas de cuenta y el juego. */
+
+/* ---------- Plan gratis ---------- */
+.plan-box {
+  display: grid;
+  gap: 8px;
+  font-size: .82rem;
+  color: var(--text-soft);
+}
+.plan-box .plan-tag {
+  justify-self: start;
+  background: var(--mint-soft);
+  color: var(--mint);
+  font-weight: 700;
+  font-size: .72rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.meter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--mint), var(--violet));
+  border-radius: inherit;
+  transition: width .2s ease;
+}
+
+/* ---------- Lista de actividades de la sesión ---------- */
+.slots { display: grid; gap: 10px; }
+.slot {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  cursor: pointer;
+}
+.slot:hover { border-color: var(--violet); }
+.slot.is-active { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-soft); }
+.slot-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--violet-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+.slot-name { font-weight: 700; font-size: .9rem; line-height: 1.25; }
+.slot-meta { font-size: .75rem; color: var(--text-soft); }
+.slot-state { font-size: .72rem; font-weight: 700; }
+.slot-state.ok { color: var(--mint); }
+.slot-state.warn { color: var(--coral-ink); }
+.slot-empty {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+  font-size: .82rem;
+  color: var(--text-soft);
+}
+.btn-block { width: 100%; }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+/* ---------- Catálogo ---------- */
+.catalog-head { margin-bottom: 22px; }
+.catalog-head h1 { font-size: clamp(1.5rem, 2.6vw, 2rem); margin-top: 12px; }
+.catalog-head p { margin-top: 8px; color: var(--text-soft); }
+.catalog-group + .catalog-group { margin-top: 28px; }
+.catalog-group h2 { font-size: 1.1rem; }
+.catalog-group > p { font-size: .85rem; color: var(--text-soft); margin: 4px 0 12px; }
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.format-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  position: relative;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.format-card:hover:not([disabled]) {
+  border-color: var(--violet);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.format-card[disabled] { cursor: not-allowed; opacity: .6; }
+.format-card .fc-icon { font-size: 1.6rem; }
+.format-card .fc-name { font-weight: 700; }
+.format-card .fc-desc { font-size: .8rem; color: var(--text-soft); }
+.format-card .fc-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: .66rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.fc-tag.puntua { background: var(--mint-soft); color: var(--mint); }
+.fc-tag.opina { background: var(--violet-soft); color: var(--violet); }
+.fc-tag.lock { background: color-mix(in srgb, var(--sun) 20%, transparent); color: var(--coral-ink); }
+@media (prefers-reduced-motion: reduce) { .format-card { transition: none; } .format-card:hover:not([disabled]) { transform: none; } }
+
+.notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--sun) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--sun) 40%, var(--border));
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: .88rem;
+  margin-bottom: 18px;
+}
+
+/* ---------- Editor ---------- */
+.editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.editor-type { display: flex; align-items: center; gap: 12px; }
+.editor-type .slot-icon { width: 48px; height: 48px; font-size: 1.5rem; }
+.editor-type h1 { font-size: 1.35rem; }
+.editor-type p { font-size: .82rem; color: var(--text-soft); }
+/* .link-btn vive en ludia.css: lo comparten la barra superior y esta pantalla. */
+
+.row-2 { display: grid; grid-template-columns: 1fr 160px; gap: 12px; }
+@media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
+
+.items-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0 16px;
+}
+.item-pill {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+}
+.item-pill.is-active { background: var(--violet); border-color: var(--violet); color: var(--surface); }
+.item-pill.has-error::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--coral);
+  border: 2px solid var(--surface);
+}
+.item-pill.add { border-style: dashed; color: var(--violet); }
+
+.item-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  background: var(--surface-2);
+}
+.item-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.item-card-head strong { font-family: var(--font-title); font-weight: 600; }
+
+.option-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.option-row.pair { grid-template-columns: 1fr 20px 1fr auto; }
+/* Párrafos: el textarea es alto, así que la marca y el botón van arriba. */
+.option-row.parrafo { align-items: start; }
+.option-row.parrafo .textarea { min-height: 76px; }
+.option-row .arrow { text-align: center; color: var(--text-soft); }
+
+/* ---------- Imagen en cada lado de una pareja ----------
+   El texto NO desaparece cuando hay imagen: sigue siendo lo que compara la
+   calificación y el alternativo para quien no ve la foto. Por eso el campo de
+   texto manda y la imagen se acompaña al lado, pequeña. */
+.par-lado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.par-lado .input { flex: 1 1 auto; min-width: 0; }
+
+.par-imagen { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+
+.par-miniatura { position: relative; display: inline-flex; }
+.par-miniatura img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: block;
+}
+.par-miniatura .icon-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  font-size: .7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  padding: 0;
+}
+
+/* Botón de subir: un icono, porque en una fila de pareja no cabe más. */
+.par-subir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 1rem;
+  flex: none;
+}
+.par-subir:hover { border-color: var(--violet); border-style: solid; }
+
+/* Con imagen la fila necesita más aire y no puede seguir siendo una rejilla
+   de columnas fijas: en móvil se apila. */
+@media (max-width: 720px) {
+  .option-row.pair-img {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .option-row.pair-img .arrow { display: none; }
+}
+
+/* ---------- Vídeo en el editor ---------- */
+.video-vista {
+  margin-top: 10px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #000;
+}
+.video-vista iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* La pista se vuelve aviso cuando el enlace no se reconoce. */
+.error-hint { color: var(--coral-ink); font-weight: 600; }
+
+.pv-video {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--violet);
+  background: var(--violet-soft);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+/* Miniatura en la vista previa del editor. */
+.pv-mini {
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+.option-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+}
+.option-mark input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.option-mark.plain { background: var(--bg-soft); color: var(--text-soft); cursor: default; }
+.option-mark:has(input:focus-visible) { outline: 3px solid var(--violet); outline-offset: 2px; }
+/* Los colores .opt-* viven en ludia.css: los comparten editor, juego y proyección. */
+.option-mark:not(.plain):not(:has(input:checked)) { opacity: .35; }
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.icon-btn:hover { color: var(--coral-ink); border-color: var(--coral); }
+.icon-btn[disabled] { opacity: .35; cursor: not-allowed; }
+/* ---------- Formatos que no entran en el plan ---------- */
+.format-card.bloqueado { opacity: .62; cursor: not-allowed; }
+.format-card.bloqueado .fc-name { color: var(--text-soft); }
+.fc-tag.plan {
+  background: color-mix(in srgb, var(--sun) 26%, transparent);
+  color: var(--coral-ink);
+}
+.catalog-plan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 18px 0 8px;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  font-size: .88rem;
+  color: var(--text-soft);
+}
+.catalog-plan b { color: var(--text); }
+
+/* Aviso de que la imagen es de los planes de pago */
+.imagen-bloqueada {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .82rem;
+  color: var(--text-soft);
+}
+.imagen-bloqueada b { color: var(--text); font-size: .88rem; }
+
+.add-row {
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--violet);
+  background: none;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.add-row:hover { border-color: var(--violet); }
+
+.toggle-vf { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.toggle-vf label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-weight: 700;
+  cursor: pointer;
+}
+.toggle-vf label:has(input:checked) { border-color: var(--mint); background: var(--mint-soft); color: var(--mint); }
+.toggle-vf input { accent-color: var(--mint); }
+
+.errors {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  list-style: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--coral) 10%, transparent);
+  color: var(--coral-ink);
+  font-size: .8rem;
+  font-weight: 600;
+  display: grid;
+  gap: 2px;
+}
+.errors.ok { background: var(--mint-soft); color: var(--mint); }
+
+/* ---------- Vista previa (celular) ---------- */
+.phone {
+  background: #15102A;
+  border: 1px solid var(--border);
+  border-radius: 34px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  max-width: 320px;
+  margin: 0 auto;
+}
+.phone-screen {
+  background: var(--bg);
+  border-radius: 24px;
+  min-height: 520px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+.pv-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+.pv-player { display: flex; align-items: center; gap: 6px; }
+.pv-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--coral), var(--violet));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+}
+.pv-timer {
+  background: var(--violet-soft);
+  color: var(--violet);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.pv-progress { height: 5px; border-radius: 999px; background: var(--bg-soft); overflow: hidden; }
+.pv-progress span { display: block; height: 100%; width: 65%; background: var(--violet); }
+.pv-kind { font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--violet); }
+.pv-question {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.pv-placeholder { color: var(--text-soft); font-style: italic; font-family: var(--font-body); font-weight: 500; font-size: .95rem; }
+.pv-imagen {
+  display: block;
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.pv-options { display: grid; gap: 8px; }
+.pv-options.grid-2 { grid-template-columns: 1fr 1fr; }
+.pv-option {
+  border-radius: 12px;
+  padding: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: .85rem;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+.pv-option.neutral { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.pv-blank {
+  display: inline-block;
+  min-width: 64px;
+  border-bottom: 2px solid var(--violet);
+  margin: 0 2px;
+}
+.pv-text { font-size: .95rem; line-height: 1.7; overflow-wrap: anywhere; }
+.pv-input {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: .85rem;
+  color: var(--text-soft);
+}
+.pv-pairs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: .78rem; }
+.pv-pairs div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.pv-pairs .right { border-color: var(--violet); }
+.pv-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pv-scale span {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.pv-scale-labels { display: flex; justify-content: space-between; font-size: .7rem; color: var(--text-soft); gap: 8px; }
+.pv-foot { margin-top: auto; font-size: .72rem; color: var(--text-soft); text-align: center; }
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  flex: 1;
+  color: var(--text-soft);
+  font-size: .88rem;
+}
+.preview-empty b { font-size: 2rem; }
+
+/* La barra inferior fija vive en ludia.css: la comparten el editor y la sala. */
+
+/* ---------- Diálogo "siguiente paso" ---------- */
+.dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  padding: 28px;
+  max-width: 520px;
+  width: calc(100% - 32px);
+  box-shadow: var(--shadow);
+}
+.dialog::backdrop { background: rgba(26, 21, 48, .55); }
+.dialog h2 { font-size: 1.4rem; }
+.dialog p { color: var(--text-soft); margin-top: 8px; }
+.steps-next { list-style: none; margin: 18px 0; padding: 0; display: grid; gap: 10px; }
+.steps-next li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; font-size: .9rem; }
+.steps-next li span {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--violet-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.steps-next small { display: block; color: var(--text-soft); }
+.dialog .hero-cta { margin-top: 8px; }
+
+/* ---------- Interruptores (mural) ---------- */
+.switch {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.switch input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--violet); cursor: pointer; }
+.switch b { font-size: .88rem; font-weight: 700; }
+.switch small { display: block; font-size: .78rem; color: var(--text-soft); margin-top: 2px; }
+
+/* ---------- Bloques de categoría (clasificar) ---------- */
+.cat-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--bg);
+}
+.cat-head { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px; }
+.cat-head .input { font-weight: 700; }
+
+/* ---------- Vistas previas de los formatos nuevos ---------- */
+.pv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pv-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: .78rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.pv-chip.mas { color: var(--text-soft); }
+.pv-word { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin: 6px 0; }
+.pv-hueco { width: 18px; height: 24px; border-bottom: 3px solid var(--violet); }
+.pv-letters {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  font-size: .72rem;
+  font-weight: 700;
+  text-align: center;
+}
+.pv-letters span {
+  aspect-ratio: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pv-cruci { display: grid; grid-template-columns: 20px 1fr; gap: 6px; font-size: .78rem; margin-bottom: 8px; }
+.pv-cruci-cells { display: flex; gap: 2px; flex-wrap: wrap; margin-bottom: 3px; }
+.pv-cruci-cells span {
+  width: 16px;
+  height: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.pv-cruci small { color: var(--text-soft); }
+.pv-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.pv-card {
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--violet), var(--coral));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.pv-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; }
+.pv-col {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: .76rem;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.pv-drop {
+  display: block;
+  margin-top: 6px;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 4px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: .7rem;
+}
+.pv-mural { display: grid; gap: 8px; }
+.pv-mural .nota {
+  border-radius: 10px;
+  padding: 10px;
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+  color: #2A2140;
+}
+.pv-mural .nota small { display: block; margin-top: 4px; opacity: .7; font-weight: 700; }
+/* Los colores .nota-* viven en ludia.css: se usan en la vista previa y en el mural proyectado. */
+.pv-mural.postit { grid-template-columns: 1fr 1fr; }
+.pv-mural.postit .nota { transform: rotate(-1.5deg); box-shadow: 0 6px 12px -8px rgba(0, 0, 0, .5); }
+.pv-mural.postit .nota:nth-child(even) { transform: rotate(1.5deg); }
+.pv-mural.flotante .nota { border-radius: 999px; padding: 8px 14px; }
+.pv-mural.flotante .nota:nth-child(even) { margin-left: 28px; }
+/* Página informativa: portada o diapositiva de texto. */
+.pv-pagina-titulo {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+.pv-pagina {
+  display: grid;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.pv-pagina p { font-size: .78rem; line-height: 1.5; overflow-wrap: anywhere; }
+
+.pv-panel { display: grid; gap: 6px; }
+.pv-panel div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+}
+.pv-panel small { display: block; color: var(--text-soft); margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .pv-mural.postit .nota, .pv-mural.postit .nota:nth-child(even) { transform: none; }
+}

@@ -1,0 +1,23 @@
+# Ludia — qué puede recorrer un buscador y qué no.
+#
+# La regla de fondo: se indexa lo que vende (la portada) y NADA de lo que pasa
+# dentro. En /app/ hay salas de juego con los nombres de quienes participan,
+# muchos de ellos menores, escritos por su profesor. Un buscador no tiene por
+# qué guardar eso, aunque para llegar haga falta un código.
+
+User-agent: *
+
+# Todo lo que ocurre dentro de la aplicación.
+Disallow: /app/
+Disallow: /api/
+
+# Descargas y material generado: no son páginas.
+Disallow: /uploads/
+Disallow: /sql/
+Disallow: /docs/
+
+# La portada y sus anclas sí, que es a lo que se viene.
+Allow: /$
+
+# Cuando esté el dominio en pie, aquí va:
+# Sitemap: https://ludia.click/sitemap.xml

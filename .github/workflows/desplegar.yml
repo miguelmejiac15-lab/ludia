@@ -1,0 +1,131 @@
+# Construye la imagen de Ludia y avisa a Coolify para que la despliegue.
+#
+# La construcción ocurre AQUÍ, en los runners de GitHub, nunca en la EC2: es
+# una t3.small con 2 GB de RAM que ya está atendiendo otro sitio en producción,
+# y compilar las extensiones de PHP allí competiría por memoria con visitas
+# reales. El servidor solo se descarga una imagen ya hecha.
+#
+# La imagen se publica en GHCR (el registro de contenedores de GitHub) en vez
+# de en Docker Hub: no hace falta otra cuenta ni otro secreto, el permiso sale
+# del propio token del flujo.
+
+name: Desplegar Ludia
+
+on:
+  push:
+    branches: [main]
+  # Permite lanzarlo a mano desde la pestaña Actions, que es lo que se quiere
+  # cuando el despliegue falló por algo del servidor y no por el código.
+  workflow_dispatch:
+
+env:
+  REGISTRO: ghcr.io
+  IMAGEN: ${{ github.repository }}
+
+jobs:
+  construir-y-desplegar:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Traer el código
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------------
+      # Antes de construir: comprobar que el PHP está sano.
+      #
+      # `php -l` no lo detecta todo —un `require` duplicado tumbó media
+      # aplicación el 18/09 y pasó el linter—, pero un paréntesis mal cerrado
+      # sí, y es absurdo construir una imagen de 400 MB para descubrirlo.
+      # ---------------------------------------------------------------------
+      - name: Preparar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Revisar la sintaxis de todo el PHP
+        run: |
+          errores=0
+          while IFS= read -r archivo; do
+            php -l "$archivo" > /dev/null 2>&1 || { echo "SINTAXIS: $archivo"; php -l "$archivo"; errores=1; }
+          done < <(find . -name '*.php' -not -path './.git/*')
+          exit $errores
+        shell: bash
+
+      # El repositorio es público: una credencial escrita en un archivo
+      # versionado queda a la vista de cualquiera. Esto corta el despliegue
+      # antes de publicarla, que es el único momento en que aún se puede evitar.
+      - name: Comprobar que no se cuelan credenciales
+        run: |
+          if [ -f config/config.php ]; then
+            echo "ERROR: config/config.php está en el repositorio."
+            echo "Ese archivo lleva credenciales y debe quedarse en .gitignore."
+            echo "En el servidor la configuración la pone config.env.php con variables de entorno."
+            exit 1
+          fi
+          # Un token de Mercado Pago o de GitHub escrito en el código.
+          if grep -rInE '(APP_USR-[0-9a-f]{8}|ghp_[A-Za-z0-9]{36}|TEST-[0-9]{10,})' \
+               --include='*.php' --include='*.js' --include='*.yml' . ; then
+            echo "ERROR: parece haber un token escrito en el código."
+            exit 1
+          fi
+          echo "Sin credenciales a la vista."
+        shell: bash
+
+      - name: Entrar en el registro de GitHub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir y publicar la imagen
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # La EC2 es x86_64 (t3.small). Construir también para arm64 doblaría
+          # el tiempo para una arquitectura que nadie va a usar.
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRO }}/${{ env.IMAGEN }}:latest
+            ${{ env.REGISTRO }}/${{ env.IMAGEN }}:${{ github.sha }}
+          # La caché vive en Actions, no en el servidor: la primera
+          # construcción tarda unos minutos y las siguientes, segundos.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---------------------------------------------------------------------
+      # Avisar a Coolify
+      #
+      # Coolify se descarga la imagen recién publicada y reemplaza el
+      # contenedor. No construye nada: por eso la EC2 no compila.
+      # ---------------------------------------------------------------------
+      - name: Pedir el despliegue a Coolify
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_WEBHOOK" ]; then
+            echo "Falta el secreto COOLIFY_WEBHOOK. La imagen quedó publicada;"
+            echo "el despliegue habrá que lanzarlo desde Coolify."
+            exit 1
+          fi
+          codigo=$(curl -s -o /tmp/respuesta.txt -w '%{http_code}' -X GET \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK")
+          echo "Coolify respondió $codigo"
+          cat /tmp/respuesta.txt
+          echo
+          # Un 2xx significa "encolado", no "terminado": el estado final se ve
+          # en Coolify. Aquí solo se comprueba que la petición se aceptó.
+          case "$codigo" in
+            2*) echo "Despliegue encolado." ;;
+            *)  echo "ERROR: Coolify no aceptó la petición."; exit 1 ;;
+          esac
+        shell: bash

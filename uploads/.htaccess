@@ -1,0 +1,17 @@
+# Carpeta de imágenes subidas por los creadores.
+# Aquí solo se sirven archivos: nada de ejecutar código, pase lo que pase.
+
+php_flag engine off
+
+<IfModule mod_rewrite.c>
+  RewriteEngine Off
+</IfModule>
+
+# Solo se permiten imágenes; cualquier otra extensión queda bloqueada.
+<FilesMatch "\.(?i:jpe?g|png|gif|webp)$">
+  Require all granted
+</FilesMatch>
+
+<FilesMatch "(?i:\.php|\.phtml|\.php\d|\.phar|\.html?|\.js|\.htaccess)$">
+  Require all denied
+</FilesMatch>

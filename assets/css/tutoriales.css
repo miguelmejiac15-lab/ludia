@@ -1,0 +1,359 @@
+/* =====================================================================
+   Ludia — mini tutoriales animados (CSS puro, sin vídeo).
+
+   Cada "vídeo" son cuatro escenas que se encadenan con animaciones y se
+   repiten en bucle. Quien pide menos movimiento las ve quietas, una debajo
+   de otra: se entiende igual sin que nada se mueva.
+   ===================================================================== */
+
+.tuto {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(26, 21, 48, .55);
+  backdrop-filter: blur(3px);
+}
+.tuto[hidden] { display: none !important; }
+
+.tuto-caja {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px -20px rgba(26, 21, 48, .5);
+  padding: 26px;
+}
+.tuto-cerrar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-soft);
+  font-size: .9rem;
+  cursor: pointer;
+}
+.tuto-cerrar:hover { color: var(--text); border-color: var(--text-soft); }
+
+.tuto-cabecera { text-align: center; margin-bottom: 18px; }
+.tuto-cabecera h2 { font-size: 1.4rem; margin-top: 10px; }
+.tuto-cabecera p { color: var(--text-soft); font-size: .9rem; margin-top: 6px; }
+
+/* ---------- Pantalla ---------- */
+.tuto-pantalla {
+  position: relative;
+  height: 230px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.tuto-video { position: absolute; inset: 0; }
+.tuto-video[hidden] { display: none; }
+
+.tuto-escena {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px;
+  opacity: 0;
+  animation: tuto-ciclo 12s infinite;
+}
+.esc-1 { animation-delay: 0s; }
+.esc-2 { animation-delay: 3s; }
+.esc-3 { animation-delay: 6s; }
+.esc-4 { animation-delay: 9s; }
+
+@keyframes tuto-ciclo {
+  0%   { opacity: 0; transform: translateY(10px) scale(.98); }
+  3%   { opacity: 1; transform: translateY(0) scale(1); }
+  22%  { opacity: 1; transform: translateY(0) scale(1); }
+  25%  { opacity: 0; transform: translateY(-10px) scale(.98); }
+  100% { opacity: 0; }
+}
+
+.tuto-paso {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--violet);
+}
+.tuto-pie { font-size: .8rem; color: var(--text-soft); }
+
+/* Escena: elegir modo */
+.tuto-modos { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.tuto-modo {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-size: .86rem;
+  font-weight: 700;
+}
+.tuto-modo.elegido {
+  border-color: var(--violet);
+  background: var(--violet-soft);
+  color: var(--violet);
+  animation: tuto-latido 12s infinite;
+}
+@keyframes tuto-latido {
+  0%, 6% { transform: scale(1); }
+  8%     { transform: scale(1.06); }
+  10%, 100% { transform: scale(1); }
+}
+
+/* La escritura del tema ocurre en la primera escena, así que su animación
+   arranca al principio del ciclo. */
+.esc-1 .tuto-escribe { animation-delay: 0s; }
+
+/* Escena: escribir el tema */
+.tuto-campo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface);
+  border: 2px solid var(--violet);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  min-width: 220px;
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.tuto-escribe {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: tuto-teclea 12s infinite steps(9);
+}
+@keyframes tuto-teclea {
+  0%, 3%  { width: 0; }
+  12%     { width: 9ch; }
+  22%     { width: 9ch; }
+  25%, 100% { width: 9ch; }
+}
+.tuto-cursor {
+  width: 2px;
+  height: 20px;
+  background: var(--violet);
+  animation: tuto-parpadeo 1s infinite steps(2);
+}
+@keyframes tuto-parpadeo { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+/* Escena: lista de actividades que van cayendo */
+.tuto-lista { display: grid; gap: 8px; width: min(260px, 100%); }
+.tuto-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--mint);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: .84rem;
+  font-weight: 600;
+  opacity: 0;
+  animation: tuto-entra 12s infinite;
+}
+.tuto-item.i1 { animation-delay: 6.2s; }
+.tuto-item.i2 { animation-delay: 6.8s; }
+.tuto-item.i3 { animation-delay: 7.4s; }
+@keyframes tuto-entra {
+  0%, 1%  { opacity: 0; transform: translateX(-12px); }
+  4%      { opacity: 1; transform: translateX(0); }
+  22%     { opacity: 1; transform: translateX(0); }
+  25%, 100% { opacity: 0; }
+}
+
+/* Escena: listo */
+.tuto-ok {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--mint-soft);
+  color: var(--mint);
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Escena: código y QR */
+.tuto-codigo {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 26px;
+}
+.tuto-codigo-label {
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.tuto-codigo b {
+  font-family: var(--font-title);
+  font-size: 1.9rem;
+  letter-spacing: .08em;
+  color: var(--coral);
+}
+/* QR insinuado con un degradado a cuadros: no hace falta que sea legible. */
+.tuto-qr {
+  width: 46px;
+  height: 46px;
+  margin-top: 4px;
+  border-radius: 6px;
+  background:
+    conic-gradient(var(--text) 25%, transparent 0 50%, var(--text) 0 75%, transparent 0) 0 0 / 12px 12px,
+    var(--surface);
+  border: 2px solid var(--text);
+}
+
+/* Escena: entra la gente */
+.tuto-gente { display: flex; gap: 10px; }
+.tuto-persona {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--violet-soft);
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  opacity: 0;
+  animation: tuto-salta 12s infinite;
+}
+.tuto-persona.p1 { animation-delay: 3.2s; }
+.tuto-persona.p2 { animation-delay: 3.5s; }
+.tuto-persona.p3 { animation-delay: 3.8s; }
+.tuto-persona.p4 { animation-delay: 4.1s; }
+@keyframes tuto-salta {
+  0%, 1%  { opacity: 0; transform: translateY(14px); }
+  4%      { opacity: 1; transform: translateY(0); }
+  22%     { opacity: 1; transform: translateY(0); }
+  25%, 100% { opacity: 0; }
+}
+
+/* Escena: la pregunta proyectada */
+.tuto-pregunta { font-family: var(--font-title); font-weight: 600; font-size: 1.05rem; text-align: center; }
+.tuto-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(280px, 100%); }
+.tuto-opcion {
+  padding: 9px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-align: center;
+  font-weight: 700;
+  font-size: .86rem;
+}
+.tuto-opcion.buena {
+  border-color: var(--mint);
+  background: var(--mint-soft);
+  color: var(--mint);
+  animation: tuto-acierta 12s infinite;
+}
+@keyframes tuto-acierta {
+  0%, 8%   { transform: scale(1); }
+  9%       { transform: scale(1.08); }
+  10%, 100% { transform: scale(1); }
+}
+
+/* Escena: podio que crece */
+.tuto-podio { display: flex; align-items: flex-end; gap: 8px; height: 90px; }
+.podio-barra {
+  width: 44px;
+  border-radius: 8px 8px 0 0;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding-top: 6px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  color: #fff;
+  height: 0;
+  animation: tuto-crece 12s infinite;
+}
+.podio-barra.b1 { background: var(--sun); animation-delay: 9.3s; --alto: 88px; }
+.podio-barra.b2 { background: var(--violet); animation-delay: 9.5s; --alto: 62px; }
+.podio-barra.b3 { background: var(--coral); animation-delay: 9.7s; --alto: 44px; }
+@keyframes tuto-crece {
+  0%, 1%   { height: 0; }
+  5%       { height: var(--alto); }
+  22%      { height: var(--alto); }
+  25%, 100% { height: 0; }
+}
+
+/* ---------- Pestañas ---------- */
+.tuto-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.tuto-tab {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+.tuto-tab b { font-size: .9rem; }
+.tuto-tab span { font-size: .74rem; color: var(--text-soft); }
+.tuto-tab.activo { border-color: var(--violet); background: var(--violet-soft); }
+.tuto-tab.activo span { color: var(--violet); }
+
+.tuto-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.tuto-nover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  .tuto-caja { padding: 20px 16px; }
+  .tuto-tabs { grid-template-columns: 1fr; }
+  .tuto-acciones .btn { width: 100%; }
+}
+
+/* ---------- Sin movimiento: los pasos, quietos ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .tuto-pantalla { height: auto; }
+  .tuto-escena {
+    position: static;
+    opacity: 1;
+    animation: none;
+    transform: none;
+    border-bottom: 1px solid var(--border);
+    padding: 14px;
+  }
+  .tuto-escena:last-child { border-bottom: 0; }
+  .tuto-item, .tuto-persona { opacity: 1; animation: none; }
+  .tuto-escribe { width: auto; animation: none; }
+  .tuto-cursor { animation: none; opacity: 0; }
+  .tuto-modo.elegido, .tuto-opcion.buena { animation: none; }
+  .podio-barra { height: var(--alto); animation: none; }
+}

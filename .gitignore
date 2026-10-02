@@ -1,0 +1,40 @@
+# Credenciales reales (se versiona solo config.example.php)
+config/config.php
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs y temporales
+*.log
+/tmp/
+
+# Datos de los usuarios, no código: las imágenes que suben viven aquí y se
+# respaldan con las copias, no con el historial de cambios.
+uploads/*
+!uploads/.gitkeep
+# El .htaccess de esa carpeta SI es codigo: impide que se ejecute lo que
+# alguien suba. Sin el, un .php disfrazado de imagen se ejecutaria.
+!uploads/.htaccess
+
+# Copias de seguridad (si alguna vez se hacen dentro del proyecto; el destino
+# normal es D:\copias-ludira, fuera de htdocs para que Apache no las sirva).
+copias/
+
+# Documentación interna. El repositorio es PÚBLICO: el masterplan lleva la
+# estrategia de precios, el análisis de la competencia, la hoja de ruta y las
+# trampas encontradas. Nada de eso debe estar a la vista de cualquiera, y
+# tampoco hace falta en el servidor.
+#
+# Si algún día el repositorio pasa a privado, basta con borrar estas tres
+# líneas para empezar a versionarlo.
+docs/
+ludia-documento-maestro.md
+
+# La clave del servidor y los volcados, si alguien los deja aquí por error.
+*.ppk
+*.pem
+*.key
+*.sql.gz

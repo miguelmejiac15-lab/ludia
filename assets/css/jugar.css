@@ -1,0 +1,833 @@
+/* =====================================================================
+   Ludia — juego en vivo: pantalla del participante y proyección del anfitrión.
+   ===================================================================== */
+
+/* ---------- Cabecera del juego (participante) ---------- */
+.juego-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+.juego-top .avatar { vertical-align: middle; }
+.j-crono {
+  background: var(--violet-soft);
+  color: var(--violet);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.j-crono.poco { background: color-mix(in srgb, var(--coral) 18%, transparent); color: var(--coral-ink); }
+.j-puntaje { color: var(--mint); }
+.j-paso {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 8px;
+}
+
+/* ---------- Pregunta y respuestas ---------- */
+/* Imagen que acompaña a la pregunta */
+.j-imagen {
+  display: block;
+  width: 100%;
+  max-height: 34vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 14px;
+}
+.proy-imagen {
+  display: block;
+  max-width: 100%;
+  max-height: 40vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin: 0 auto 20px;
+}
+
+.j-pregunta {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  margin-bottom: 14px;
+  overflow-wrap: anywhere;
+}
+.j-ayuda { font-size: .82rem; color: var(--text-soft); margin: 6px 0 10px; }
+.j-opciones { display: grid; gap: 10px; }
+.j-opciones.dos { grid-template-columns: 1fr 1fr; }
+.j-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 700;
+  font-size: .98rem;
+  text-align: left;
+  color: #fff;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.j-opcion b { opacity: .75; }
+.j-opcion.neutra { background: var(--surface); color: var(--text); border-color: var(--border); }
+.j-opcion.elegida { outline: 3px solid var(--text); outline-offset: 2px; }
+.j-opcion.neutra.elegida { border-color: var(--violet); background: var(--violet-soft); color: var(--violet); }
+.j-opcion:not(.neutra):not(.elegida) { filter: saturate(.85); }
+
+.j-input, .j-definicion .input { margin-bottom: 10px; }
+.j-frase { line-height: 2.2; }
+.j-hueco {
+  display: inline-block;
+  width: 110px;
+  font: inherit;
+  font-size: .95rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 0;
+  border-bottom: 2px solid var(--violet);
+  padding: 2px 6px;
+  margin: 0 4px;
+}
+.j-definicion { display: block; margin-bottom: 12px; font-size: .9rem; }
+.j-definicion span { display: block; margin-bottom: 4px; }
+.j-definicion small { color: var(--text-soft); }
+/* Relacionar y clasificar: cada fila se lee como una ficha con su menú. */
+.j-par {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  border-radius: var(--radius-sm);
+  font-size: .92rem;
+}
+.j-par > span { font-weight: 700; overflow-wrap: anywhere; }
+.j-par .select { height: 40px; }
+
+/* ---------- Vídeo con preguntas ----------
+   El vídeo manda en la pantalla: ocupa el ancho y conserva su proporción para
+   que no salte al cargar. La pregunta vive debajo, oculta hasta que llega. */
+.j-video { margin-bottom: 14px; }
+.j-video-marco {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.j-video-marco iframe,
+.j-video-marco > div {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Línea de tiempo propia: el reproductor de YouTube no deja pintar encima de
+   su barra, así que las marcas de pregunta van en una barra nuestra. */
+.j-video-linea {
+  position: relative;
+  height: 10px;
+  margin: 10px 0 8px;
+  background: var(--bg-soft);
+  border-radius: 999px;
+  overflow: visible;
+}
+.j-video-avance {
+  display: block;
+  height: 100%;
+  background: var(--coral);
+  border-radius: 999px;
+  transition: width .4s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .j-video-avance { transition: none; }
+}
+.j-video-marca {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  transform: translateY(-50%);
+  background: var(--surface);
+  border: 2px solid var(--violet);
+  border-radius: 50%;
+}
+.j-video-marca.actual {
+  background: var(--violet);
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+}
+
+.j-video-pregunta {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+/* ---------- Parejas con imagen ----------
+   Un <select> no puede mostrar imágenes. Cuando las tiene el lado que se
+   ELIGE, se pintan arriba en una galería con su etiqueta: así se ven, y elegir
+   sigue siendo por texto, que funciona con teclado y con lector de pantalla. */
+.j-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+.j-galeria-item {
+  margin: 0;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+.j-galeria-item img {
+  width: 100%;
+  height: 90px;
+  object-fit: contain;
+  display: block;
+}
+.j-galeria-item figcaption {
+  margin-top: 6px;
+  font-size: .82rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* La imagen del lado que se MUESTRA va grande, con su texto debajo. */
+.j-par-img { display: flex; align-items: center; gap: 10px; }
+.j-par-img img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex: none;
+}
+.j-par-con-img { align-items: center; }
+
+/* Cartas de memoria con imagen: la foto llena la cara. */
+.j-carta-frente img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+@media (max-width: 420px) { .j-par { grid-template-columns: 1fr; gap: 4px; } }
+
+.j-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.j-chip {
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.j-chip:disabled { opacity: .3; cursor: default; }
+.j-chip.puesto { background: var(--violet-soft); border-color: var(--violet); color: var(--violet); }
+.j-armada {
+  min-height: 56px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.j-orden { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: paso; }
+.j-orden li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: .92rem;
+  overflow-wrap: anywhere;
+}
+.j-flechas { display: flex; gap: 6px; flex: none; }
+
+/* ---------- Sopa de letras ---------- */
+.j-sopa-palabras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.j-sopa-palabra {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: var(--text);
+}
+.j-sopa-palabra.hallada {
+  background: var(--mint-soft);
+  border-color: var(--mint);
+  color: var(--mint);
+  text-decoration: line-through;
+}
+.j-sopa {
+  display: grid;
+  gap: 4px;
+  justify-content: center;
+  margin: 0 auto;
+}
+.j-letra {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 22px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  font-size: .82rem;
+  cursor: pointer;
+  padding: 0;
+  transition: transform .12s ease, background-color .12s ease;
+}
+.j-letra:hover { border-color: var(--violet); }
+.j-letra.marcada { background: var(--violet); border-color: var(--violet); color: #fff; transform: scale(1.06); }
+.j-letra.hallada { background: var(--mint-soft); border-color: var(--mint); color: var(--mint); }
+.j-letra.hallada.marcada { background: var(--mint); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .j-letra { transition: none; } }
+
+/* ---------- Crucigrama ---------- */
+/* Cada celda es un contenedor: la casilla ocupa todo y el número se apoya
+   encima, en una esquina. Así la cuadrícula no se desalinea. */
+.j-cruci { display: grid; gap: 3px; justify-content: center; margin: 0 auto 14px; }
+.j-celda { position: relative; aspect-ratio: 1; min-width: 20px; }
+.j-celda.vacia { background: transparent; }
+.j-num {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  z-index: 1;
+  font-size: .5rem;
+  font-weight: 800;
+  color: var(--text-soft);
+  line-height: 1;
+  pointer-events: none;
+}
+.j-casilla {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font: inherit;
+  font-weight: 700;
+  font-size: .8rem;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 0;
+}
+.j-casilla.activa { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-soft); }
+.j-casilla.resuelta { background: var(--mint-soft); border-color: var(--mint); color: var(--mint); }
+.j-casilla .num {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: .5rem;
+  font-weight: 800;
+  color: var(--text-soft);
+  line-height: 1;
+}
+.j-cruci-pistas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 520px) { .j-cruci-pistas { grid-template-columns: 1fr; } }
+.j-cruci-grupo > b {
+  display: block;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+.j-pista {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: .84rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.j-pista:hover { border-color: var(--violet); }
+.j-pista.activa { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-soft); }
+.j-pista.resuelta { border-color: var(--mint); color: var(--mint); }
+.j-pista span.n {
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  font-weight: 800;
+  flex: none;
+}
+.j-pista.resuelta span.n { background: var(--mint-soft); color: var(--mint); }
+
+/* ---------- Ortografía ---------- */
+.j-orto {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.j-orto-opcion {
+  padding: 14px 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  font-size: .95rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.j-orto-opcion:hover { border-color: var(--violet); }
+.j-orto-opcion.elegida { border-color: var(--violet); background: var(--violet-soft); color: var(--violet); }
+
+/* ---------- Respuesta numérica ---------- */
+.j-numerica { display: flex; align-items: center; gap: 10px; }
+.j-numero {
+  font-family: var(--font-title);
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  height: 64px;
+}
+.j-unidad { font-weight: 700; color: var(--text-soft); white-space: nowrap; }
+
+/* ---------- Línea de tiempo ---------- */
+.j-linea { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; position: relative; }
+.j-linea::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--mint), var(--violet));
+  border-radius: 2px;
+}
+.j-linea li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px 10px 34px;
+  font-size: .92rem;
+  position: relative;
+  overflow-wrap: anywhere;
+}
+.j-linea li::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--violet);
+}
+
+/* ---------- Memoria ---------- */
+.j-cartas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; perspective: 800px; }
+.j-carta {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border: 0;
+  border-radius: 14px;
+  padding: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--violet), var(--coral));
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 6px 14px -8px rgba(42, 33, 64, .55);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.j-carta:hover { transform: translateY(-2px); }
+.j-carta .j-carta-reverso { font-size: 1.6rem; opacity: .85; }
+@media (prefers-reduced-motion: reduce) { .j-carta { transition: none; } .j-carta:hover { transform: none; } }
+.j-carta-frente { display: none; overflow-wrap: anywhere; }
+.j-carta.vista { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.j-carta.vista .j-carta-reverso { display: none; }
+.j-carta.vista .j-carta-frente { display: block; }
+.j-carta.lograda { background: var(--mint-soft); color: var(--mint); border-color: var(--mint); }
+
+.j-escala { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.j-nivel {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.j-nivel.elegida { background: var(--violet); border-color: var(--violet); color: #fff; }
+.j-escala-pies { display: flex; justify-content: space-between; gap: 10px; font-size: .74rem; color: var(--text-soft); margin-top: 6px; }
+
+.j-panel { display: grid; gap: 8px; }
+.j-panel div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: .88rem;
+}
+.j-panel b { display: block; }
+.j-panel span { color: var(--text-soft); }
+
+/* ---------- Página informativa (portada / diapositiva de texto) ---------- */
+.j-pagina-titulo {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1.45rem;
+  line-height: 1.25;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+.j-pagina {
+  display: grid;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.j-pagina p { font-size: .95rem; line-height: 1.6; overflow-wrap: anywhere; }
+
+.proy-pagina-titulo {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 3.6vw, 2.8rem);
+  line-height: 1.2;
+  margin-bottom: 20px;
+  overflow-wrap: anywhere;
+}
+.proy-pagina {
+  display: grid;
+  gap: 14px;
+  max-width: 44rem;
+  margin: 0 auto;
+  text-align: left;
+}
+.proy-pagina p {
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+/* Aviso cuando el informe no entra en el plan */
+.informe-bloqueado {
+  margin-top: 26px;
+  padding: 22px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+.informe-bloqueado b { font-family: var(--font-title); font-size: 1.1rem; }
+.informe-bloqueado span { color: var(--text-soft); font-size: .9rem; max-width: 40ch; }
+
+.j-enviada {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  text-align: center;
+  padding: 26px 16px;
+}
+.j-enviada b { font-family: var(--font-title); font-size: 1.5rem; }
+.j-enviada b.bien { color: var(--mint); }
+.j-enviada b.parcial { color: var(--sun); }
+.j-enviada b.mal { color: var(--text-soft); }
+.j-enviada span { color: var(--text-soft); font-size: .9rem; }
+[data-enviar] { margin-top: 16px; }
+
+/* ---------- Proyección del anfitrión ---------- */
+.proyeccion { text-align: center; }
+.proy-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.proy-titulo { font-size: .8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--violet); }
+.proy-crono {
+  font-family: var(--font-title);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--coral);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.proy-conteo { font-weight: 700; color: var(--mint); }
+.proy-pregunta {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 3.4vw, 2.6rem);
+  line-height: 1.2;
+  margin-bottom: 22px;
+  overflow-wrap: anywhere;
+}
+.proy-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
+@media (max-width: 640px) { .proy-opciones { grid-template-columns: 1fr; } }
+.proy-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.proy-opcion.neutra { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.proy-opcion.correcta { outline: 3px solid var(--mint); outline-offset: 2px; }
+.proy-opcion .marca { margin-left: auto; font-size: 1.2rem; }
+.proy-lista { display: grid; gap: 10px; text-align: left; }
+.proy-lista div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 1rem;
+}
+.proy-clave { margin-top: 18px; font-size: .9rem; color: var(--mint); font-weight: 700; }
+.proy-barra { height: 10px; border-radius: 999px; background: var(--bg-soft); overflow: hidden; margin-top: 18px; }
+.proy-barra span { display: block; height: 100%; background: linear-gradient(90deg, var(--mint), var(--violet)); transition: width .3s ease; }
+
+/* Sopa y crucigrama proyectados */
+.proy-sopa {
+  display: grid;
+  gap: 5px;
+  max-width: 620px;
+  margin: 0 auto;
+}
+.proy-letra {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.proy-cruci {
+  display: grid;
+  gap: 4px;
+  max-width: 620px;
+  margin: 0 auto 22px;
+}
+.proy-casilla {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.proy-casilla.vacia { border: 0; background: transparent; }
+.proy-casilla .num {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: .6rem;
+  font-weight: 800;
+  color: var(--text-soft);
+  line-height: 1;
+}
+
+/* Muro proyectado */
+.proy-muro { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.proy-muro .nota {
+  border-radius: 12px;
+  padding: 14px;
+  color: #2A2140;
+  font-size: .95rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.proy-muro .nota small { display: block; margin-top: 6px; font-weight: 700; opacity: .7; }
+.proy-muro.postit .nota:nth-child(odd) { transform: rotate(-1.5deg); }
+.proy-muro.postit .nota:nth-child(even) { transform: rotate(1.5deg); }
+.proy-muro.flotante .nota { border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) {
+  .proy-muro.postit .nota { transform: none; }
+}
+
+/* Resultados en vivo (encuesta y escala) */
+.proy-resultados { display: grid; gap: 14px; text-align: left; }
+.proy-resultado { display: grid; gap: 4px; }
+.proy-resultado b { display: flex; justify-content: space-between; gap: 12px; font-size: .95rem; }
+.proy-resultado .barra {
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.proy-resultado .barra span { display: block; height: 100%; background: var(--violet); border-radius: inherit; }
+
+/* ---------- Marcador en vivo (durante la partida) ---------- */
+.marcador {
+  margin-top: 22px;
+  padding: 16px 18px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+.marcador[hidden] { display: none !important; }
+.marcador-titulo {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 10px;
+}
+.marcador-lista { display: grid; gap: 6px; }
+.marcador-fila {
+  display: grid;
+  grid-template-columns: 34px auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: .9rem;
+  transition: transform .25s ease;
+}
+.marcador-fila.lider { border-color: var(--sun); box-shadow: 0 2px 10px -4px rgba(0, 0, 0, .18); }
+.marcador-pos { font-size: 1.1rem; text-align: center; font-weight: 700; color: var(--text-soft); }
+.marcador-nombre { font-weight: 700; overflow-wrap: anywhere; }
+.marcador-puntos {
+  font-family: var(--font-title);
+  font-weight: 700;
+  color: var(--mint);
+  font-variant-numeric: tabular-nums;
+}
+.marcador-resto { display: block; margin-top: 8px; font-size: .78rem; color: var(--text-soft); }
+@media (prefers-reduced-motion: reduce) { .marcador-fila { transition: none; } }
+
+/* ---------- Posiciones e informe ---------- */
+.podio { display: grid; gap: 10px; margin-top: 18px; }
+.podio-fila {
+  display: grid;
+  grid-template-columns: 44px auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  text-align: left;
+}
+.podio-fila.top { border-color: var(--sun); box-shadow: var(--shadow); }
+.podio-pos { font-family: var(--font-title); font-size: 1.3rem; font-weight: 700; color: var(--text-soft); }
+.podio-fila.top .podio-pos { color: var(--sun); }
+/* Nombre y datos son dos <span> seguidos: sin esto se leen pegados
+   ("Zorro veloz0 aciertos"). */
+.podio-fila > span:nth-child(3) { display: grid; gap: 2px; text-align: left; }
+.podio-nombre { display: block; font-weight: 700; overflow-wrap: anywhere; }
+.podio-datos { display: block; font-size: .78rem; color: var(--text-soft); }
+.podio-puntos { font-family: var(--font-title); font-weight: 700; font-size: 1.1rem; color: var(--mint); }
+
+.informe { margin-top: 26px; text-align: left; }
+.informe h3 { font-size: 1.05rem; margin-bottom: 10px; }
+.informe-actividad {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--surface);
+}
+.informe-actividad > b { display: block; margin-bottom: 4px; }
+.informe-tipo { font-size: .75rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: .06em; }
+.informe-pregunta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: .88rem;
+}
+.informe-pregunta:first-of-type { border-top: 0; }
+.informe-dato { font-weight: 700; color: var(--mint); white-space: nowrap; }
+.informe-aportes { margin: 6px 0 0; padding-left: 18px; color: var(--text-soft); font-size: .84rem; }

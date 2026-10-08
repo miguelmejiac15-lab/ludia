@@ -143,7 +143,7 @@ require __DIR__ . '/includes/partials/header.php';
     </p>
     <ul>
       <li>
-        <strong>Una cookie técnica de sesión</strong> (<code>ludia_sesion</code>), solo
+        <strong>Una cookie técnica de sesión</strong> (<code>ludia</code>), solo
         para quien tiene cuenta. Sirve para mantenerte dentro mientras navegas. No la
         puede leer el JavaScript de la página y se borra al cerrar sesión.
       </li>

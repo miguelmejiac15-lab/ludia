@@ -586,6 +586,49 @@
   overflow-wrap: anywhere;
 }
 
+/* ---------- Diapositiva en vivo (página informativa, panel de repaso) ----------
+   Sin cronómetro: la pasa el docente. Se ve como una diapositiva, con una
+   entrada suave escalonada que se pinta UNA vez (sala.js no la repinta). */
+.proyeccion.es-lectura { min-height: min(70vh, 640px); display: flex; flex-direction: column; }
+.proyeccion.es-lectura #proy-cuerpo { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.es-lectura .proy-pagina-titulo { font-size: clamp(2rem, 4.6vw, 3.6rem); }
+.es-lectura .proy-pagina p { font-size: clamp(1.1rem, 2vw, 1.6rem); }
+.es-lectura .proy-imagen { max-height: 38vh; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .es-lectura #proy-cuerpo > *,
+  .es-lectura .proy-pagina > p,
+  .es-lectura .proy-lista > div,
+  .j-pagina-titulo, .j-pagina > p {
+    animation: diapo-entra .55s cubic-bezier(.2, .7, .2, 1) both;
+  }
+  .es-lectura .proy-pagina > p:nth-child(2), .es-lectura .proy-lista > div:nth-child(2), .j-pagina > p:nth-child(2) { animation-delay: .12s; }
+  .es-lectura .proy-pagina > p:nth-child(3), .es-lectura .proy-lista > div:nth-child(3), .j-pagina > p:nth-child(3) { animation-delay: .24s; }
+  .es-lectura .proy-pagina > p:nth-child(n+4), .es-lectura .proy-lista > div:nth-child(n+4), .j-pagina > p:nth-child(n+4) { animation-delay: .36s; }
+}
+@keyframes diapo-entra {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Pantalla completa: solo la diapositiva, grande, con su propio «Siguiente». */
+.proyeccion:fullscreen {
+  background: var(--bg);
+  padding: clamp(24px, 5vw, 72px);
+  overflow: auto;
+  border-radius: 0;
+}
+.proy-siguiente-fs { display: none; }
+.proyeccion:fullscreen .proy-siguiente-fs {
+  display: inline-flex;
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+}
+.proyeccion:fullscreen #btn-pantalla-completa::after { content: ' (salir)'; }
+
+.j-crono.lectura { background: var(--violet-soft); color: var(--violet); }
+
 /* Aviso cuando el informe no entra en el plan */
 .informe-bloqueado {
   margin-top: 26px;

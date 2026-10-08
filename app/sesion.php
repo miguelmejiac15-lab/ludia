@@ -134,9 +134,13 @@ require LUDIA_ROOT . '/includes/partials/header.php';
           <span class="proy-titulo" id="proy-titulo"></span>
           <span class="proy-crono" id="proy-crono">—</span>
           <span class="proy-conteo" id="proy-conteo">0 respuestas</span>
+          <button class="link-btn" type="button" id="btn-pantalla-completa" hidden title="Pantalla completa">⛶ Pantalla completa</button>
         </div>
         <div id="proy-cuerpo"></div>
         <div class="proy-barra" aria-hidden="true"><span id="proy-barra" style="width:0%"></span></div>
+
+        <!-- Solo se ve en pantalla completa, donde la barra de abajo no está. -->
+        <button class="btn btn-primary proy-siguiente-fs" type="button" data-siguiente-fs>Siguiente →</button>
 
         <!-- Marcador en vivo: quién va ganando, mientras se juega. -->
         <aside class="marcador" id="marcador" aria-live="polite" hidden></aside>

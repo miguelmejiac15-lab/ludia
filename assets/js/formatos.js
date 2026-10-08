@@ -314,7 +314,7 @@ window.LudiaFormatos = (function () {
 
     /* ---------- Apoyo y repaso ---------- */
     panel: {
-      nombre: 'Panel de repaso', icono: '📋', grupo: 'apoyo', puntua: false,
+      nombre: 'Panel de repaso', icono: '📋', grupo: 'apoyo', puntua: false, lectura: true,
       descripcion: 'Tarjetas con los conceptos clave para mostrar antes de jugar.',
       nuevoItem: function () {
         return { instruccion: 'Repasa antes de jugar', tarjetas: [{ titulo: '', texto: '' }, { titulo: '', texto: '' }] };
@@ -323,8 +323,8 @@ window.LudiaFormatos = (function () {
     },
 
     pagina: {
-      nombre: 'Página informativa', icono: '📄', grupo: 'apoyo', puntua: false,
-      descripcion: 'Portada o diapositiva con título, imagen y texto para explicar el tema.',
+      nombre: 'Página informativa', icono: '📄', grupo: 'apoyo', puntua: false, lectura: true,
+      descripcion: 'Diapositiva con título, imagen y texto para explicar el tema. Sin tiempo: la pasas tú.',
       nuevoItem: function () { return { titulo: '', parrafos: [''] }; },
       validar: function (it) {
         var e = [];

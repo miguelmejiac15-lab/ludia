@@ -30,6 +30,19 @@ function juego_puntua(string $tipo): bool
     return in_array($tipo, JUEGO_TIPOS_PUNTUABLES, true);
 }
 
+/**
+ * Pantallas que se leen y no se responden: diapositivas para explicar.
+ * No tienen tiempo: en vivo las pasa el docente cuando termina de explicar,
+ * así que un cronómetro solo metería prisa (decisión del 2026-10-08).
+ * La misma lista vive en jugar.js (SOLO_LECTURA) y en formatos.js (`lectura`).
+ */
+const JUEGO_TIPOS_LECTURA = ['panel', 'pagina'];
+
+function juego_es_lectura(string $tipo): bool
+{
+    return in_array($tipo, JUEGO_TIPOS_LECTURA, true);
+}
+
 /** Texto comparable: sin mayúsculas, tildes, ni signos. */
 function juego_normalizar(string $texto): string
 {

@@ -166,7 +166,11 @@
   }
 
   function minutosEstimados() {
-    var segundos = state.actividades.reduce(function (n, a) { return n + a.items.length * a.tiempo; }, 0);
+    // Una diapositiva no tiene tiempo; para la estimación se cuenta un minuto
+    // de explicación por cada una.
+    var segundos = state.actividades.reduce(function (n, a) {
+      return n + a.items.length * (F.tipos[a.tipo].lectura ? 60 : a.tiempo);
+    }, 0);
     return Math.max(1, Math.round(segundos / 60));
   }
 
@@ -411,10 +415,16 @@
          pedir el mismo dato dos veces. */
       '<div class="panel">' +
       campoVideo(a) +
-      '<div class="field"><label for="act-tiempo">Tiempo por pregunta</label>' +
-      '<select class="select" id="act-tiempo" data-act="tiempo" data-type="number">' + tiempos + '</select></div>' +
+      /* Las diapositivas no tienen tiempo: en vivo las pasas tú cuando
+         terminas de explicar (decisión del 2026-10-08). */
+      (tipo.lectura
+        ? '<p class="hint" style="margin-bottom:14px">⏸ Sin tiempo: en vivo, cada ' + (a.tipo === 'pagina' ? 'diapositiva' : 'pantalla') +
+          ' se queda hasta que pulses «Siguiente». Ideal para explicar.</p>'
+        : '<div class="field"><label for="act-tiempo">Tiempo por pregunta</label>' +
+          '<select class="select" id="act-tiempo" data-act="tiempo" data-type="number">' + tiempos + '</select></div>') +
 
-      '<span class="field-label">Preguntas (' + a.items.length + ' de ' + LIMITE.itemsPorActividad + ')</span>' +
+      '<span class="field-label">' + (a.tipo === 'pagina' ? 'Diapositivas' : tipo.lectura ? 'Pantallas' : 'Preguntas') +
+      ' (' + a.items.length + ' de ' + LIMITE.itemsPorActividad + ')</span>' +
       '<div class="items-bar">' + pills +
       (puedeAgregar ? '<button type="button" class="item-pill add" data-action="agregar-item" aria-label="Agregar pregunta">+</button>' : '') + '</div>' +
 
@@ -456,8 +466,10 @@
       return '<li class="revision-fila">' +
         '<span class="slot-icon" aria-hidden="true">' + tipo.icono + '</span>' +
         '<span><b>' + esc(a.titulo || tipo.nombre) + '</b>' +
-        '<span class="slot-meta">' + esc(tipo.nombre) + ' · ' + plural(a.items.length, 'pregunta', 'preguntas') +
-        ' · ' + a.tiempo + ' s cada una</span></span>' +
+        '<span class="slot-meta">' + esc(tipo.nombre) + ' · ' +
+        (tipo.lectura
+          ? plural(a.items.length, 'pantalla', 'pantallas') + ' · sin tiempo, la pasas tú'
+          : plural(a.items.length, 'pregunta', 'preguntas') + ' · ' + a.tiempo + ' s cada una') + '</span></span>' +
         '<button type="button" class="link-btn" data-editar="' + a.uid + '">Editar</button></li>';
     }).join('');
 

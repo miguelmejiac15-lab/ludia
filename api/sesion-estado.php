@@ -93,6 +93,7 @@ function bloque_actividad(array $contenido, string $codigo, int $a, int $i, ?str
         'tiempo'      => $tiempo,
         'restante'    => max(0, $tiempo - $transcurrido),
         'puntua'      => juego_puntua($actividad['tipo']),
+        'lectura'     => juego_es_lectura($actividad['tipo']),
         'item_indice' => $i,
         'total_items' => count($actividad['items']),
         'item'        => juego_item_publico($actividad, $i, $codigo . "-$a-$i"),

@@ -391,20 +391,35 @@
     el.resultado.hidden = true;
 
     var clave = actividad.indice + '-' + actividad.item_indice;
-    if (clave !== preguntaActual) {
+    var esNueva = clave !== preguntaActual;
+    if (esNueva) {
       preguntaActual = clave;
       finCronometro = Date.now() + actividad.restante * 1000;
     }
 
-    el.proyTitulo.textContent = actividad.titulo + ' · pregunta ' + (actividad.item_indice + 1) + ' de ' + actividad.total_items;
+    // Una diapositiva (página informativa, panel de repaso) no tiene tiempo ni
+    // respuestas: se queda hasta que el docente pulsa «Siguiente». Mostrarle
+    // un cronómetro metía prisa en plena explicación (2026-10-08).
+    var lectura = !!actividad.lectura;
+    el.proyeccion.classList.toggle('es-lectura', lectura);
+    el.proyCrono.hidden = lectura;
+    el.proyConteo.hidden = lectura;
+    el.proyBarra.parentNode.hidden = lectura;
+
+    el.proyTitulo.textContent = actividad.titulo + ' · ' + (lectura ? 'diapositiva ' : 'pregunta ') +
+      (actividad.item_indice + 1) + ' de ' + actividad.total_items;
 
     var vista = vistas[actividad.item.tipo];
     var imagen = actividad.item.imagen
       ? '<img class="proy-imagen" src="' + esc(actividad.item.imagen) + '" alt="">'
       : '';
-    el.proyCuerpo.innerHTML = imagen + (vista
-      ? vista(actividad.item, actividad.clave, datos.aportes || [], datos.muro)
-      : '<p class="proy-pregunta">Actividad no disponible</p>');
+    // Una diapositiva no cambia entre consultas: se pinta una sola vez, así la
+    // animación de entrada no se repite cada tres segundos.
+    if (!lectura || esNueva) {
+      el.proyCuerpo.innerHTML = imagen + (vista
+        ? vista(actividad.item, actividad.clave, datos.aportes || [], datos.muro)
+        : '<p class="proy-pregunta">Actividad no disponible</p>');
+    }
 
     var recibidas = datos.respuestas_recibidas || 0;
     el.proyConteo.textContent = recibidas + (recibidas === 1 ? ' respuesta' : ' respuestas');
@@ -465,7 +480,7 @@
   }
 
   function actualizarCrono() {
-    if (el.proyeccion.hidden) return;
+    if (el.proyeccion.hidden || el.proyCrono.hidden) return;
     var restante = Math.max(0, Math.round((finCronometro - Date.now()) / 1000));
     el.proyCrono.textContent = restante + ' s';
   }
@@ -703,6 +718,31 @@
     el.siguiente.disabled = true;
     controlar('siguiente').then(function () { consultar(); });
   });
+
+  /* Avanzar con el teclado o con un control de presentaciones (los que se
+     usan en clase mandan → o «Av Pág»). Como pasar una diapositiva. */
+  document.addEventListener('keydown', function (evento) {
+    if (el.siguiente.hidden || el.siguiente.disabled || el.proyeccion.hidden) return;
+    if (evento.target.closest('input, textarea, select, [contenteditable]')) return;
+    if (['ArrowRight', 'PageDown'].indexOf(evento.key) === -1) return;
+    evento.preventDefault();
+    el.siguiente.click();
+  });
+
+  /* Pantalla completa de lo que se proyecta: para una clase con diapositivas
+     sobra todo lo demás de la página. */
+  el.proyeccion.addEventListener('click', function (evento) {
+    if (evento.target.closest('[data-siguiente-fs]') && !el.siguiente.hidden && !el.siguiente.disabled) el.siguiente.click();
+  });
+
+  var botonCompleta = document.getElementById('btn-pantalla-completa');
+  if (botonCompleta && el.proyeccion.requestFullscreen) {
+    botonCompleta.hidden = false;
+    botonCompleta.addEventListener('click', function () {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else el.proyeccion.requestFullscreen().catch(function () {});
+    });
+  }
 
   el.terminar.addEventListener('click', function () {
     var aviso = MODO === 'enviar'

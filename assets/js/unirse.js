@@ -223,11 +223,17 @@
     if (!actividad) return;
 
     var clave = actividad.indice + '-' + actividad.item_indice;
-    if (clave !== preguntaActual) {
+    var esNueva = clave !== preguntaActual;
+    if (esNueva) {
       preguntaActual = clave;
       finCronometro = Date.now() + actividad.restante * 1000;
       J.reiniciar();
     }
+
+    // Una diapositiva no tiene tiempo: se queda hasta que el docente avanza
+    // (en vivo) o hasta que el estudiante pulsa «Continuar» (enviado).
+    var lectura = !!actividad.lectura;
+    el.juegoCrono.classList.toggle('lectura', lectura);
 
     if (datos.yo) {
       // Con equipos, saber de cuál eres es la mitad del juego: la insignia va
@@ -251,6 +257,12 @@
         (actividad.item_indice + 1) + ' de ' + actividad.total_items;
     }
 
+    // La diapositiva no cambia entre consultas: se pinta una vez, y así su
+    // animación de entrada no se repite cada tres segundos.
+    if (lectura && !esNueva) {
+      actualizarCrono();
+      return;
+    }
     J.pintar(el.juegoCuerpo, actividad, datos.mi_respuesta);
 
     // Las pantallas de lectura (panel, página informativa…) no tienen botón de
@@ -266,6 +278,11 @@
 
   function actualizarCrono() {
     if (el.juego.hidden) return;
+    if (el.juegoCrono.classList.contains('lectura')) {
+      el.juegoCrono.textContent = modo === 'enviar' ? '📖 A tu ritmo' : '📖 Mira y escucha';
+      el.juegoCrono.classList.remove('poco');
+      return;
+    }
     var restante = Math.max(0, Math.round((finCronometro - Date.now()) / 1000));
     el.juegoCrono.textContent = '⏱ ' + restante + ' s';
     el.juegoCrono.classList.toggle('poco', restante <= 5);

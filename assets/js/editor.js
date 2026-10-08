@@ -548,12 +548,15 @@ window.LudiaEditor = (function () {
     var total = actividad.items.length;
     var imagen = item.imagen ? '<img class="pv-imagen" src="' + esc(item.imagen) + '" alt="">' : '';
     return '<div class="pv-top"><span class="pv-player"><span class="pv-avatar">🦊</span>Tu personaje</span>' +
-      '<span class="pv-timer">⏱ ' + actividad.tiempo + ' s</span>' + (tipo.puntua ? '<span>⭐ 0 pts</span>' : '') + '</div>' +
+      (tipo.lectura ? '<span class="pv-timer">⏸ Sin tiempo</span>' : '<span class="pv-timer">⏱ ' + actividad.tiempo + ' s</span>') +
+      (tipo.puntua ? '<span>⭐ 0 pts</span>' : '') + '</div>' +
       '<div class="pv-progress"><span style="width:' + Math.round(((indice + 1) / total) * 100) + '%"></span></div>' +
       '<div class="pv-kind">' + tipo.icono + ' ' + (indice + 1) + ' de ' + total + ' · ' + esc(tipo.nombre) + '</div>' +
       imagen +
       vistas[actividad.tipo](item) +
-      '<div class="pv-foot">' + (tipo.puntua ? 'Suma puntos por acierto y rapidez' : 'No suma puntos · va al informe final') + '</div>';
+      '<div class="pv-foot">' + (tipo.puntua ? 'Suma puntos por acierto y rapidez'
+        : tipo.lectura ? 'No se responde · en vivo la pasas tú con «Siguiente»'
+        : 'No suma puntos · va al informe final') + '</div>';
   }
 
   /** Formatos donde la imagen acompaña al enunciado. */

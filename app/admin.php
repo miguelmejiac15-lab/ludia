@@ -75,10 +75,22 @@ if ($esAdmin && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 (string) ($_POST['formato'] ?? ''),
                 (string) ($_POST['plan_minimo'] ?? '')
             ),
-            // Material de muestra en la cuenta de quien pulsa (includes/Demo.php).
+            // Material de muestra (includes/Demo.php): en la cuenta indicada
+            // desde la lista de Cuentas, o en la propia desde el Resumen.
             'cargar_demo' => (static function () use ($usuario): array {
                 require_once __DIR__ . '/../includes/Demo.php';
-                return demo_cargar((int) $usuario['id']);
+                $destino = (int) ($_POST['usuario_id'] ?? 0) ?: (int) $usuario['id'];
+                $existe = db()->prepare('SELECT email FROM usuarios WHERE id = ?');
+                $existe->execute([$destino]);
+                $correo = $existe->fetchColumn();
+                if (!$correo) {
+                    return ['ok' => false, 'mensaje' => 'Esa cuenta no existe.'];
+                }
+                $r = demo_cargar($destino);
+                if ($destino !== (int) $usuario['id']) {
+                    $r['mensaje'] = str_replace('«Mis paquetes»', '«Mis paquetes» de ' . $correo, $r['mensaje']);
+                }
+                return $r;
             })(),
             default => ['ok' => false, 'mensaje' => 'Acción desconocida.'],
         };
@@ -414,7 +426,18 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                     <noscript><button class="btn btn-ghost btn-sm" type="submit">Guardar</button></noscript>
                   </form>
                 </td>
-                <td class="num"><?= (int) $u['paquetes'] ?></td>
+                <td class="num">
+                  <?= (int) $u['paquetes'] ?>
+                  <?php /* Carga los paquetes de demostración («Las plantas»,
+                           los 23 formatos) en ESTA cuenta, sin entrar con ella. */ ?>
+                  <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=<?= e($seccion) ?>" style="display:inline">
+                    <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+                    <input type="hidden" name="accion" value="cargar_demo">
+                    <input type="hidden" name="usuario_id" value="<?= (int) $u['id'] ?>">
+                    <input type="hidden" name="q" value="<?= e($busqueda) ?>">
+                    <button class="link-btn" type="submit" title="Crear en esta cuenta los paquetes de demostración">🌱 Demo</button>
+                  </form>
+                </td>
                 <td class="num"><?= (int) $u['imagenes'] ?></td>
                 <td><span class="celda-sub"><?= e(admin_cuando($u['ultimo_acceso'])) ?></span></td>
                 <td>

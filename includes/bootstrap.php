@@ -49,6 +49,14 @@ function base_path(): string
 
     $configured = config('app.base_url');
     if (is_string($configured)) {
+        // En el servidor viene la dirección COMPLETA (https://ludia.click), que
+        // es lo que necesita url_absoluta(). Aquí solo cuenta la ruta. Tomada
+        // entera, la cookie de sesión salía con `path=https://ludia.click/`, el
+        // navegador la descartaba por inválida y la dejaba en /app: ninguna
+        // llamada a /api/ veía la sesión (02/10 → 08/10/2026, en silencio).
+        if (preg_match('~^https?://~i', $configured)) {
+            $configured = (string) (parse_url($configured, PHP_URL_PATH) ?? '');
+        }
         return $base = rtrim($configured, '/');
     }
 

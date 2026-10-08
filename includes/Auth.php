@@ -42,6 +42,17 @@ function auth_iniciar(): void
         'samesite' => 'Lax',    // no viaja desde otros sitios
     ]);
     session_name('ludia_sesion');
+
+    // Restos del fallo de base_path() (hasta el 08/10/2026): los navegadores
+    // que entraron entonces guardan la cookie con path=/app. Esa, más
+    // específica, se manda ANTES que la buena y PHP se queda con ella, así que
+    // las páginas usarían una sesión y la API otra. Se borra aquí; quien la
+    // tuviera tendrá que volver a ingresar una vez.
+    if (base_path() === '' && isset($_COOKIE['ludia_sesion'])
+        && str_starts_with((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/app/')) {
+        setcookie('ludia_sesion', '', ['expires' => 1, 'path' => '/app', 'secure' => $https, 'httponly' => true, 'samesite' => 'Lax']);
+    }
+
     session_start();
 }
 

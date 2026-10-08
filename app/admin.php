@@ -75,6 +75,11 @@ if ($esAdmin && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 (string) ($_POST['formato'] ?? ''),
                 (string) ($_POST['plan_minimo'] ?? '')
             ),
+            // Material de muestra en la cuenta de quien pulsa (includes/Demo.php).
+            'cargar_demo' => (static function () use ($usuario): array {
+                require_once __DIR__ . '/../includes/Demo.php';
+                return demo_cargar((int) $usuario['id']);
+            })(),
             default => ['ok' => false, 'mensaje' => 'Acción desconocida.'],
         };
     }
@@ -213,6 +218,21 @@ require LUDIA_ROOT . '/includes/partials/header.php';
           <span class="cifra-pie"><?= e($pie) ?></span>
         </article>
       <?php endforeach; ?>
+    </section>
+
+    <?php /* Material de muestra: los 23 formatos con el tema «Las plantas»,
+             para enseñar Ludia o grabar vídeos. Va a la cuenta de quien pulsa. */ ?>
+    <section class="panel" style="margin-top:22px">
+      <h2 class="panel-title">Paquetes de demostración</h2>
+      <p class="cuenta-sub" style="margin-bottom:14px">
+        Crea en <b>tu</b> cuenta dos paquetes con el tema «Las plantas»: uno en vivo con las 22 actividades
+        que se proyectan, y otro con el vídeo con preguntas (ese solo se juega enviado). Si ya están, no los duplica.
+      </p>
+      <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=resumen">
+        <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+        <input type="hidden" name="accion" value="cargar_demo">
+        <button class="btn btn-primary" type="submit">Cargar paquetes de demostración</button>
+      </form>
     </section>
 
     <?php endif; ?>

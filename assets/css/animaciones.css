@@ -1,0 +1,181 @@
+/* =====================================================================
+   Ludia — animaciones (08/10/2026).
+
+   Regla de la casa: animar, no rediseñar. Nada aquí cambia colores, tamaños
+   ni la disposición; solo cómo aparecen y reaccionan las cosas.
+
+   Todo el movimiento vive dentro de `prefers-reduced-motion: no-preference`:
+   quien pidió a su sistema menos movimiento (mareos, vértigo, TDAH) ve el
+   sitio exactamente como antes. Lo que NO es movimiento —un color de realce—
+   queda fuera, para que el aviso llegue igual.
+
+   Las pantallas de juego se repintan cada 3 s. Las animaciones de aquí se
+   disparan con una clase que el JS pone SOLO cuando algo cambia de verdad
+   (pregunta nueva, alguien que entra, alguien que sube); si se pusieran en el
+   elemento a secas, se repetirían en bucle.
+   ===================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  /* ---------- Portada: entrada del hero ---------- */
+  .hero h1, .hero .eyebrow, .hero-sub, .hero .hero-cta, .hero .hero-meta, .hero .device {
+    animation: anim-sube .7s cubic-bezier(.2, .7, .2, 1) both;
+  }
+  .hero h1 { animation-delay: .08s; }
+  .hero-sub { animation-delay: .18s; }
+  .hero .hero-cta { animation-delay: .28s; }
+  .hero .hero-meta { animation-delay: .38s; }
+  .hero .device { animation: anim-flota-entra .9s .2s cubic-bezier(.2, .7, .2, 1) both; }
+  .hero .avatars span { display: inline-block; animation: anim-saluda 2.8s ease-in-out infinite; }
+  .hero .avatars span:nth-child(2) { animation-delay: .25s; }
+  .hero .avatars span:nth-child(3) { animation-delay: .5s; }
+
+  /* ---------- Aparecer al bajar (main.js pone .revela y luego .visible) ---------- */
+  /* `main .revela` le gana a la transición propia de cada tarjeta mientras
+     aparece; al terminar, main.js quita la clase y la tarjeta vuelve a lo
+     suyo (levantarse al pasar el ratón, sin retraso). */
+  main .revela {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1);
+    transition-delay: calc(var(--i, 0) * 80ms);
+  }
+  main .revela.visible { opacity: 1; transform: none; }
+
+  /* ---------- Tarjetas y botones que responden ---------- */
+  .audience-card, .plan, .step, .value-card {
+    transition: transform .25s cubic-bezier(.2, .7, .2, 1), box-shadow .25s ease, border-color .15s ease;
+  }
+    /* .format-card ya se levanta en crear.css: aquí solo rebota su icono. */
+  .audience-card:hover, .plan:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+  }
+  .audience-card:hover .audience-icon { animation: anim-rebota .5s ease; }
+  .format-card:hover:not([disabled]) .fc-icon { display: inline-block; animation: anim-rebota .5s ease; }
+  .btn { transition: transform .12s ease, background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+  .btn:not(:disabled):hover { transform: translateY(-1px); }
+  .btn:not(:disabled):active { transform: translateY(1px) scale(.98); }
+
+  /* ---------- Juego: pregunta nueva (jugar.js pone .entra) ---------- */
+  .entra > .j-pregunta, .entra > .j-imagen, .entra > .j-pagina-titulo,
+  .entra > .proy-pregunta, .entra > .proy-imagen {
+    animation: anim-aparece .45s cubic-bezier(.2, .7, .2, 1) both;
+  }
+  .entra .j-opcion, .entra .proy-opcion {
+    animation: anim-sube .45s cubic-bezier(.2, .7, .2, 1) both;
+  }
+  .entra .j-opcion:nth-child(2), .entra .proy-opcion:nth-child(2) { animation-delay: .07s; }
+  .entra .j-opcion:nth-child(3), .entra .proy-opcion:nth-child(3) { animation-delay: .14s; }
+  .entra .j-opcion:nth-child(4), .entra .proy-opcion:nth-child(4) { animation-delay: .21s; }
+  .entra .j-opcion:nth-child(n+5), .entra .proy-opcion:nth-child(n+5) { animation-delay: .28s; }
+
+  .j-opcion { transition: transform .12s ease; }
+  .j-opcion:active { transform: scale(.97); }
+  .j-opcion.elegida { animation: anim-elige .28s ease; }
+
+  /* ---------- Juego: resultado de la respuesta ---------- */
+  .j-enviada.anima { animation: anim-aparece .4s cubic-bezier(.2, .7, .2, 1) both; }
+  .j-enviada.anima b.bien { display: inline-block; animation: anim-festeja .7s cubic-bezier(.3, 1.6, .5, 1) both; }
+  .j-enviada.anima b.parcial { display: inline-block; animation: anim-rebota .6s ease both; }
+  .j-enviada.anima b.mal { display: inline-block; animation: anim-sacude .5s ease both; }
+
+  /* Puntaje que sube y cronómetro en los últimos segundos */
+  .sube-puntaje { display: inline-block; animation: anim-festeja .6s cubic-bezier(.3, 1.6, .5, 1); }
+  .j-crono.poco, .proy-crono.poco { animation: anim-late 1s ease-in-out infinite; }
+
+  /* ---------- Sala: gente que entra y marcador ---------- */
+  .participante.nuevo { animation: anim-entra-pop .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+  .marcador-fila.sube { animation: anim-sube-puesto .8s cubic-bezier(.2, .7, .2, 1); }
+  .marcador-fila.lider .marcador-pos { display: inline-block; animation: anim-corona 2.4s ease-in-out infinite; }
+
+  /* ---------- Podio final ---------- */
+  .podio .podio-fila { animation: anim-sube .55s cubic-bezier(.2, .7, .2, 1) both; }
+  .podio .podio-fila:nth-child(1) { animation-delay: .15s; }
+  .podio .podio-fila:nth-child(2) { animation-delay: .3s; }
+  .podio .podio-fila:nth-child(3) { animation-delay: .45s; }
+  .podio .podio-fila:nth-child(n+4) { animation-delay: .6s; }
+  .podio .podio-fila.top { animation-name: anim-entra-pop; }
+
+  /* ---------- Confeti (main.js: LudiaAnim.confeti) ---------- */
+  .confeti {
+    position: fixed;
+    top: -16px;
+    width: 9px;
+    height: 14px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 9999;
+    animation: anim-confeti var(--dur, 2.6s) cubic-bezier(.25, .6, .4, 1) forwards;
+  }
+}
+
+/* Sin movimiento, el confeti no se crea (main.js lo comprueba); por si acaso. */
+@media (prefers-reduced-motion: reduce) {
+  .confeti { display: none; }
+}
+
+/* Realce de color: no es movimiento, así que vale para todos. */
+.marcador-fila.sube { border-color: var(--mint); }
+
+@keyframes anim-sube {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes anim-aparece {
+  from { opacity: 0; transform: scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes anim-flota-entra {
+  from { opacity: 0; transform: translateY(30px) rotate(-2deg); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes anim-saluda {
+  0%, 70%, 100% { transform: none; }
+  80% { transform: translateY(-4px) rotate(-8deg); }
+  90% { transform: translateY(-2px) rotate(6deg); }
+}
+@keyframes anim-rebota {
+  0%, 100% { transform: none; }
+  35% { transform: translateY(-6px) scale(1.08); }
+  65% { transform: translateY(1px) scale(.98); }
+}
+@keyframes anim-elige {
+  0% { transform: scale(.96); }
+  60% { transform: scale(1.03); }
+  100% { transform: none; }
+}
+@keyframes anim-festeja {
+  0% { transform: scale(.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: none; }
+}
+@keyframes anim-sacude {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes anim-late {
+  0%, 100% { transform: none; }
+  50% { transform: scale(1.12); }
+}
+@keyframes anim-entra-pop {
+  0% { opacity: 0; transform: scale(.6); }
+  70% { opacity: 1; transform: scale(1.06); }
+  100% { transform: none; }
+}
+@keyframes anim-sube-puesto {
+  0% { transform: translateY(14px); background: var(--mint-soft); }
+  60% { transform: none; }
+  100% { background: var(--surface); }
+}
+@keyframes anim-corona {
+  0%, 100% { transform: none; }
+  50% { transform: translateY(-3px) rotate(-6deg); }
+}
+@keyframes anim-confeti {
+  0%   { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--dx, 0), 105vh, 0) rotate(var(--giro, 540deg)); opacity: .9; }
+}

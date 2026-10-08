@@ -11,6 +11,7 @@
   if (!sala) return;
 
   var P = window.LudiaPersonaje;
+  var A = window.LudiaAnim;   // animaciones (main.js); puede no estar
   var CODIGO = sala.getAttribute('data-codigo');
   var MAX = Number(sala.getAttribute('data-max'));
   var MODO = sala.getAttribute('data-modo') || 'vivo';
@@ -100,14 +101,23 @@
 
   /* ---------- Participantes en la sala de espera ---------- */
 
+  var yaEnSala = null;   // nombres de la vuelta anterior; null = primera vez
+
   function pintarParticipantes(lista) {
     if (!lista.length) {
+      yaEnSala = {};   // sala vacía ya vista: el primero que entre debe saltar
       el.participantes.innerHTML = '<div class="participantes-vacio">' +
         '<b aria-hidden="true">👋</b><span>Nadie ha entrado todavía. Proyecta el código o el QR.</span></div>';
       return;
     }
+    // Quien acaba de entrar aparece con un saltito. Se compara con la vuelta
+    // anterior: el lobby se repinta cada 3 s y si no, saltarían todos siempre.
+    var antes = yaEnSala;
+    yaEnSala = {};
+    lista.forEach(function (p) { yaEnSala[p.nombre] = true; });
     el.participantes.innerHTML = lista.map(function (p) {
-      return '<div class="participante' + (p.conectado ? '' : ' ausente') + '">' +
+      var nuevo = antes !== null && !antes[p.nombre];
+      return '<div class="participante' + (p.conectado ? '' : ' ausente') + (nuevo ? ' nuevo' : '') + '">' +
         P.avatar(p.personaje, 'md') +
         '<span class="participante-nombre">' + esc(p.nombre) + '</span>' +
         (p.conectado ? '' : '<span class="participante-nota">se desconectó</span>') +
@@ -420,6 +430,8 @@
         ? vista(actividad.item, actividad.clave, datos.aportes || [], datos.muro)
         : '<p class="proy-pregunta">Actividad no disponible</p>');
     }
+    // La diapositiva ya trae su propia entrada (jugar.css).
+    if (esNueva && !lectura && A) A.marcar(el.proyCuerpo, 'entra', 900);
 
     var recibidas = datos.respuestas_recibidas || 0;
     el.proyConteo.textContent = recibidas + (recibidas === 1 ? ' respuesta' : ' respuestas');
@@ -440,6 +452,8 @@
    * pregunta. Es lo que hace ameno el juego en vivo — sin esto, las posiciones
    * solo aparecían al final y nadie sabía cómo iba.
    */
+  var puestos = {};   // nombre → puesto en la vuelta anterior
+
   function pintarMarcador(datos) {
     if (!el.marcador) return;
 
@@ -468,9 +482,15 @@
     }
     el.marcador.hidden = false;
 
+    // Quien mejoró su puesto desde la vuelta anterior se destaca un momento.
+    var puestosAntes = puestos;
+    puestos = {};
+    ranking.forEach(function (f) { puestos[f.nombre] = f.posicion; });
+
     el.marcador.innerHTML = '<h3 class="marcador-titulo">Van ganando</h3>' +
       '<div class="marcador-lista">' + ranking.slice(0, 5).map(function (f, i) {
-        return '<div class="marcador-fila' + (i === 0 ? ' lider' : '') + '">' +
+        var subio = puestosAntes[f.nombre] !== undefined && f.posicion < puestosAntes[f.nombre];
+        return '<div class="marcador-fila' + (i === 0 ? ' lider' : '') + (subio ? ' sube' : '') + '">' +
           '<span class="marcador-pos">' + (medallas[i] || f.posicion) + '</span>' +
           P.avatar(f.personaje, 'sm') +
           '<span class="marcador-nombre">' + esc(f.nombre) + '</span>' +
@@ -483,6 +503,7 @@
     if (el.proyeccion.hidden || el.proyCrono.hidden) return;
     var restante = Math.max(0, Math.round((finCronometro - Date.now()) / 1000));
     el.proyCrono.textContent = restante + ' s';
+    el.proyCrono.classList.toggle('poco', restante > 0 && restante <= 5);
   }
 
   setInterval(actualizarCrono, 1000);
@@ -613,6 +634,9 @@
     } else {
       pintarResultado(datos);
       detener();
+      // Confeti solo al terminar en directo, no al volver a abrir una sala
+      // que ya había terminado.
+      if (ultimoEstado === 'en_curso' && A) A.confeti(160);
     }
 
     if (!token) {

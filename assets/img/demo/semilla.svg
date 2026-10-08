@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Una semilla brotando"><rect width="400" height="240" rx="24" fill="#F3EBDC"/>
+<rect y="160" width="400" height="80" fill="#B9875B"/><ellipse cx="200" cy="190" rx="34" ry="22" fill="#7A5230"/>
+<path d="M200 172v-62" stroke="#1FA98A" stroke-width="7" stroke-linecap="round"/>
+<path d="M200 128c-30 0-44-18-44-36 24 0 44 12 44 36z" fill="#1FA98A"/><path d="M200 116c26 0 40-16 40-32-22 0-40 10-40 32z" fill="#4FD8B8"/>
+</svg>

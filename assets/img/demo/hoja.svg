@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Una hoja"><rect width="400" height="240" rx="24" fill="#DEF6EE"/>
+<path d="M110 190C110 90 190 40 300 50c8 110-60 170-160 160z" fill="#1FA98A"/>
+<path d="M120 196C170 140 220 100 288 62" stroke="#DEF6EE" stroke-width="7" fill="none" stroke-linecap="round"/>
+<g stroke="#DEF6EE" stroke-width="4" stroke-linecap="round"><path d="M175 150l-6-38M210 122l-2-40M245 96l4-30M175 150l40 4M210 122l42 0M245 96l32-4"/></g>
+</svg>

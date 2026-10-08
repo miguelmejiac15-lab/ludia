@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Una flor"><rect width="400" height="240" rx="24" fill="#FDE8F1"/>
+<path d="M200 220V130" stroke="#1FA98A" stroke-width="8" stroke-linecap="round"/><path d="M200 190c-36 0-50-20-50-40 26 0 50 14 50 40z" fill="#1FA98A"/>
+<g fill="#FF6A4D"><circle cx="200" cy="70" r="28"/><circle cx="240" cy="98" r="28"/><circle cx="226" cy="142" r="28"/><circle cx="174" cy="142" r="28"/><circle cx="160" cy="98" r="28"/></g>
+<circle cx="200" cy="108" r="22" fill="#FFB020"/>
+</svg>

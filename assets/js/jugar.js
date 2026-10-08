@@ -776,7 +776,12 @@ window.LudiaJugar = (function () {
     var soloLectura = SOLO_LECTURA.indexOf(tipo) > -1;
 
     if (mia && tipo !== 'mural') {
-      caja.innerHTML = vistas[tipo] ? '<div class="j-enviada">' + resumenEnviado(mia) + '</div>' : '';
+      // El sondeo vuelve a pasar por aquí cada 3 s con la misma respuesta. Si
+      // ya está pintada no se toca: repintarla repetiría su animación en bucle.
+      var marca = actividad.indice + '-' + actividad.item_indice;
+      var pintada = caja.querySelector('.j-enviada');
+      if (pintada && pintada.getAttribute('data-pregunta') === marca) return;
+      caja.innerHTML = vistas[tipo] ? '<div class="j-enviada" data-pregunta="' + marca + '">' + resumenEnviado(mia) + '</div>' : '';
       return;
     }
 
@@ -790,6 +795,10 @@ window.LudiaJugar = (function () {
     caja.innerHTML = imagen + (vistas[tipo] ? vistas[tipo](item) : '<p class="j-pregunta">Actividad no disponible</p>') +
       (soloLectura ? '' : '<button class="btn btn-primary btn-block" type="button" data-enviar disabled>' +
         (tipo === 'mural' ? 'Enviar aporte' : 'Enviar respuesta') + '</button>');
+
+    // Entrada de la pregunta nueva (css/animaciones.css). Solo aquí, que es
+    // cuando de verdad cambia: el resto de pasadas del sondeo salen antes.
+    if (!mismaPregunta && window.LudiaAnim) window.LudiaAnim.marcar(caja, 'entra', 900);
 
     if (tipo === 'video_preguntas') montarVideo(item);
     if (tipo === 'ordenar' || tipo === 'linea_tiempo') refrescarOrden();

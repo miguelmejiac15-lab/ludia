@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Una planta al sol"><rect width="400" height="240" rx="24" fill="#FFF4DC"/>
+<circle cx="320" cy="62" r="34" fill="#FFB020"/><g stroke="#FFB020" stroke-width="6" stroke-linecap="round"><path d="M320 10v-6M320 120v-8M268 62h-8M380 62h-8M284 26l-6-6M362 104l-6-6M284 98l-6 6M362 20l-6 6"/></g>
+<rect x="150" y="170" width="90" height="56" rx="10" fill="#C2431F"/><rect x="142" y="160" width="106" height="18" rx="8" fill="#FF6A4D"/>
+<path d="M195 162V96" stroke="#1FA98A" stroke-width="8" stroke-linecap="round"/>
+<path d="M195 120c-40 0-56-26-56-48 30 0 56 16 56 48z" fill="#1FA98A"/><path d="M195 104c34 0 52-22 52-44-28 0-52 14-52 44z" fill="#4FD8B8"/>
+</svg>

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="El sol"><rect width="400" height="240" rx="24" fill="#FFF4DC"/>
+<circle cx="200" cy="120" r="56" fill="#FFB020"/><g stroke="#FFB020" stroke-width="9" stroke-linecap="round"><path d="M200 34v-14M200 220v-14M114 120h-14M300 120h-14M140 60l-10-10M270 190l-10-10M140 180l-10 10M270 50l-10 10"/></g>
+<circle cx="182" cy="112" r="6" fill="#2A2140"/><circle cx="218" cy="112" r="6" fill="#2A2140"/><path d="M180 136q20 18 40 0" stroke="#2A2140" stroke-width="5" fill="none" stroke-linecap="round"/>
+</svg>

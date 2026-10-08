@@ -13,6 +13,8 @@
   if (!raiz) return;
 
   var P = window.LudiaPersonaje;
+
+  var A = window.LudiaAnim;   // animaciones (main.js); puede no estar
   var J = window.LudiaJugar;
   var R = window.LudiaRutas;
   var INTERVALO = 3000;
@@ -343,10 +345,16 @@
           return;
         }
 
-        el.juegoCuerpo.innerHTML = '<div class="j-enviada">' + J.resumenEnviado({
+        // `data-pregunta` hace que jugar.js no la repinte en el siguiente
+        // sondeo; `anima` dispara la celebración (o la sacudida) una sola vez.
+        el.juegoCuerpo.innerHTML = '<div class="j-enviada anima" data-pregunta="' + escapar(preguntaActual) + '">' + J.resumenEnviado({
           correcta: datos.correcta, aciertos: datos.aciertos, total: datos.total, puntos: datos.puntos
         }) + '</div>';
-        if (datos.puntaje !== undefined) el.juegoPuntaje.textContent = '⭐ ' + datos.puntaje;
+        if (datos.puntaje !== undefined) {
+          el.juegoPuntaje.textContent = '⭐ ' + datos.puntaje;
+          if (datos.puntos > 0 && A) A.marcar(el.juegoPuntaje, 'sube-puntaje', 700);
+        }
+        if (datos.correcta && A) A.confeti(28);
 
         // En un paquete enviado, el servidor ya avanzó: se pasa solo tras el aviso.
         if (datos.avance) {
@@ -374,6 +382,8 @@
     ranking.forEach(function (f) { if (f.nombre === miNombre) yo = f; });
 
     el.finalTitulo.textContent = yo && yo.posicion === 1 ? '🏆 ¡Quedaste de primero!' : '¡Terminaste!';
+    // Celebración para el podio. pintarFinal corre una sola vez (detiene el sondeo).
+    if (yo && yo.posicion <= 3 && A) A.confeti(yo.posicion === 1 ? 140 : 70);
     el.finalSub.textContent = yo
       ? 'Puesto ' + yo.posicion + ' de ' + ranking.length + ' · ' + yo.puntaje + ' puntos · ' + yo.aciertos + ' aciertos'
       : 'Gracias por participar.';

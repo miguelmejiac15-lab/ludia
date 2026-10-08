@@ -59,6 +59,7 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
 
   <link rel="stylesheet" href="<?= e(asset('css/ludia.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset('css/animaciones.css')) ?>">
   <?php foreach ($extraStyles ?? [] as $style): ?>
   <link rel="stylesheet" href="<?= e(asset($style)) ?>">
   <?php endforeach; ?>

@@ -28,5 +28,13 @@ function db(): PDO
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
 
+    // La base habla en la MISMA hora que PHP. Las fechas se escriben con NOW()
+    // en SQL y se leen con DateTimeImmutable en PHP; si cada uno usa su zona,
+    // todo lo que se mide entre los dos sale corrido. Pasó en el servidor
+    // (MariaDB en UTC, PHP en Bogotá): cada respuesta "tardaba" −18.000 s, la
+    // columna `segundos` la rechazaba y nadie podía responder (08/10/2026).
+    // En XAMPP no se notaba porque los dos usan la hora de Windows.
+    $pdo->exec("SET time_zone = '" . date('P') . "'");
+
     return $pdo;
 }

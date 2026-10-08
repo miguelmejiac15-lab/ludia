@@ -1,6 +1,6 @@
 /* =====================================================================
-   Ludia — contratar un plan: pide el enlace de pago y lleva a Mercado Pago.
-   El plan NO se activa aquí: eso ocurre cuando Mercado Pago confirma el cobro.
+   Ludia — pagar un plan: pide el enlace de pago y lleva al checkout de Wompi.
+   El plan NO se activa aquí: eso ocurre cuando Wompi confirma el cobro.
    ===================================================================== */
 (function () {
   'use strict';
@@ -43,10 +43,10 @@
     // El botón dice qué se va a pagar. Con el anual mostrado como equivalente
     // mensual, un "Suscribirme" a secas deja creer que el cobro es mensual.
     [].forEach.call(raiz.querySelectorAll('[data-contratar]'), function (b) {
-      // Solo se respeta el texto de "Es tu plan actual". Antes esto miraba
-      // `b.disabled`, que significa DOS cosas —ese caso y "los pagos no están
-      // configurados"—, así que el cartel se quedaba mudo sin motivo.
-      if (b.hasAttribute('data-plan-actual')) return;
+      // Solo se respeta el texto de un botón bloqueado a propósito. No vale
+      // mirar `b.disabled`: también lo está cuando faltan las llaves de pago, y
+      // ahí el cartel sí debe decir lo que se cobraría.
+      if (b.hasAttribute('data-fijo')) return;
       var texto = b.getAttribute(periodo === 'anual' ? 'data-texto-anual' : 'data-texto-mensual');
       if (texto) b.textContent = texto;
     });

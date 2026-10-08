@@ -14,7 +14,7 @@
  *   - lista del salón .............. `curso_estudiantes` (licencia Escuela)
  *   - cobros ....................... `suscripciones`, `pagos`
  *   - cookie de sesión ............. `auth_iniciar()` en includes/Auth.php
- *   - terceros ..................... Google Fonts (header.php), Google, Mercado Pago, YouTube
+ *   - terceros ..................... Google Fonts (header.php), Google, Wompi, YouTube
  */
 
 require __DIR__ . '/includes/bootstrap.php';
@@ -123,14 +123,15 @@ require __DIR__ . '/includes/partials/header.php';
 
     <h2>6. Cobros</h2>
     <p>
-      Los pagos con tarjeta los procesa <strong>Mercado Pago</strong>. Ludia
-      <strong>nunca ve ni guarda el número de tu tarjeta</strong>: esos datos viajan
-      directamente a Mercado Pago y se rigen por su propia política.
+      Los pagos los procesa <strong>Wompi</strong> (de Bancolombia), con tarjeta, PSE,
+      Nequi o Bancolombia. Ludia <strong>nunca ve ni guarda el número de tu tarjeta ni
+      los datos de tu cuenta</strong>: esos datos viajan directamente a Wompi y se rigen
+      por su propia política. Ludia tampoco te cobra de forma automática.
     </p>
     <p>
-      De cada pago, Ludia guarda el identificador que le asigna Mercado Pago, el
+      De cada pago, Ludia guarda el identificador que le asigna Wompi, el
       estado, el importe y la moneda, y además <strong>la respuesta completa que envía
-      Mercado Pago</strong>, que según el caso puede incluir el nombre, el correo y el
+      Wompi</strong>, que según el caso puede incluir el nombre, el correo y el
       documento de identidad de quien pagó. Se conserva para poder resolver
       reclamaciones y cuadrar cuentas.
     </p>
@@ -159,7 +160,7 @@ require __DIR__ . '/includes/partials/header.php';
     <ul>
       <li><strong>Google Fonts.</strong> Las tipografías se cargan desde los servidores de Google, así que al abrir cualquier página de Ludia tu dirección IP llega a Google. Ocurre en todas las páginas, aunque no tengas cuenta.</li>
       <li><strong>Google.</strong> Solo si usas el botón «Entrar con Google», y únicamente para comprobar tu identidad y tu correo.</li>
-      <li><strong>Mercado Pago.</strong> Solo al pagar.</li>
+      <li><strong>Wompi.</strong> Solo al pagar.</li>
       <li><strong>YouTube.</strong> Solo si la actividad que estás resolviendo incluye un vídeo; en ese caso el reproductor lo sirve YouTube con sus propias condiciones.</li>
     </ul>
 

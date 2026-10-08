@@ -66,8 +66,8 @@ jobs:
             echo "En el servidor la configuración la pone config.env.php con variables de entorno."
             exit 1
           fi
-          # Un token de Mercado Pago o de GitHub escrito en el código.
-          if grep -rInE '(APP_USR-[0-9a-f]{8}|ghp_[A-Za-z0-9]{36}|TEST-[0-9]{10,})' \
+          # Una llave de Wompi o un token de GitHub escrito en el código.
+          if grep -rInE '(prv_(prod|test)_[A-Za-z0-9]{16,}|(prod|test)_(events|integrity)_[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{36})' \
                --include='*.php' --include='*.js' --include='*.yml' . ; then
             echo "ERROR: parece haber un token escrito en el código."
             exit 1

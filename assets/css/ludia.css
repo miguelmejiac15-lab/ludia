@@ -750,6 +750,18 @@ section { padding-block: 64px; }
 /* Avisos que llevan una dirección dentro (el enlace para restablecer la
    contraseña, que el administrador tiene que copiar entero). Sin esto la URL
    desborda la caja o se parte por donde no debe, y se copia a medias. */
+/* Aviso de que el plan va a vencer (header.php): Wompi no renueva solo. */
+.aviso-renovar {
+  margin: 0;
+  padding: 10px 16px;
+  text-align: center;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--sun) 22%, var(--surface));
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.aviso-renovar a { margin-left: 8px; color: var(--violet); }
+
 .mensaje-largo {
   font-weight: 500;
   overflow-wrap: anywhere;

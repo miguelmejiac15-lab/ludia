@@ -28,22 +28,22 @@ return [
     // (decisión del 2026-09-15, ver masterplan sección 14).
 
     /**
-     * Mercado Pago — cobro de las suscripciones.
+     * Wompi — cobro de los planes (pago por adelantado, sin cobro automático).
      *
-     * Las credenciales se sacan del panel de Mercado Pago (Tus integraciones →
-     * Credenciales). Con las de PRUEBA se cobra con tarjetas de test y no se
-     * mueve dinero real; cambia a las de producción solo cuando vayas a vender.
+     * Se sacan del panel de Wompi → Desarrollo → Programadores. Con las de
+     * Sandbox (pub_test_...) se paga con datos de prueba y no se mueve dinero;
+     * la propia llave decide a qué ambiente se habla.
      *
-     * `webhook_secret` es la clave de firma que Mercado Pago muestra al
-     * configurar las notificaciones: sirve para comprobar que un aviso viene
-     * de verdad de ellos y no de alguien que descubrió la URL.
+     * `events_secret` comprueba que un aviso viene de verdad de Wompi; sin él,
+     * los avisos se rechazan. `integrity_secret` firma el monto del checkout
+     * para que nadie lo cambie en la URL. La llave privada NO hace falta.
+     *
+     * En el panel de Wompi, la "URL de eventos" es https://<dominio>/api/wompi-webhook.php
      */
-    'mercadopago' => [
-        'access_token'   => '',       // APP_USR-... (o TEST-... en pruebas)
-        'public_key'     => '',
-        'webhook_secret' => '',
-        'moneda'         => 'COP',
-        'pruebas'        => true,     // false cuando uses credenciales de producción
+    'wompi' => [
+        'public_key'       => '',   // pub_test_... o pub_prod_...
+        'events_secret'    => '',   // test_events_... o prod_events_...
+        'integrity_secret' => '',   // test_integrity_... o prod_integrity_...
     ],
 
     /*

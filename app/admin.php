@@ -367,7 +367,7 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                     <noscript><button class="btn btn-ghost btn-sm" type="submit">Guardar</button></noscript>
                   </form>
                   <?php
-                  // De dónde viene el plan: pagado en Mercado Pago o puesto a mano aquí.
+                  // De dónde viene el plan: pagado con Wompi o puesto a mano aquí.
                   $estadoSus = $u['suscripcion_estado'] ?? null;
                   if ($u['plan'] !== 'gratis' && !$estadoSus) {
                       echo '<span class="sus-chip sus-manual">dado a mano</span>';

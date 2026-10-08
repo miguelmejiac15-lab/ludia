@@ -67,10 +67,10 @@ return [
         'charset' => 'utf8mb4',
     ],
 
-    'mercadopago' => [
-        'access_token'   => $env('MP_ACCESS_TOKEN', ''),
-        'public_key'     => $env('MP_PUBLIC_KEY', ''),
-        'webhook_secret' => $env('MP_WEBHOOK_SECRET', ''),
+    'wompi' => [
+        'public_key'       => $env('WOMPI_PUBLIC_KEY', ''),
+        'events_secret'    => $env('WOMPI_EVENTS_SECRET', ''),
+        'integrity_secret' => $env('WOMPI_INTEGRITY_SECRET', ''),
     ],
 
     'google' => [

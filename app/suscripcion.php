@@ -1,10 +1,11 @@
 <?php
 /**
- * Mi suscripción: ver el plan actual, contratar uno de pago o cancelar.
+ * Mi suscripción: ver el plan actual y pagar o renovar uno de pago.
  *
- * El cobro es mensual y automático (Mercado Pago). Al cancelar no se pierde
- * nada de inmediato: el plan sigue hasta la fecha ya pagada y, cuando vence,
- * la cuenta vuelve a gratis con sus paquetes guardados pero bloqueados.
+ * El cobro es POR ADELANTADO con Wompi: un mes o un año cada vez, sin cobro
+ * automático (decisión del 2026-10-08). No hay nada que cancelar: si no
+ * renueva, cuando vence la cuenta vuelve a gratis con sus paquetes guardados
+ * pero bloqueados.
  */
 
 require_once __DIR__ . '/../includes/Auth.php';
@@ -13,42 +14,19 @@ require_once __DIR__ . '/../includes/Sesiones.php';   // SESION_TIPOS: cuántos 
 require_once __DIR__ . '/../includes/Suscripciones.php';
 
 $usuario = auth_requerir();
-$aviso = null;
-$avisoTipo = 'ok';
-
-// Cancelar va por POST con CSRF y responde con redirección (patrón PRG).
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    if (!auth_csrf_valido($_POST['csrf'] ?? null)) {
-        $_SESSION['suscripcion_aviso'] = ['ok' => false, 'mensaje' => 'El formulario caducó. Inténtalo otra vez.'];
-    } else {
-        $suscripcion = suscripcion_de_usuario((int) $usuario['id']);
-        if (!$suscripcion) {
-            $_SESSION['suscripcion_aviso'] = ['ok' => false, 'mensaje' => 'No tienes ninguna suscripción activa.'];
-        } else {
-            $r = suscripcion_cancelar((int) $suscripcion['id']);
-            $_SESSION['suscripcion_aviso'] = $r['ok']
-                ? ['ok' => true, 'mensaje' => 'Suscripción cancelada. Conservas tu plan hasta la fecha ya pagada.']
-                : ['ok' => false, 'mensaje' => $r['error']];
-        }
-    }
-    header('Location: ' . base_url('app/suscripcion.php'));
-    exit;
-}
-
-if (!empty($_SESSION['suscripcion_aviso'])) {
-    $aviso = $_SESSION['suscripcion_aviso']['mensaje'];
-    $avisoTipo = $_SESSION['suscripcion_aviso']['ok'] ? 'ok' : 'error';
-    unset($_SESSION['suscripcion_aviso']);
-}
 
 $suscripcion = suscripcion_de_usuario((int) $usuario['id']);
 $planActual  = plan_de($usuario);
 $vigente     = suscripcion_vigente($suscripcion);
-$pagosListos = mp_configurado();
+$diasQuedan  = suscripcion_dias_restantes($suscripcion);
+$pagosListos = wompi_configurado();
+// Con Pro pagado no se vende Estándar: lo pagado se suma y el plan pasa a ser
+// el último comprado, así que le quitaría el Pro al instante.
+$proPagado   = $vigente && $suscripcion['plan'] === 'pro';
 
 $page = [
     'title'       => 'Mi suscripción — Ludia',
-    'description' => 'Tu plan, tu próximo cobro y cómo cambiarlo.',
+    'description' => 'Tu plan, hasta cuándo está pagado y cómo renovarlo.',
     'home'        => false,
 ];
 $extraStyles  = ['css/cuenta.css'];
@@ -72,14 +50,10 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <a class="btn btn-ghost" href="<?= e(base_url('app/mis-sesiones.php')) ?>">Mis paquetes</a>
     </div>
 
-    <?php if ($aviso): ?>
-      <p class="mensaje <?= e($avisoTipo) ?>" role="status"><?= e($aviso) ?></p>
-    <?php endif; ?>
-
     <?php if (!$pagosListos): ?>
       <p class="mensaje error">
-        Los pagos todavía no están configurados en este servidor: falta el <code>access_token</code> de Mercado Pago
-        en <code>config/config.php</code>. Mientras tanto, un administrador puede activarte el plan a mano.
+        Los pagos todavía no están configurados en este servidor: faltan las llaves de Wompi.
+        Mientras tanto, un administrador puede activarte el plan a mano.
       </p>
     <?php endif; ?>
 
@@ -87,31 +61,25 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <section class="panel plan-actual">
         <h2 class="panel-title">Tu plan <?= e(plan_nombre((string) $suscripcion['plan'])) ?></h2>
         <ul class="plan-datos">
-          <li><span>Estado</span><b><?= e(suscripcion_estado_legible($suscripcion)) ?></b></li>
-          <li><span>Precio</span><b>$<?= number_format((int) $suscripcion['monto'], 0, ',', '.') ?> <?= e($suscripcion['moneda']) ?> / mes</b></li>
-          <?php if ($suscripcion['estado'] === 'activa'): ?>
-            <li><span>Próximo cobro</span><b><?= e(date('d/m/Y', strtotime((string) $suscripcion['pagado_hasta']))) ?></b></li>
-          <?php endif; ?>
+          <li><span>Pagado hasta</span><b><?= e(date('d/m/Y', strtotime((string) $suscripcion['pagado_hasta']))) ?></b></li>
+          <li><span>Te quedan</span><b><?= (int) $diasQuedan ?> <?= $diasQuedan === 1 ? 'día' : 'días' ?></b></li>
           <?php if (!empty($suscripcion['ultimo_pago_at'])): ?>
-            <li><span>Último pago</span><b><?= e(date('d/m/Y', strtotime((string) $suscripcion['ultimo_pago_at']))) ?></b></li>
+            <li><span>Último pago</span><b>$<?= number_format((int) $suscripcion['monto'], 0, ',', '.') ?>
+              <?= ($suscripcion['periodo'] ?? 'mensual') === 'anual' ? 'por un año' : 'por un mes' ?>
+              · <?= e(date('d/m/Y', strtotime((string) $suscripcion['ultimo_pago_at']))) ?></b></li>
           <?php endif; ?>
         </ul>
-
-        <?php if ($suscripcion['estado'] === 'activa'): ?>
-          <form method="post" action="<?= e(base_url('app/suscripcion.php')) ?>"
-                onsubmit="return confirm('¿Cancelar la suscripción? Conservas el plan hasta la fecha ya pagada y no se borra ninguno de tus paquetes.');">
-            <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
-            <button class="link-btn danger" type="submit">Cancelar la suscripción</button>
-          </form>
-          <p class="hint">Al cancelar conservas el plan hasta la fecha pagada. Después vuelves a gratis y tus paquetes quedan guardados, aunque bloqueados.</p>
-        <?php endif; ?>
+        <p class="hint">
+          No se renueva solo: no guardamos tu tarjeta ni te cobramos sin que lo pidas.
+          Si renuevas antes de la fecha, lo nuevo se suma a lo que te queda.
+        </p>
       </section>
     <?php endif; ?>
 
     <!-- Elegir plan -->
     <section class="panel">
-      <h2 class="panel-title"><?= $vigente ? 'Cambiar de plan' : 'Pasar a un plan de pago' ?></h2>
-      <p class="cuenta-sub" style="margin-bottom:16px">Cobro automático con Mercado Pago. Puedes cancelar cuando quieras.</p>
+      <h2 class="panel-title"><?= $vigente ? 'Renovar o cambiar de plan' : 'Pasar a un plan de pago' ?></h2>
+      <p class="cuenta-sub" style="margin-bottom:16px">Pagas un mes o un año por adelantado con tarjeta, PSE, Nequi o Bancolombia. Sin cobros automáticos.</p>
 
       <?php /* El periodo se elige una vez para las dos tarjetas: tener un
                selector por plan invita a compararlos mal. El descuento se
@@ -168,18 +136,23 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                      vista mostrado como equivalente mensual, un "Suscribirme"
                      a secas deja creer que el cobro es de $11.830 al mes. El
                      texto lo cambia suscripcion.js al alternar el periodo. */ ?>
-            <?php /* `data-plan-actual` se marca aparte a propósito: el botón
-                     también sale deshabilitado cuando no hay credenciales de
-                     pago, y el JS necesita distinguir "este ya es tu plan" —cuyo
-                     texto no se toca— de "no se puede pagar todavía", donde el
-                     cartel sí debe decir la verdad de lo que se cobraría. */ ?>
+            <?php
+            /* `data-fijo` marca el único caso en que el JS no debe tocar el
+               texto: Estándar bloqueado mientras haya Pro pagado. Sin
+               credenciales el botón también sale deshabilitado, pero ahí el
+               cartel sí debe decir la verdad de lo que se cobraría. */
+            $bloqueado = $clave === 'estandar' && $proPagado;
+            $verbo = ($vigente && $suscripcion['plan'] === $clave) ? 'Renovar' : 'Pagar';
+            $textoMes = $verbo . ' un mes · $' . number_format((int) $p['precio'], 0, ',', '.');
+            $textoAnio = $anual > 0 ? $verbo . ' un año · $' . number_format($anual, 0, ',', '.') : $textoMes;
+            ?>
             <button class="btn <?= $clave === 'pro' ? 'btn-primary' : 'btn-ghost' ?> btn-block"
                     type="button" data-contratar="<?= e($clave) ?>"
-                    <?= $planActual === $clave ? 'data-plan-actual' : '' ?>
-                    data-texto-mensual="Suscribirme por mes"
-                    data-texto-anual="<?= $anual > 0 ? 'Pagar el año · $' . number_format($anual, 0, ',', '.') : 'Suscribirme por mes' ?>"
-                    <?= (!$pagosListos || $planActual === $clave) ? 'disabled' : '' ?>>
-              <?= $planActual === $clave ? 'Es tu plan actual' : 'Suscribirme por mes' ?>
+                    <?= $bloqueado ? 'data-fijo' : '' ?>
+                    data-texto-mensual="<?= e($textoMes) ?>"
+                    data-texto-anual="<?= e($textoAnio) ?>"
+                    <?= (!$pagosListos || $bloqueado) ? 'disabled' : '' ?>>
+              <?= $bloqueado ? 'Disponible cuando venza tu Pro' : e($textoMes) ?>
             </button>
           </article>
         <?php endforeach; ?>
@@ -187,7 +160,7 @@ require LUDIA_ROOT . '/includes/partials/header.php';
 
       <p class="mensaje error" id="pago-error" hidden></p>
       <p class="hint" style="margin-top:14px">
-        El pago lo procesa Mercado Pago: Ludia no guarda los datos de tu tarjeta.
+        El pago lo procesa Wompi (de Bancolombia): Ludia no ve ni guarda los datos de tu tarjeta ni de tu cuenta.
       </p>
     </section>
 

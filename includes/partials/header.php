@@ -131,3 +131,21 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
     </div>
   </div>
 </header>
+<?php
+/* Aviso de renovación. Wompi no cobra solo, así que sin este aviso la cuenta
+   caería a gratis sin que nadie se lo hubiera dicho, y el sitio aún no puede
+   mandar correos. Solo dentro de /app/ y solo para planes de pago: a una
+   cuenta gratis no le cuesta ni la consulta. La propia página de pago no lo
+   repite, porque ya muestra los días que quedan. */
+if ($enApp && $usuarioActual && ($usuarioActual['plan'] ?? 'gratis') !== 'gratis'
+    && !str_ends_with((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/suscripcion.php')) {
+    require_once LUDIA_ROOT . '/includes/Suscripciones.php';
+    $diasPlan = suscripcion_dias_restantes(suscripcion_de_usuario((int) $usuarioActual['id']));
+    if ($diasPlan !== null && $diasPlan <= SUSCRIPCION_AVISO_DIAS): ?>
+  <p class="aviso-renovar" role="status">
+    <?= $diasPlan <= 1 ? 'Tu plan vence mañana.' : 'Tu plan vence en ' . (int) $diasPlan . ' días.' ?>
+    <a href="<?= e(base_url('app/suscripcion.php')) ?>">Renovar</a>
+  </p>
+<?php endif;
+}
+?>

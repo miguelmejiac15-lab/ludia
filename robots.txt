@@ -19,5 +19,5 @@ Disallow: /docs/
 # La portada y sus anclas sí, que es a lo que se viene.
 Allow: /$
 
-# Cuando esté el dominio en pie, aquí va:
-# Sitemap: https://ludia.click/sitemap.xml
+# Las páginas públicas, para Google Search Console.
+Sitemap: https://ludia.click/sitemap.xml

@@ -52,6 +52,11 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
   <meta property="og:title" content="<?= e($page['title']) ?>">
   <meta property="og:description" content="<?= e($page['description']) ?>">
 
+  <?php /* Verificación de Google Search Console (propiedad «Prefijo de la URL»,
+           https://ludia.click/). No es secreta. Si se quita, Google deja de
+           reconocer la propiedad. */ ?>
+  <meta name="google-site-verification" content="JOpHTwSDiRf4jglbz6-lWKqAnAqSEoc7s76_PpjxWBQ">
+
   <link rel="icon" href="<?= e(asset('img/favicon.svg')) ?>" type="image/svg+xml">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

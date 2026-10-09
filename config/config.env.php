@@ -74,6 +74,12 @@ return [
         'id' => $env('GA_ID', 'G-ZGSC13TY6D'),
     ],
 
+    // Píxel de Meta (Facebook/Instagram). Mismas reglas que Analytics: solo
+    // en páginas públicas y solo con el consentimiento del visitante.
+    'meta' => [
+        'pixel' => $env('META_PIXEL', '2770218656708597'),
+    ],
+
     'wompi' => [
         'public_key'       => $env('WOMPI_PUBLIC_KEY', ''),
         'events_secret'    => $env('WOMPI_EVENTS_SECRET', ''),

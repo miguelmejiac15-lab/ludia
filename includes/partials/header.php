@@ -29,6 +29,8 @@ $noIndex = $page['noindex'] ?? ($enApp && empty($page['indexable']));
    estudiantes, muchos menores: no se mide nada ahí (decisión del 09/10/2026).
    Fuera, solo se carga si el visitante acepta las cookies (footer.php). */
 $gaId = $enApp ? '' : trim((string) config('analytics.id', ''));
+$metaPixel = $enApp ? '' : preg_replace('/\D/', '', (string) config('meta.pixel', ''));
+$hayMedicion = $gaId !== '' || $metaPixel !== '';
 
 // En la home los enlaces del menú son anclas locales; en otras páginas apuntan a la home.
 $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/')) . '#' . $id;

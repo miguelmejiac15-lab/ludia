@@ -15,7 +15,7 @@
     <nav class="footer-enlaces" aria-label="Enlaces del pie">
       <a href="<?= e(base_url('enfoque.php')) ?>">Cómo está pensada</a>
       <a href="<?= e(base_url('privacidad.php')) ?>">Privacidad</a>
-      <?php if (!empty($gaId)): ?>
+      <?php if (!empty($hayMedicion)): ?>
         <a href="<?= e(base_url('privacidad.php')) ?>#cookies" data-cookies-preferencias>Cookies</a>
       <?php endif; ?>
     </nav>
@@ -26,15 +26,15 @@
   </div>
 </footer>
 
-<?php if (!empty($gaId)): ?>
-<?php /* Aviso de cookies. Google Analytics NO se carga hasta que la persona
-         pulse «Aceptar»; con «Rechazar» no se carga nada y se borran las
-         cookies de Analytics que hubiera. La elección se guarda en este
-         navegador y se cambia desde «Cookies», en el pie. */ ?>
+<?php if (!empty($hayMedicion)): ?>
+<?php /* Aviso de cookies. Ni Google Analytics ni el píxel de Meta se cargan
+         hasta que la persona pulse «Aceptar»; con «Rechazar» no se carga nada
+         y se borran sus cookies. La elección se guarda en este navegador y se
+         cambia desde «Cookies», en el pie. */ ?>
 <div class="aviso-cookies" id="aviso-cookies" role="dialog" aria-live="polite" aria-label="Cookies" hidden>
   <p>
-    Usamos <b>Google Analytics</b> para saber cuántas personas visitan Ludia y qué páginas les sirven.
-    Solo en estas páginas públicas: nunca dentro de las actividades.
+    Usamos cookies de <b>Google Analytics</b> para saber cuántas personas visitan Ludia, y de <b>Meta</b>
+    para medir nuestros anuncios en Facebook e Instagram. Solo en estas páginas públicas: nunca dentro de las actividades.
     <a href="<?= e(base_url('privacidad.php')) ?>#cookies">Más información</a>
   </p>
   <div class="aviso-cookies-botones">
@@ -46,7 +46,10 @@
 (function () {
   'use strict';
   var ID = <?= json_encode($gaId) ?>;
-  var CLAVE = 'ludia_cookies';
+  var PIXEL = <?= json_encode($metaPixel) ?>;
+  // «_v2» desde que se añadió Meta (09/10/2026): quien aceptó antes lo hizo
+  // solo para Analytics, así que se le vuelve a preguntar.
+  var CLAVE = 'ludia_cookies_v2';
   var aviso = document.getElementById('aviso-cookies');
 
   function leer() { try { return localStorage.getItem(CLAVE); } catch (e) { return null; } }
@@ -55,6 +58,8 @@
   function cargar() {
     if (window.__ludiaGa) return;
     window.__ludiaGa = true;
+    if (PIXEL) cargarMeta();
+    if (!ID) return;
     var s = document.createElement('script');
     s.async = true;
     s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ID);
@@ -66,11 +71,24 @@
     window.gtag('config', ID, { allow_google_signals: false, allow_ad_personalization_signals: false });
   }
 
-  // Al rechazar, fuera las cookies de Analytics (_ga, _ga_XXXX) de este dominio.
+  // El código oficial de Meta, sin la parte <noscript>: esa dispara el píxel
+  // sin JavaScript y por tanto sin haber pedido permiso.
+  function cargarMeta() {
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+      t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+    }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    window.fbq('init', PIXEL);
+    window.fbq('track', 'PageView');
+  }
+
+  // Al rechazar, fuera las cookies de Analytics (_ga, _ga_XXXX) y de Meta
+  // (_fbp, _fbc) de este dominio.
   function borrarCookiesGa() {
     document.cookie.split(';').forEach(function (c) {
       var nombre = c.split('=')[0].trim();
-      if (nombre.indexOf('_ga') !== 0) return;
+      if (nombre.indexOf('_ga') !== 0 && nombre !== '_fbp' && nombre !== '_fbc') return;
       [location.hostname, '.' + location.hostname.replace(/^www\./, '')].forEach(function (d) {
         document.cookie = nombre + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + d;
       });

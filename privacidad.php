@@ -14,7 +14,7 @@
  *   - lista del salón .............. `curso_estudiantes` (licencia Escuela)
  *   - cobros ....................... `suscripciones`, `pagos`
  *   - cookie de sesión ............. `auth_iniciar()` en includes/Auth.php
- *   - terceros ..................... Google Fonts (header.php), Google, Google Analytics (footer.php), Wompi, YouTube
+ *   - terceros ..................... Google Fonts (header.php), Google, Google Analytics y píxel de Meta (footer.php), Wompi, YouTube
  */
 
 require __DIR__ . '/includes/bootstrap.php';
@@ -138,9 +138,9 @@ require __DIR__ . '/includes/partials/header.php';
 
     <h2 id="cookies">7. Cookies y lo que queda en tu navegador</h2>
     <p>
-      Ludia <strong>no usa cookies de publicidad</strong>. Solo mide visitas con
-      Google Analytics, en las páginas públicas y <strong>únicamente si lo
-      aceptas</strong>.
+      Ludia mide visitas con Google Analytics y sus anuncios con el píxel de Meta,
+      <strong>solo en las páginas públicas y únicamente si lo aceptas</strong>.
+      Dentro de las actividades y las salas de juego no hay ninguna de las dos.
     </p>
     <ul>
       <li>
@@ -151,6 +151,13 @@ require __DIR__ . '/includes/partials/header.php';
         el aviso de cookies. Está configurado sin personalización de anuncios ni
         señales de Google. Puedes cambiar tu elección cuando quieras desde el enlace
         «Cookies» del pie de página; si rechazas, se borran.
+      </li>
+      <li>
+        <strong>Píxel de Meta</strong> (cookies <code>_fbp</code> y <code>_fbc</code>),
+        para saber si alguien llegó a Ludia desde un anuncio en Facebook o Instagram y
+        para mostrar esos anuncios a personas con intereses parecidos. Mismas reglas
+        que Analytics: solo en las páginas públicas, solo si aceptas, y se borra si
+        rechazas.
       </li>
       <li>
         <strong>Una cookie técnica de sesión</strong> (<code>ludia</code>), solo
@@ -171,6 +178,7 @@ require __DIR__ . '/includes/partials/header.php';
       <li><strong>Google Fonts.</strong> Las tipografías se cargan desde los servidores de Google, así que al abrir cualquier página de Ludia tu dirección IP llega a Google. Ocurre en todas las páginas, aunque no tengas cuenta.</li>
       <li><strong>Google.</strong> Solo si usas el botón «Entrar con Google», y únicamente para comprobar tu identidad y tu correo.</li>
       <li><strong>Google Analytics.</strong> Solo si aceptas las cookies, y solo en las páginas públicas: recibe la página que visitas, tu dirección IP y datos generales del navegador y el dispositivo.</li>
+      <li><strong>Meta (Facebook e Instagram).</strong> Solo si aceptas las cookies, y solo en las páginas públicas: recibe la página que visitas, tu dirección IP, datos del navegador y, si tienes cuenta en Meta, la puede asociar a ella.</li>
       <li><strong>Wompi.</strong> Solo al pagar.</li>
       <li><strong>YouTube.</strong> Solo si la actividad que estás resolviendo incluye un vídeo; en ese caso el reproductor lo sirve YouTube con sus propias condiciones.</li>
     </ul>

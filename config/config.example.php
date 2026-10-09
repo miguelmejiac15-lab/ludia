@@ -35,6 +35,11 @@ return [
         'id' => '',
     ],
 
+    /* Píxel de Meta (15-16 cifras). Vacío = no se carga. */
+    'meta' => [
+        'pixel' => '',
+    ],
+
     /**
      * Wompi — cobro de los planes (pago por adelantado, sin cobro automático).
      *

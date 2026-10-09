@@ -27,6 +27,14 @@ return [
     // No hay credenciales de IA: la plataforma no genera contenido automáticamente
     // (decisión del 2026-09-15, ver masterplan sección 14).
 
+    /*
+     * Google Analytics 4 (G-XXXXXXXXXX). Vacío = no se carga. En local se deja
+     * vacío para no mezclar tus pruebas con las visitas reales.
+     */
+    'analytics' => [
+        'id' => '',
+    ],
+
     /**
      * Wompi — cobro de los planes (pago por adelantado, sin cobro automático).
      *

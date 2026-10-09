@@ -67,6 +67,13 @@ return [
         'charset' => 'utf8mb4',
     ],
 
+    // Google Analytics 4. El ID no es secreto (va en el HTML de cada página).
+    // Solo se carga en las páginas públicas y solo si el visitante acepta las
+    // cookies: ver includes/partials/footer.php.
+    'analytics' => [
+        'id' => $env('GA_ID', 'G-ZGSC13TY6D'),
+    ],
+
     'wompi' => [
         'public_key'       => $env('WOMPI_PUBLIC_KEY', ''),
         'events_secret'    => $env('WOMPI_EVENTS_SECRET', ''),

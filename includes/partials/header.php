@@ -25,6 +25,11 @@ $usuarioActual = auth_usuario();
 $enApp   = str_contains(str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '')), '/app/');
 $noIndex = $page['noindex'] ?? ($enApp && empty($page['indexable']));
 
+/* Google Analytics: solo fuera de /app/. Dentro están las salas de juego, con
+   estudiantes, muchos menores: no se mide nada ahí (decisión del 09/10/2026).
+   Fuera, solo se carga si el visitante acepta las cookies (footer.php). */
+$gaId = $enApp ? '' : trim((string) config('analytics.id', ''));
+
 // En la home los enlaces del menú son anclas locales; en otras páginas apuntan a la home.
 $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/')) . '#' . $id;
 ?>

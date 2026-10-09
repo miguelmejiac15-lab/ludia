@@ -14,7 +14,7 @@
  *   - lista del salón .............. `curso_estudiantes` (licencia Escuela)
  *   - cobros ....................... `suscripciones`, `pagos`
  *   - cookie de sesión ............. `auth_iniciar()` en includes/Auth.php
- *   - terceros ..................... Google Fonts (header.php), Google, Wompi, YouTube
+ *   - terceros ..................... Google Fonts (header.php), Google, Google Analytics (footer.php), Wompi, YouTube
  */
 
 require __DIR__ . '/includes/bootstrap.php';
@@ -136,12 +136,22 @@ require __DIR__ . '/includes/partials/header.php';
       reclamaciones y cuadrar cuentas.
     </p>
 
-    <h2>7. Cookies y lo que queda en tu navegador</h2>
+    <h2 id="cookies">7. Cookies y lo que queda en tu navegador</h2>
     <p>
-      Ludia <strong>no usa cookies de publicidad ni herramientas de analítica</strong>.
-      No hay rastreadores de terceros siguiéndote por el sitio.
+      Ludia <strong>no usa cookies de publicidad</strong>. Solo mide visitas con
+      Google Analytics, en las páginas públicas y <strong>únicamente si lo
+      aceptas</strong>.
     </p>
     <ul>
+      <li>
+        <strong>Google Analytics</strong> (cookies <code>_ga</code>), para saber
+        cuántas personas visitan Ludia y qué páginas les sirven. Solo se carga en la
+        portada y las páginas informativas, <strong>nunca dentro de las actividades
+        ni de las salas de juego</strong>, y solo después de que pulses «Aceptar» en
+        el aviso de cookies. Está configurado sin personalización de anuncios ni
+        señales de Google. Puedes cambiar tu elección cuando quieras desde el enlace
+        «Cookies» del pie de página; si rechazas, se borran.
+      </li>
       <li>
         <strong>Una cookie técnica de sesión</strong> (<code>ludia</code>), solo
         para quien tiene cuenta. Sirve para mantenerte dentro mientras navegas. No la
@@ -160,6 +170,7 @@ require __DIR__ . '/includes/partials/header.php';
     <ul>
       <li><strong>Google Fonts.</strong> Las tipografías se cargan desde los servidores de Google, así que al abrir cualquier página de Ludia tu dirección IP llega a Google. Ocurre en todas las páginas, aunque no tengas cuenta.</li>
       <li><strong>Google.</strong> Solo si usas el botón «Entrar con Google», y únicamente para comprobar tu identidad y tu correo.</li>
+      <li><strong>Google Analytics.</strong> Solo si aceptas las cookies, y solo en las páginas públicas: recibe la página que visitas, tu dirección IP y datos generales del navegador y el dispositivo.</li>
       <li><strong>Wompi.</strong> Solo al pagar.</li>
       <li><strong>YouTube.</strong> Solo si la actividad que estás resolviendo incluye un vídeo; en ese caso el reproductor lo sirve YouTube con sus propias condiciones.</li>
     </ul>

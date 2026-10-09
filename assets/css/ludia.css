@@ -750,6 +750,31 @@ section { padding-block: 64px; }
 /* Avisos que llevan una dirección dentro (el enlace para restablecer la
    contraseña, que el administrador tiene que copiar entero). Sin esto la URL
    desborda la caja o se parte por donde no debe, y se copia a medias. */
+/* Aviso de cookies (footer.php): solo en páginas públicas con Analytics. */
+.aviso-cookies {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  font-size: .88rem;
+}
+.aviso-cookies p { flex: 1 1 320px; margin: 0; line-height: 1.5; }
+.aviso-cookies a { color: var(--violet); font-weight: 600; }
+.aviso-cookies-botones { display: flex; gap: 8px; margin-left: auto; }
+
 /* Aviso de que el plan va a vencer (header.php): Wompi no renueva solo. */
 .aviso-renovar {
   margin: 0;

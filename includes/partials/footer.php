@@ -15,6 +15,9 @@
     <nav class="footer-enlaces" aria-label="Enlaces del pie">
       <a href="<?= e(base_url('enfoque.php')) ?>">Cómo está pensada</a>
       <a href="<?= e(base_url('privacidad.php')) ?>">Privacidad</a>
+      <?php if (!empty($gaId)): ?>
+        <a href="<?= e(base_url('privacidad.php')) ?>#cookies" data-cookies-preferencias>Cookies</a>
+      <?php endif; ?>
     </nav>
     <div class="footer-meta">
       <span>© <?= date('Y') ?> Ludia</span>
@@ -22,5 +25,79 @@
     </div>
   </div>
 </footer>
+
+<?php if (!empty($gaId)): ?>
+<?php /* Aviso de cookies. Google Analytics NO se carga hasta que la persona
+         pulse «Aceptar»; con «Rechazar» no se carga nada y se borran las
+         cookies de Analytics que hubiera. La elección se guarda en este
+         navegador y se cambia desde «Cookies», en el pie. */ ?>
+<div class="aviso-cookies" id="aviso-cookies" role="dialog" aria-live="polite" aria-label="Cookies" hidden>
+  <p>
+    Usamos <b>Google Analytics</b> para saber cuántas personas visitan Ludia y qué páginas les sirven.
+    Solo en estas páginas públicas: nunca dentro de las actividades.
+    <a href="<?= e(base_url('privacidad.php')) ?>#cookies">Más información</a>
+  </p>
+  <div class="aviso-cookies-botones">
+    <button class="btn btn-ghost btn-sm" type="button" data-cookies="no">Rechazar</button>
+    <button class="btn btn-primary btn-sm" type="button" data-cookies="si">Aceptar</button>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var ID = <?= json_encode($gaId) ?>;
+  var CLAVE = 'ludia_cookies';
+  var aviso = document.getElementById('aviso-cookies');
+
+  function leer() { try { return localStorage.getItem(CLAVE); } catch (e) { return null; } }
+  function guardar(v) { try { localStorage.setItem(CLAVE, v); } catch (e) {} }
+
+  function cargar() {
+    if (window.__ludiaGa) return;
+    window.__ludiaGa = true;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ID);
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    // Sin señales de Google ni personalización de anuncios: solo contar visitas.
+    window.gtag('config', ID, { allow_google_signals: false, allow_ad_personalization_signals: false });
+  }
+
+  // Al rechazar, fuera las cookies de Analytics (_ga, _ga_XXXX) de este dominio.
+  function borrarCookiesGa() {
+    document.cookie.split(';').forEach(function (c) {
+      var nombre = c.split('=')[0].trim();
+      if (nombre.indexOf('_ga') !== 0) return;
+      [location.hostname, '.' + location.hostname.replace(/^www\./, '')].forEach(function (d) {
+        document.cookie = nombre + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + d;
+      });
+      document.cookie = nombre + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    });
+  }
+
+  var eleccion = leer();
+  if (eleccion === 'si') cargar();
+  else if (eleccion === null) aviso.hidden = false;
+
+  aviso.addEventListener('click', function (evento) {
+    var boton = evento.target.closest('[data-cookies]');
+    if (!boton) return;
+    var acepta = boton.getAttribute('data-cookies') === 'si';
+    guardar(acepta ? 'si' : 'no');
+    aviso.hidden = true;
+    if (acepta) cargar(); else borrarCookiesGa();
+  });
+
+  document.addEventListener('click', function (evento) {
+    if (!evento.target.closest('[data-cookies-preferencias]')) return;
+    evento.preventDefault();
+    aviso.hidden = false;
+  });
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

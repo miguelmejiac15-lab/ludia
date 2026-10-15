@@ -111,7 +111,8 @@ function admin_usuarios(string $busqueda = '', int $limite = 60): array
                 (SELECT COUNT(*) FROM imagenes i WHERE i.usuario_id = u.id) AS imagenes,
                 -- Distingue un plan pagado de uno puesto a mano desde el panel.
                 (SELECT x.estado FROM suscripciones x WHERE x.usuario_id = u.id ORDER BY x.pagado_hasta IS NULL, x.pagado_hasta DESC, x.created_at DESC LIMIT 1) AS suscripcion_estado,
-                (SELECT x.pagado_hasta FROM suscripciones x WHERE x.usuario_id = u.id ORDER BY x.pagado_hasta IS NULL, x.pagado_hasta DESC, x.created_at DESC LIMIT 1) AS suscripcion_hasta
+                (SELECT x.pagado_hasta FROM suscripciones x WHERE x.usuario_id = u.id ORDER BY x.pagado_hasta IS NULL, x.pagado_hasta DESC, x.created_at DESC LIMIT 1) AS suscripcion_hasta,
+                (SELECT x.origen FROM suscripciones x WHERE x.usuario_id = u.id ORDER BY x.pagado_hasta IS NULL, x.pagado_hasta DESC, x.created_at DESC LIMIT 1) AS suscripcion_origen
          FROM usuarios u' . $filtro . '
          ORDER BY u.created_at DESC
          LIMIT ' . max(1, min(200, $limite))

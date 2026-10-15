@@ -48,6 +48,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
 }
 
+// ¿Viene de un enlace de cortesía o de descuento? Se le recuerda lo que se
+// activará al terminar (lo activa app/invitacion.php, a donde vuelve).
+$invitacion = null;
+if (!empty($_SESSION['invitacion_pendiente'])) {
+    require_once __DIR__ . '/../includes/Invitaciones.php';
+    $invitacion = invitacion_por_codigo((string) $_SESSION['invitacion_pendiente']);
+    if (invitacion_problema($invitacion)) {
+        $invitacion = null;
+    }
+}
+
 $page = [
     'title'       => 'Crear cuenta gratis — Ludia',
     'description' => 'Crea tu cuenta gratuita de Ludia y arma sesiones para tu público.',
@@ -64,6 +75,13 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <span class="eyebrow">Plan gratis</span>
       <h1>Crea tu cuenta</h1>
       <p class="cuenta-sub">Sin tarjeta. Incluye <?= SESION_MAX_PLAN_GRATIS ?> paquetes guardados, hasta <?= SESION_MAX_PARTICIPANTES ?> participantes y juégalos las veces que quieras.</p>
+
+      <?php if ($invitacion): ?>
+        <p class="mensaje ok" role="status">
+          <?= $invitacion['tipo'] === 'cortesia' ? '🎁' : '🏷️' ?>
+          Al crear tu cuenta se activa: <b><?= e(invitacion_descripcion($invitacion)) ?></b>.
+        </p>
+      <?php endif; ?>
 
       <?php if ($error): ?>
         <p class="mensaje error" role="alert"><?= e($error) ?></p>

@@ -30,6 +30,7 @@ $secciones = [
     'planes'   => ['Planes y precios', '💳'],
     'colegios' => ['Colegios', '🏫'],
     'catalogo' => ['Actividades por plan', '🧩'],
+    'invitaciones' => ['Cortesías y descuentos', '🎁'],
 ];
 
 // La sección viaja también en el `action` de los formularios, así que llega por
@@ -91,6 +92,27 @@ if ($esAdmin && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $r['mensaje'] = str_replace('«Mis paquetes»', '«Mis paquetes» de ' . $correo, $r['mensaje']);
                 }
                 return $r;
+            })(),
+            // Cortesías y descuentos (includes/Invitaciones.php).
+            'dar_cortesia' => (static function (): array {
+                require_once __DIR__ . '/../includes/Invitaciones.php';
+                return admin_dar_cortesia((int) ($_POST['usuario_id'] ?? 0), (int) ($_POST['meses'] ?? INVITACION_MESES_DEFECTO));
+            })(),
+            'crear_invitacion' => (static function () use ($usuario): array {
+                require_once __DIR__ . '/../includes/Invitaciones.php';
+                return invitacion_crear(
+                    (string) ($_POST['tipo'] ?? ''),
+                    (int) ($_POST['meses'] ?? INVITACION_MESES_DEFECTO),
+                    (int) ($_POST['porcentaje'] ?? INVITACION_PORCENTAJE_DEFECTO),
+                    (string) ($_POST['nota'] ?? ''),
+                    ($_POST['usos_max'] ?? '') !== '' ? (int) $_POST['usos_max'] : null,
+                    ($_POST['expira'] ?? '') !== '' ? (string) $_POST['expira'] : null,
+                    (int) $usuario['id']
+                );
+            })(),
+            'activar_invitacion' => (static function (): array {
+                require_once __DIR__ . '/../includes/Invitaciones.php';
+                return invitacion_activar((int) ($_POST['invitacion_id'] ?? 0), ($_POST['activa'] ?? '') === '1');
             })(),
             default => ['ok' => false, 'mensaje' => 'Acción desconocida.'],
         };
@@ -403,6 +425,10 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                   $estadoSus = $u['suscripcion_estado'] ?? null;
                   if ($u['plan'] !== 'gratis' && !$estadoSus) {
                       echo '<span class="sus-chip sus-manual">dado a mano</span>';
+                  } elseif ($estadoSus === 'activa' && ($u['suscripcion_origen'] ?? '') === 'cortesia'
+                      && strtotime((string) $u['suscripcion_hasta']) > time()) {
+                      echo '<span class="sus-chip sus-activa">🎁 cortesía hasta ' .
+                          e(date('d/m/y', strtotime((string) $u['suscripcion_hasta']))) . '</span>';
                   } elseif ($estadoSus === 'activa') {
                       echo '<span class="sus-chip sus-activa">pagada hasta ' .
                           e(date('d/m/y', strtotime((string) $u['suscripcion_hasta']))) . '</span>';
@@ -436,6 +462,18 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                     <input type="hidden" name="usuario_id" value="<?= (int) $u['id'] ?>">
                     <input type="hidden" name="q" value="<?= e($busqueda) ?>">
                     <button class="link-btn" type="submit" title="Crear en esta cuenta los paquetes de demostración">🌱 Demo</button>
+                  </form>
+                  <?php /* Cortesía a mano: Pro por 3 meses, se suma a lo que le
+                           quede y vence sola. Para los docentes de las reuniones,
+                           que crean su cuenta normal y aquí se marca. */ ?>
+                  <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=<?= e($seccion) ?>" style="display:inline"
+                        onsubmit="return confirm(<?= e(json_encode('¿Dar 3 meses de Pro de cortesía a ' . $u['email'] . '?', JSON_UNESCAPED_UNICODE)) ?>);">
+                    <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+                    <input type="hidden" name="accion" value="dar_cortesia">
+                    <input type="hidden" name="usuario_id" value="<?= (int) $u['id'] ?>">
+                    <input type="hidden" name="meses" value="3">
+                    <input type="hidden" name="q" value="<?= e($busqueda) ?>">
+                    <button class="link-btn" type="submit" title="Activar Pro gratis por 3 meses en esta cuenta">🎁 Cortesía</button>
                   </form>
                 </td>
                 <td class="num"><?= (int) $u['imagenes'] ?></td>
@@ -823,6 +861,135 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       </form>
     </section>
 
+    <?php endif; ?>
+
+    <?php if ($seccion === 'invitaciones'): ?>
+    <?php
+    require_once __DIR__ . '/../includes/Invitaciones.php';
+    $enlaces = invitaciones_listar();
+    $recibidos = beneficios_recientes();
+    ?>
+    <section class="panel">
+      <h2 class="panel-title">Crear un enlace</h2>
+      <p class="cuenta-sub" style="margin-bottom:14px">
+        Quien lo abra crea su cuenta (o ingresa) y recibe el beneficio solo. Cada cuenta recibe
+        como mucho <b>una</b> cortesía por enlace y <b>un</b> descuento en toda su vida.
+        Para dar cortesía a alguien que ya tiene cuenta, usa <b>🎁 Cortesía</b> en «Cuentas».
+      </p>
+      <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=invitaciones" class="form-invitacion">
+        <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+        <input type="hidden" name="accion" value="crear_invitacion">
+        <label class="field"><span>Tipo</span>
+          <select class="select" name="tipo">
+            <option value="cortesia">🎁 Cortesía: Pro gratis</option>
+            <option value="descuento">🏷️ Descuento en el primer pago</option>
+          </select>
+        </label>
+        <label class="field"><span>Meses de cortesía</span>
+          <input class="input" type="number" name="meses" min="1" max="24" value="<?= INVITACION_MESES_DEFECTO ?>">
+        </label>
+        <label class="field"><span>% de descuento</span>
+          <input class="input" type="number" name="porcentaje" min="5" max="90" value="<?= INVITACION_PORCENTAJE_DEFECTO ?>">
+        </label>
+        <label class="field"><span>Nota (para ti)</span>
+          <input class="input" type="text" name="nota" maxlength="120" placeholder="Ej. Reunión Colegio San José · Instagram octubre">
+        </label>
+        <label class="field"><span>Límite de usos (vacío = sin límite)</span>
+          <input class="input" type="number" name="usos_max" min="1" placeholder="Sin límite">
+        </label>
+        <label class="field"><span>Vence el (opcional)</span>
+          <input class="input" type="date" name="expira">
+        </label>
+        <button class="btn btn-primary" type="submit">Crear enlace</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Enlaces</h2>
+      <?php if (!$enlaces): ?>
+        <p class="hint">Todavía no hay enlaces.</p>
+      <?php else: ?>
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead><tr><th>Nota</th><th>Regala</th><th>Enlace</th><th class="num">Usos</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($enlaces as $inv): ?>
+              <?php $url = invitacion_url((string) $inv['codigo']); $problemaInv = invitacion_problema($inv); ?>
+              <tr>
+                <td><b><?= e($inv['nota'] ?: '—') ?></b><br><span class="celda-sub"><?= e(date('d/m/Y', strtotime((string) $inv['created_at']))) ?></span></td>
+                <td><?= $inv['tipo'] === 'cortesia' ? '🎁 ' . (int) $inv['meses'] . ' meses de Pro' : '🏷️ ' . (int) $inv['porcentaje'] . ' % en el primer pago' ?></td>
+                <td class="celda-enlace">
+                  <input class="input input-copiar" type="text" readonly value="<?= e($url) ?>" onclick="this.select()" aria-label="Enlace para copiar">
+                  <button class="link-btn" type="button" data-copiar="<?= e($url) ?>">Copiar</button>
+                </td>
+                <td class="num"><?= (int) $inv['usos'] ?><?= $inv['usos_max'] !== null ? ' / ' . (int) $inv['usos_max'] : '' ?></td>
+                <td>
+                  <?php if (!$problemaInv): ?>
+                    <span class="sus-chip sus-activa">activo</span>
+                    <?php if (!empty($inv['expira_at'])): ?><br><span class="celda-sub">hasta <?= e(date('d/m/Y', strtotime((string) $inv['expira_at']))) ?></span><?php endif; ?>
+                  <?php else: ?>
+                    <span class="sus-chip sus-fin" title="<?= e($problemaInv) ?>"><?= (int) $inv['activa'] ? 'agotado o vencido' : 'desactivado' ?></span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=invitaciones">
+                    <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+                    <input type="hidden" name="accion" value="activar_invitacion">
+                    <input type="hidden" name="invitacion_id" value="<?= (int) $inv['id'] ?>">
+                    <input type="hidden" name="activa" value="<?= (int) $inv['activa'] ? '0' : '1' ?>">
+                    <button class="link-btn<?= (int) $inv['activa'] ? ' danger' : '' ?>" type="submit"><?= (int) $inv['activa'] ? 'Desactivar' : 'Activar' ?></button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+        <script>
+          /* Copiar el enlace con un clic. */
+          document.addEventListener('click', function (evento) {
+            var boton = evento.target.closest('[data-copiar]');
+            if (!boton) return;
+            var texto = boton.getAttribute('data-copiar');
+            var listo = function () {
+              boton.textContent = '✓ Copiado';
+              setTimeout(function () { boton.textContent = 'Copiar'; }, 1500);
+            };
+            if (navigator.clipboard) navigator.clipboard.writeText(texto).then(listo, function () { boton.previousElementSibling.select(); });
+            else { boton.previousElementSibling.select(); document.execCommand('copy'); listo(); }
+          });
+        </script>
+      <?php endif; ?>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Quién recibió qué</h2>
+      <?php if (!$recibidos): ?>
+        <p class="hint">Nadie ha recibido todavía una cortesía o un descuento.</p>
+      <?php else: ?>
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead><tr><th>Cuenta</th><th>Beneficio</th><th>Cómo llegó</th><th>Estado</th></tr></thead>
+            <tbody>
+            <?php foreach ($recibidos as $b): ?>
+              <tr>
+                <td><b><?= e($b['nombre']) ?></b><br><span class="celda-sub"><?= e($b['email']) ?></span></td>
+                <td><?= $b['tipo'] === 'cortesia' ? '🎁 ' . (int) $b['meses'] . ' meses de Pro' : '🏷️ ' . (int) $b['porcentaje'] . ' % de descuento' ?></td>
+                <td><?= $b['invitacion_id'] ? 'Enlace' . ($b['nota'] ? ': ' . e($b['nota']) : '') : 'A mano (panel)' ?><br><span class="celda-sub"><?= e(date('d/m/Y', strtotime((string) $b['created_at']))) ?></span></td>
+                <td>
+                  <?php if ($b['tipo'] === 'cortesia'): ?>
+                    <?= $b['pagado_hasta'] && strtotime((string) $b['pagado_hasta']) > time() ? 'Pro hasta el ' . e(date('d/m/Y', strtotime((string) $b['pagado_hasta']))) : 'Venció' ?>
+                  <?php else: ?>
+                    <?= $b['usado_at'] ? 'Usado el ' . e(date('d/m/Y', strtotime((string) $b['usado_at']))) : 'Sin usar todavía' ?>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+    </section>
     <?php endif; ?>
 
     <?php if ($seccion === 'catalogo'): ?>

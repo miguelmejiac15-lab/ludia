@@ -12,6 +12,7 @@ require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../includes/Planes.php';
 require_once __DIR__ . '/../includes/Sesiones.php';   // SESION_TIPOS: cuántos formatos hay
 require_once __DIR__ . '/../includes/Suscripciones.php';
+require_once __DIR__ . '/../includes/Invitaciones.php';
 
 $usuario = auth_requerir();
 
@@ -23,6 +24,12 @@ $pagosListos = wompi_configurado();
 // Con Pro pagado no se vende Estándar: lo pagado se suma y el plan pasa a ser
 // el último comprado, así que le quitaría el Pro al instante.
 $proPagado   = $vigente && $suscripcion['plan'] === 'pro';
+$esCortesia  = $vigente && ($suscripcion['origen'] ?? 'pago') === 'cortesia';
+// Descuento de un enlace, para un solo pago. Los precios de los botones lo
+// muestran ya aplicado; quien lo cobra de verdad es api/suscripcion-crear.php.
+$descuento   = descuento_disponible((int) $usuario['id']);
+$pct         = $descuento ? (int) $descuento['porcentaje'] : 0;
+$precio      = static fn (int $monto): int => $pct > 0 ? descuento_aplicar($monto, $pct) : $monto;
 
 $page = [
     'title'       => 'Mi suscripción — Ludia',
@@ -50,6 +57,13 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <a class="btn btn-ghost" href="<?= e(base_url('app/mis-sesiones.php')) ?>">Mis paquetes</a>
     </div>
 
+    <?php if ($pct > 0): ?>
+      <p class="mensaje ok" role="status">
+        🏷️ Tienes <b><?= $pct ?> % de descuento</b> en tu próximo pago, mensual o anual. Ya está aplicado en los precios
+        de abajo. Vale para un solo pago.
+      </p>
+    <?php endif; ?>
+
     <?php if (!$pagosListos): ?>
       <p class="mensaje error">
         Los pagos todavía no están configurados en este servidor: faltan las llaves de Wompi.
@@ -61,9 +75,11 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <section class="panel plan-actual">
         <h2 class="panel-title">Tu plan <?= e(plan_nombre((string) $suscripcion['plan'])) ?></h2>
         <ul class="plan-datos">
-          <li><span>Pagado hasta</span><b><?= e(date('d/m/Y', strtotime((string) $suscripcion['pagado_hasta']))) ?></b></li>
+          <li><span><?= $esCortesia ? 'Cortesía hasta' : 'Pagado hasta' ?></span><b><?= e(date('d/m/Y', strtotime((string) $suscripcion['pagado_hasta']))) ?></b></li>
           <li><span>Te quedan</span><b><?= (int) $diasQuedan ?> <?= $diasQuedan === 1 ? 'día' : 'días' ?></b></li>
-          <?php if (!empty($suscripcion['ultimo_pago_at'])): ?>
+          <?php if ($esCortesia): ?>
+            <li><span>Origen</span><b>🎁 Cortesía de Ludia, sin costo</b></li>
+          <?php elseif (!empty($suscripcion['ultimo_pago_at'])): ?>
             <li><span>Último pago</span><b>$<?= number_format((int) $suscripcion['monto'], 0, ',', '.') ?>
               <?= ($suscripcion['periodo'] ?? 'mensual') === 'anual' ? 'por un año' : 'por un mes' ?>
               · <?= e(date('d/m/Y', strtotime((string) $suscripcion['ultimo_pago_at']))) ?></b></li>
@@ -143,8 +159,12 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                cartel sí debe decir la verdad de lo que se cobraría. */
             $bloqueado = $clave === 'estandar' && $proPagado;
             $verbo = ($vigente && $suscripcion['plan'] === $clave) ? 'Renovar' : 'Pagar';
-            $textoMes = $verbo . ' un mes · $' . number_format((int) $p['precio'], 0, ',', '.');
-            $textoAnio = $anual > 0 ? $verbo . ' un año · $' . number_format($anual, 0, ',', '.') : $textoMes;
+            $textoMes = $verbo . ' un mes · $' . number_format($precio((int) $p['precio']), 0, ',', '.');
+            $textoAnio = $anual > 0 ? $verbo . ' un año · $' . number_format($precio($anual), 0, ',', '.') : $textoMes;
+            if ($pct > 0) {
+                $textoMes .= ' (-' . $pct . ' %)';
+                $textoAnio .= ' (-' . $pct . ' %)';
+            }
             ?>
             <button class="btn <?= $clave === 'pro' ? 'btn-primary' : 'btn-ghost' ?> btn-block"
                     type="button" data-contratar="<?= e($clave) ?>"

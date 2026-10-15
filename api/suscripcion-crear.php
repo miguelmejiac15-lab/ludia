@@ -16,6 +16,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../includes/Planes.php';
 require_once __DIR__ . '/../includes/Suscripciones.php';
+require_once __DIR__ . '/../includes/Invitaciones.php';
 require_once __DIR__ . '/../includes/api.php';
 
 api_iniciar();
@@ -42,7 +43,7 @@ if ($plan === '') {
 // porque lo pagado se suma y el plan pasa a ser el último comprado.
 $actual = suscripcion_de_usuario((int) $usuario['id']);
 if ($plan === 'estandar' && suscripcion_vigente($actual) && $actual['plan'] === 'pro') {
-    api_error('Tienes Pro pagado hasta el ' . date('d/m/Y', strtotime((string) $actual['pagado_hasta']))
+    api_error('Tienes Pro activo hasta el ' . date('d/m/Y', strtotime((string) $actual['pagado_hasta']))
         . '. Podrás pasar a Estándar cuando venza.', 422);
 }
 
@@ -57,7 +58,15 @@ if ($monto <= 0) {
         : 'Ese plan no tiene precio configurado.', 422);
 }
 
-$nueva = suscripcion_crear((int) $usuario['id'], $plan, $monto, $periodo);
+// Descuento de un enlace (una sola vez): se aplica aquí y se gasta cuando
+// Wompi aprueba el pago, en suscripcion_registrar_pago().
+$descuento = descuento_disponible((int) $usuario['id']);
+$porcentaje = $descuento ? (int) $descuento['porcentaje'] : 0;
+if ($porcentaje > 0) {
+    $monto = descuento_aplicar($monto, $porcentaje);
+}
+
+$nueva = suscripcion_crear((int) $usuario['id'], $plan, $monto, $periodo, $porcentaje ?: null);
 
 // Absoluta y con el esquema real: detrás del proxy del servidor la petición
 // llega como HTTP aunque el visitante use HTTPS.
@@ -73,4 +82,5 @@ api_ok([
     'plan'    => $plan,
     'periodo' => $periodo,
     'monto'   => $monto,
+    'descuento' => $porcentaje,
 ]);

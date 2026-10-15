@@ -113,13 +113,15 @@ function suscripcion_dias_restantes(?array $suscripcion): ?int
  *
  * @return array{id:int, referencia:string}
  */
-function suscripcion_crear(int $usuarioId, string $plan, int $monto, string $periodo = 'mensual'): array
+function suscripcion_crear(int $usuarioId, string $plan, int $monto, string $periodo = 'mensual', ?int $descuentoPct = null): array
 {
     $periodo = $periodo === 'anual' ? 'anual' : 'mensual';
 
+    // `monto` es lo que se cobra DE VERDAD (ya rebajado si hay descuento): es
+    // contra lo que se comprueba el pago de Wompi.
     db()->prepare(
-        'INSERT INTO suscripciones (usuario_id, plan, periodo, estado, moneda, monto) VALUES (?, ?, ?, "pendiente", ?, ?)'
-    )->execute([$usuarioId, $plan, $periodo, wompi_moneda(), $monto]);
+        'INSERT INTO suscripciones (usuario_id, plan, periodo, estado, moneda, monto, descuento_pct) VALUES (?, ?, ?, "pendiente", ?, ?, ?)'
+    )->execute([$usuarioId, $plan, $periodo, wompi_moneda(), $monto, $descuentoPct ?: null]);
     $id = (int) db()->lastInsertId();
 
     // Wompi exige una referencia única por pago. El trozo al azar impide
@@ -172,6 +174,13 @@ function suscripcion_registrar_pago(int $suscripcionId, ?string $correoPagador =
 
     db()->prepare('UPDATE usuarios SET plan = ? WHERE id = ?')
         ->execute([$suscripcion['plan'], (int) $suscripcion['usuario_id']]);
+
+    // Si este pago llevaba descuento, se gasta ahora, con el pago ya aprobado:
+    // quien abre el checkout y no lo termina conserva su descuento.
+    if ((int) ($suscripcion['descuento_pct'] ?? 0) > 0) {
+        require_once __DIR__ . '/Invitaciones.php';
+        descuento_gastar((int) $suscripcion['usuario_id'], $suscripcionId);
+    }
 }
 
 /**
@@ -306,7 +315,7 @@ function suscripcion_estado_legible(?array $suscripcion): string
         : null;
 
     if ($hasta && suscripcion_vigente($suscripcion)) {
-        return 'Pagado hasta el ' . $hasta;
+        return (($suscripcion['origen'] ?? 'pago') === 'cortesia' ? 'Cortesía hasta el ' : 'Pagado hasta el ') . $hasta;
     }
 
     return match ($suscripcion['estado']) {

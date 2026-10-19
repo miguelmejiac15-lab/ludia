@@ -87,7 +87,12 @@
 .j-opcion.neutra { background: var(--surface); color: var(--text); border-color: var(--border); }
 .j-opcion.elegida { outline: 3px solid var(--text); outline-offset: 2px; }
 .j-opcion.neutra.elegida { border-color: var(--violet); background: var(--violet-soft); color: var(--violet); }
-.j-opcion:not(.neutra):not(.elegida) { filter: saturate(.85); }
+/* Botón de color con relieve: se ve «pulsable» y se lee de lejos. */
+.j-opcion:not(.neutra), .proy-opcion:not(.neutra) {
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .18);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .28);
+}
+.j-opcion:not(.neutra) b, .proy-opcion:not(.neutra) b { opacity: .9; }
 
 .j-input, .j-definicion .input { margin-bottom: 10px; }
 .j-frase { line-height: 2.2; }
@@ -874,3 +879,51 @@
 .informe-pregunta:first-of-type { border-top: 0; }
 .informe-dato { font-weight: 700; color: var(--mint); white-space: nowrap; }
 .informe-aportes { margin: 6px 0 0; padding-left: 18px; color: var(--text-soft); font-size: .84rem; }
+
+
+/* =====================================================================
+   Modo juego con colores vivos (19/10/2026): el fondo de la sala del
+   docente y de la pantalla del estudiante pasa a un degradado de color, y
+   cada bloque queda como una tarjeta blanca encima para que todo se lea.
+   El resto del sitio conserva los colores de siempre.
+   ===================================================================== */
+main.sala, main.unirse {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, .14) 0 70px, transparent 71px),
+    radial-gradient(circle at 88% 12%, rgba(255, 255, 255, .10) 0 110px, transparent 111px),
+    radial-gradient(circle at 80% 85%, rgba(255, 255, 255, .10) 0 90px, transparent 91px),
+    linear-gradient(135deg, #5B3DF5 0%, #8E3DF0 45%, #FF4D7E 100%);
+  min-height: calc(100vh - 72px);
+}
+.sala .panel, .unirse .panel {
+  background: var(--surface);
+  border: 0;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 30px 60px -30px rgba(20, 8, 70, .6);
+}
+.sala .sala-grid .panel + .panel { margin-top: 0; }
+.unirse .j-crono { background: #EDE9FE; color: #4C1DFF; font-weight: 800; }
+
+/* Al revelar la respuesta, las incorrectas se apagan y la buena resalta. */
+.proy-opciones:has(.correcta) .proy-opcion:not(.correcta) { opacity: .32; filter: grayscale(.4); }
+.proy-opcion.correcta { outline: 4px solid #fff; outline-offset: 0; box-shadow: 0 0 0 7px #0EA371, inset 0 -5px 0 rgba(0, 0, 0, .18); }
+
+/* ---------- Vídeo con preguntas en vivo ---------- */
+.proy-video { max-width: 920px; margin: 0 auto 18px; transition: max-width .4s ease; }
+.video-abierto .proy-video { max-width: 440px; }
+.proy-video-marco {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+}
+.proy-video-marco iframe, .proy-video-marco > div { position: absolute; inset: 0; width: 100%; height: 100%; }
+.proy-video-aviso { text-align: center; font-size: 1.1rem; color: var(--text-soft); margin-bottom: 6px; }
+
+/* Celular mientras el vídeo corre en el proyector */
+.j-espera-video { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 34px 12px; }
+.j-espera-video b { font-size: 3.4rem; line-height: 1; }
+.j-espera-video p { font-family: var(--font-title); font-weight: 600; font-size: 1.35rem; }
+.j-espera-video span { color: var(--text-soft); font-size: .92rem; }

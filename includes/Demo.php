@@ -3,9 +3,9 @@
  * Paquetes de demostración: el catálogo completo con un tema sencillo
  * ("Las plantas"), para mostrar Ludia y grabar vídeos de ejemplo (08/10/2026).
  *
- * Son DOS paquetes porque el vídeo con preguntas solo se juega enviado
- * (SESION_SOLO_ENVIAR): metido en el paquete en vivo, ese paquete no se podría
- * proyectar.
+ * Son DOS paquetes: nacieron cuando el vídeo con preguntas solo se jugaba
+ * enviado. Desde el 19/10/2026 también va en vivo (se ve en el proyector),
+ * así que el del vídeo sirve para las dos formas.
  *
  * Los carga un administrador en SU cuenta desde el panel. No mira el plan a
  * propósito: es material de muestra y tiene que llevar los 23 formatos.
@@ -145,7 +145,7 @@ function demo_paquetes(): array
         ]],
     ];
 
-    // Solo enviado: el vídeo se ve a su ritmo en el dispositivo de cada uno.
+    // Enviado, el vídeo se ve en cada celular; en vivo, en el proyector.
     // «LA FOTOSÍNTESIS - Video educativo para niñ@s» (Aprende con Tía Viviana,
     // 4:03), comprobado que permite insertarse el 08/10/2026.
     $video = [

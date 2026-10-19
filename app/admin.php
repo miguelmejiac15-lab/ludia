@@ -260,7 +260,7 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <h2 class="panel-title">Paquetes de demostración</h2>
       <p class="cuenta-sub" style="margin-bottom:14px">
         Crea en <b>tu</b> cuenta dos paquetes con el tema «Las plantas»: uno en vivo con las 22 actividades
-        que se proyectan, y otro con el vídeo con preguntas (ese solo se juega enviado). Si ya están, no los duplica.
+        y otro con el vídeo con preguntas, que sirve en vivo (el vídeo se ve en el proyector) o enviado. Si ya están, no los duplica.
       </p>
       <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=resumen">
         <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">

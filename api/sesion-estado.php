@@ -76,7 +76,7 @@ $respuesta = [
 /**
  * Arma el bloque de la pregunta que toca, con su cronómetro.
  */
-function bloque_actividad(array $contenido, string $codigo, int $a, int $i, ?string $inicio, bool $conClave): ?array
+function bloque_actividad(array $contenido, string $codigo, int $a, int $i, ?string $inicio, bool $conClave, bool $abierta = true, bool $vivo = false): ?array
 {
     $actividad = $contenido[$a] ?? null;
     if (!$actividad) {
@@ -91,7 +91,11 @@ function bloque_actividad(array $contenido, string $codigo, int $a, int $i, ?str
         'tipo'        => $actividad['tipo'],
         'titulo'      => actividad_titulo($actividad),
         'tiempo'      => $tiempo,
-        'restante'    => max(0, $tiempo - $transcurrido),
+        // Con la pregunta aún cerrada (tramo de vídeo) el reloj no corre.
+        'restante'    => $abierta ? max(0, $tiempo - $transcurrido) : $tiempo,
+        'abierta'     => $abierta,
+        // En vivo, el vídeo se ve en el proyector y no en cada celular.
+        'proyector'   => $vivo && in_array($actividad['tipo'], SESION_ABRE_PROYECTOR, true),
         'puntua'      => juego_puntua($actividad['tipo']),
         'lectura'     => juego_es_lectura($actividad['tipo']),
         'item_indice' => $i,
@@ -156,7 +160,8 @@ if ($modo === 'enviar' && $sesion['estado'] !== 'terminada') {
 if ($modo === 'vivo' && $sesion['estado'] === 'en_curso') {
     $a = (int) $sesion['actividad_indice'];
     $i = (int) $sesion['item_indice'];
-    $bloque = bloque_actividad($contenido, $sesion['codigo'], $a, $i, $sesion['item_inicio_at'], $esAnfitrion);
+    $bloque = bloque_actividad($contenido, $sesion['codigo'], $a, $i, $sesion['item_inicio_at'], $esAnfitrion,
+        (int) ($sesion['pregunta_abierta'] ?? 1) === 1, true);
 
     if ($bloque) {
         $respuesta['actividad'] = $bloque;

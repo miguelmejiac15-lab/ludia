@@ -64,8 +64,7 @@ window.LudiaFormatos = (function () {
 
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
-      soloEnviar: true,
-      descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar.',
+      descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',
       nuevoItem: function () { return { segundo: 30, enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
       validar: function (it) {
         var e = [];

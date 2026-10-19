@@ -37,7 +37,14 @@ const SESION_TIPOS = [
  * volver atrás; proyectado en clase habría que sincronizar el sonido del salón
  * con treinta teléfonos, que es otra cosa y se decidió no hacerla por ahora.
  */
-const SESION_SOLO_ENVIAR = ['video_preguntas'];
+// Formatos que no se pueden proyectar. Vacía desde el 19/10/2026: el vídeo con
+// preguntas ya funciona en vivo (se reproduce en el proyector y la pregunta se
+// abre en los celulares al llegar a su minuto). Se deja la comprobación por si
+// algún formato futuro la necesita.
+const SESION_SOLO_ENVIAR = [];
+
+/** Formatos que en vivo esperan a que el proyector ABRA la pregunta. */
+const SESION_ABRE_PROYECTOR = ['video_preguntas'];
 
 /**
  * Borra las sesiones caducadas.

@@ -70,6 +70,8 @@
   .entra .j-opcion:nth-child(4), .entra .proy-opcion:nth-child(4) { animation-delay: .21s; }
   .entra .j-opcion:nth-child(n+5), .entra .proy-opcion:nth-child(n+5) { animation-delay: .28s; }
 
+  .revelada .proy-opcion.correcta { animation: anim-festeja .7s cubic-bezier(.3, 1.6, .5, 1); }
+  .j-espera-video b { display: inline-block; animation: anim-late 1.6s ease-in-out infinite; }
   .j-opcion { transition: transform .12s ease; }
   .j-opcion:active { transform: scale(.97); }
   .j-opcion.elegida { animation: anim-elige .28s ease; }

@@ -12,6 +12,7 @@
 
   var P = window.LudiaPersonaje;
   var A = window.LudiaAnim;   // animaciones (main.js); puede no estar
+  var M = window.LudiaMusica; // música del proyector (musica.js); puede no estar
   var CODIGO = sala.getAttribute('data-codigo');
   var MAX = Number(sala.getAttribute('data-max'));
   var MODO = sala.getAttribute('data-modo') || 'vivo';
@@ -62,6 +63,10 @@
   var ultimoEstado = sala.getAttribute('data-estado');
   var preguntaActual = '';
   var finCronometro = 0;
+  var relojActual = '';      // pregunta + si está abierta: el reloj arranca al abrirse
+  var revelada = false;      // ¿ya se mostró la respuesta correcta de esta pregunta?
+  var ultimoTic = -1;
+  var pidioAlCero = false;
 
   function esc(texto) {
     return String(texto == null ? '' : texto).replace(/[&<>"']/g, function (c) {
@@ -392,9 +397,12 @@
     }
   };
 
+  var ultimaActividad = null;
+
   function pintarProyeccion(datos) {
     var actividad = datos.actividad;
     if (!actividad) return;
+    ultimaActividad = actividad;
 
     el.lobby.hidden = true;
     el.proyeccion.hidden = false;
@@ -404,17 +412,51 @@
     var esNueva = clave !== preguntaActual;
     if (esNueva) {
       preguntaActual = clave;
-      finCronometro = Date.now() + actividad.restante * 1000;
+      revelada = false;
     }
+    // El reloj se reinicia también cuando una pregunta de vídeo se ABRE: hasta
+    // entonces corría el vídeo y no contaba.
+    var abierta = actividad.abierta !== false;
+    var claveReloj = clave + (abierta ? '-a' : '-c');
+    if (claveReloj !== relojActual) {
+      relojActual = claveReloj;
+      finCronometro = Date.now() + actividad.restante * 1000;
+      ultimoTic = -1;
+      pidioAlCero = false;
+    }
+    var esVideo = actividad.item.tipo === 'video_preguntas';
 
     // Una diapositiva (página informativa, panel de repaso) no tiene tiempo ni
     // respuestas: se queda hasta que el docente pulsa «Siguiente». Mostrarle
     // un cronómetro metía prisa en plena explicación (2026-10-08).
     var lectura = !!actividad.lectura;
+    // Mientras corre el vídeo tampoco hay reloj ni respuestas que contar.
+    var sinReloj = lectura || (esVideo && !abierta);
     el.proyeccion.classList.toggle('es-lectura', lectura);
-    el.proyCrono.hidden = lectura;
-    el.proyConteo.hidden = lectura;
-    el.proyBarra.parentNode.hidden = lectura;
+    el.proyeccion.classList.toggle('es-video', esVideo);
+    // Con la pregunta abierta, el vídeo se achica para que quepan las opciones.
+    el.proyeccion.classList.toggle('video-abierto', esVideo && abierta);
+    el.proyCrono.hidden = sinReloj;
+    el.proyConteo.hidden = sinReloj;
+    el.proyBarra.parentNode.hidden = sinReloj;
+
+    // La respuesta correcta NO se proyecta mientras se responde: la pantalla
+    // del docente se ve como la del público. Se revela al acabarse el tiempo o
+    // cuando ya respondieron todos (antes se veía desde el primer segundo).
+    var recibidas = datos.respuestas_recibidas || 0;
+    var quedan = Math.max(0, Math.round((finCronometro - Date.now()) / 1000));
+    var revelar = !sinReloj && (quedan <= 0 || (datos.total > 0 && recibidas >= datos.total));
+    var claveVisible = revelar ? actividad.clave : null;
+    var recienRevelada = revelar && !revelada;
+    if (revelar) revelada = true;
+
+    // Música: con ritmo mientras se responde; en silencio para explicar
+    // (diapositivas), mientras suena un vídeo y al revelar la respuesta.
+    if (M) {
+      if (sinReloj || revelada) M.parar();
+      else M.juego();
+      if (recienRevelada) M.finDelTiempo();
+    }
 
     el.proyTitulo.textContent = actividad.titulo + ' · ' + (lectura ? 'diapositiva ' : 'pregunta ') +
       (actividad.item_indice + 1) + ' de ' + actividad.total_items;
@@ -423,17 +465,21 @@
     var imagen = actividad.item.imagen
       ? '<img class="proy-imagen" src="' + esc(actividad.item.imagen) + '" alt="">'
       : '';
-    // Una diapositiva no cambia entre consultas: se pinta una sola vez, así la
-    // animación de entrada no se repite cada tres segundos.
-    if (!lectura || esNueva) {
+    if (esVideo) {
+      // El vídeo no se repinta nunca entre consultas: se perdería el
+      // reproductor. Solo cambia lo de debajo (aviso o pregunta).
+      pintarVideo(actividad, esNueva, abierta, claveVisible);
+    } else if (!lectura || esNueva) {
+      // Una diapositiva no cambia entre consultas: se pinta una sola vez, así
+      // la animación de entrada no se repite cada tres segundos.
       el.proyCuerpo.innerHTML = imagen + (vista
-        ? vista(actividad.item, actividad.clave, datos.aportes || [], datos.muro)
+        ? vista(actividad.item, claveVisible, datos.aportes || [], datos.muro)
         : '<p class="proy-pregunta">Actividad no disponible</p>');
     }
     // La diapositiva ya trae su propia entrada (jugar.css).
-    if (esNueva && !lectura && A) A.marcar(el.proyCuerpo, 'entra', 900);
+    if (esNueva && !lectura && !esVideo && A) A.marcar(el.proyCuerpo, 'entra', 900);
+    if (recienRevelada && A) A.marcar(el.proyCuerpo, 'revelada', 1200);
 
-    var recibidas = datos.respuestas_recibidas || 0;
     el.proyConteo.textContent = recibidas + (recibidas === 1 ? ' respuesta' : ' respuestas');
     el.proyBarra.style.width = datos.total ? Math.round((recibidas / datos.total) * 100) + '%' : '0%';
 
@@ -504,9 +550,142 @@
     var restante = Math.max(0, Math.round((finCronometro - Date.now()) / 1000));
     el.proyCrono.textContent = restante + ' s';
     el.proyCrono.classList.toggle('poco', restante > 0 && restante <= 5);
+    if (revelada) return;
+    if (M && restante > 0 && restante <= 5 && restante !== ultimoTic) {
+      ultimoTic = restante;
+      M.tic(restante === 1);
+    }
+    // Al llegar a cero se pide el estado ya, para revelar la respuesta sin
+    // esperar los tres segundos del sondeo.
+    if (restante === 0 && !pidioAlCero) {
+      pidioAlCero = true;
+      consultar();
+    }
   }
 
   setInterval(actualizarCrono, 1000);
+
+  /* ---------- Vídeo con preguntas en vivo ---------- */
+
+  /*
+   * En vivo el vídeo se ve AQUÍ, en el proyector, y los celulares esperan. Al
+   * llegar al minuto de la pregunta se pausa y se avisa al servidor, que abre
+   * la pregunta en los celulares y arranca su cronómetro en ese momento. Si
+   * adelantan el vídeo más allá, vuelve al minuto de la pregunta.
+   */
+  var video = { reproductor: null, reloj: null, abierto: false };
+
+  function cargarYouTube(listo) {
+    if (window.YT && window.YT.Player) { listo(); return; }
+    var previo = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () { if (previo) previo(); listo(); };
+    if (!document.querySelector('script[data-youtube-api]')) {
+      var s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      s.setAttribute('data-youtube-api', '1');
+      document.head.appendChild(s);
+    }
+  }
+
+  function minuto(seg) {
+    seg = Math.max(0, Math.round(Number(seg) || 0));
+    return Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0');
+  }
+
+  function abrirPregunta(actividad) {
+    if (video.abierto) return;
+    video.abierto = true;
+    if (!token) return;
+    controlar('abrir_pregunta', { actividad: actividad.indice, item: actividad.item_indice }).then(consultar);
+  }
+
+  function pintarVideo(actividad, esNueva, abierta, claveVisible) {
+    var it = actividad.item;
+    if (esNueva) {
+      if (video.reloj) clearInterval(video.reloj);
+      video = { reproductor: null, reloj: null, abierto: abierta };
+      el.proyCuerpo.innerHTML =
+        '<div class="proy-video"><div class="proy-video-marco"><div id="proy-video-hueco"></div></div></div>' +
+        '<div id="proy-video-debajo"></div>';
+      montarVideo(actividad);
+    }
+    if (abierta) video.abierto = true;
+
+    var debajo = document.getElementById('proy-video-debajo');
+    if (!debajo) return;
+    if (!abierta) {
+      debajo.innerHTML = '<p class="proy-video-aviso">📺 El vídeo se detendrá solo en la pregunta (minuto <b>' +
+        minuto(it.hasta) + '</b>).</p>' +
+        (token ? '<button class="link-btn" type="button" data-abrir-ya>Mostrar la pregunta ya</button>' : '');
+    } else {
+      debajo.innerHTML = vistas.quiz(it, claveVisible);
+    }
+  }
+
+  function montarVideo(actividad) {
+    var it = actividad.item;
+    var desde = Math.max(0, Number(it.desde) || 0);
+    var hasta = Math.max(desde + 1, Number(it.hasta) || 0);
+    var hueco = document.getElementById('proy-video-hueco');
+    var marco = hueco && hueco.parentNode;
+    if (!hueco) return;
+    var mio = video;
+
+    cargarYouTube(function () {
+      if (video !== mio || !el.proyCuerpo.contains(marco)) return;
+      try {
+        mio.reproductor = new window.YT.Player(hueco, {
+          videoId: String(it.video || ''),
+          playerVars: { start: desde, autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, disablekb: 1 },
+          events: {
+            onStateChange: function (e) { if (e.data === window.YT.PlayerState.ENDED) abrirPregunta(actividad); }
+          }
+        });
+      } catch (e) {
+        return;   // queda el botón «Mostrar la pregunta ya»
+      }
+
+      mio.reloj = setInterval(function () {
+        if (video !== mio || !el.proyCuerpo.contains(marco)) { clearInterval(mio.reloj); return; }
+        var t = null;
+        try { t = mio.reproductor.getCurrentTime ? mio.reproductor.getCurrentTime() : null; } catch (e) { t = null; }
+        if (t === null) return;
+        if (t >= hasta - 0.3) {
+          try {
+            if (t > hasta + 0.5) mio.reproductor.seekTo(hasta, true);
+            mio.reproductor.pauseVideo();
+          } catch (e) { /* a medio cargar */ }
+          abrirPregunta(actividad);
+        }
+      }, 250);
+    });
+  }
+
+  el.proyeccion.addEventListener('click', function (evento) {
+    if (!evento.target.closest('[data-abrir-ya]')) return;
+    try { if (video.reproductor) video.reproductor.pauseVideo(); } catch (e) { /* nada */ }
+    var datos = ultimaActividad;
+    if (datos) abrirPregunta(datos);
+  });
+
+  /* ---------- Música ---------- */
+
+  var botonMusica = document.getElementById('btn-musica');
+  function rotularMusica() {
+    if (!botonMusica || !M) return;
+    botonMusica.textContent = M.activa() ? '🔊 Música' : '🔇 Música';
+    botonMusica.setAttribute('aria-pressed', M.activa() ? 'true' : 'false');
+  }
+  if (botonMusica && M && MODO !== 'enviar') {
+    botonMusica.hidden = false;
+    rotularMusica();
+    botonMusica.addEventListener('click', function () { M.alternar(); rotularMusica(); });
+    // «M» la prende o la apaga, también en pantalla completa.
+    document.addEventListener('keydown', function (evento) {
+      if (evento.target.closest('input, textarea, select, [contenteditable]')) return;
+      if (evento.key === 'm' || evento.key === 'M') { M.alternar(); rotularMusica(); }
+    });
+  }
 
   /* ---------- Resultados finales ---------- */
 
@@ -619,6 +798,7 @@
     }
 
     if (estado === 'lobby') {
+      if (M && MODO !== 'enviar') M.sala();
       el.contador.textContent = datos.total + ' de ' + MAX;
       pintarParticipantes(datos.participantes);
       pintarEquipos(datos);
@@ -637,6 +817,7 @@
       // Confeti solo al terminar en directo, no al volver a abrir una sala
       // que ya había terminado.
       if (ultimoEstado === 'en_curso' && A) A.confeti(160);
+      if (M) { M.parar(); if (ultimoEstado === 'en_curso') M.fanfarria(); }
     }
 
     if (!token) {

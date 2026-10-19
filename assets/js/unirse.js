@@ -224,7 +224,10 @@
     var actividad = datos.actividad;
     if (!actividad) return;
 
-    var clave = actividad.indice + '-' + actividad.item_indice;
+    // En vivo, una pregunta de vídeo cambia de «cerrada» a «abierta» sin
+    // cambiar de número: eso cuenta como pregunta nueva (se dibuja y el reloj
+    // arranca en ese momento).
+    var clave = actividad.indice + '-' + actividad.item_indice + (actividad.abierta === false ? '-c' : '');
     var esNueva = clave !== preguntaActual;
     if (esNueva) {
       preguntaActual = clave;
@@ -235,7 +238,9 @@
     // Una diapositiva no tiene tiempo: se queda hasta que el docente avanza
     // (en vivo) o hasta que el estudiante pulsa «Continuar» (enviado).
     var lectura = !!actividad.lectura;
-    el.juegoCrono.classList.toggle('lectura', lectura);
+    var esperaVideo = !!actividad.proyector && actividad.abierta === false;
+    el.juegoCrono.classList.toggle('lectura', lectura || esperaVideo);
+    el.juegoCrono.setAttribute('data-espera', esperaVideo ? 'video' : '');
 
     if (datos.yo) {
       // Con equipos, saber de cuál eres es la mitad del juego: la insignia va
@@ -281,7 +286,9 @@
   function actualizarCrono() {
     if (el.juego.hidden) return;
     if (el.juegoCrono.classList.contains('lectura')) {
-      el.juegoCrono.textContent = modo === 'enviar' ? '📖 A tu ritmo' : '📖 Mira y escucha';
+      el.juegoCrono.textContent = el.juegoCrono.getAttribute('data-espera') === 'video'
+        ? '📺 Mira la pantalla'
+        : (modo === 'enviar' ? '📖 A tu ritmo' : '📖 Mira y escucha');
       el.juegoCrono.classList.remove('poco');
       return;
     }

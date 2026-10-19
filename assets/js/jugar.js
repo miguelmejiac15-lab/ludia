@@ -821,6 +821,16 @@ window.LudiaJugar = (function () {
       return;
     }
 
+    // Vídeo en vivo: se ve en el proyector. Aquí, mientras corre, solo se
+    // espera; cuando el proyector se detiene, la pregunta se responde como un
+    // quiz (sin reproductor en el celular).
+    var enProyector = tipo === 'video_preguntas' && !!actividad.proyector;
+    if (enProyector && actividad.abierta === false) {
+      caja.innerHTML = '<div class="j-espera-video"><b aria-hidden="true">📺</b>' +
+        '<p>Mira el vídeo en la pantalla</p><span>La pregunta aparece aquí cuando se detenga.</span></div>';
+      return;
+    }
+
     seleccion = estadoInicial(tipo, item);
     memoria = { abiertas: [], bloqueado: false };
 
@@ -828,7 +838,14 @@ window.LudiaJugar = (function () {
       ? '<img class="j-imagen" src="' + esc(item.imagen) + '" alt="Imagen de la pregunta">'
       : '';
 
-    caja.innerHTML = imagen + (vistas[tipo] ? vistas[tipo](item) : '<p class="j-pregunta">Actividad no disponible</p>') +
+    var cuerpo = enProyector
+      ? '<p class="j-pregunta">' + esc(item.enunciado) + '</p><div class="j-opciones">' +
+        item.opciones.map(function (t, i) {
+          return '<button type="button" class="j-opcion opt-' + i + '" data-elegir="' + i + '">' +
+            '<b>' + LETRAS[i] + '</b> ' + esc(t) + '</button>';
+        }).join('') + '</div>'
+      : (vistas[tipo] ? vistas[tipo](item) : '<p class="j-pregunta">Actividad no disponible</p>');
+    caja.innerHTML = imagen + cuerpo +
       (soloLectura ? '' : '<button class="btn btn-primary btn-block" type="button" data-enviar disabled>' +
         (tipo === 'mural' ? 'Enviar aporte' : 'Enviar respuesta') + '</button>');
 
@@ -836,7 +853,7 @@ window.LudiaJugar = (function () {
     // cuando de verdad cambia: el resto de pasadas del sondeo salen antes.
     if (!mismaPregunta && window.LudiaAnim) window.LudiaAnim.marcar(caja, 'entra', 900);
 
-    if (tipo === 'video_preguntas') montarVideo(item);
+    if (tipo === 'video_preguntas' && !enProyector) montarVideo(item);
     if (tipo === 'ordenar' || tipo === 'linea_tiempo') refrescarOrden();
     if (tipo === 'ordenar_palabras' || tipo === 'anagrama') refrescarArmada();
     if (tipo === 'clasificar') {

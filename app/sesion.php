@@ -26,7 +26,7 @@ $page = [
 ];
 
 $extraStyles  = ['css/sesion.css', 'css/jugar.css'];
-$extraScripts = ['js/vendor/qrcode.min.js', 'js/personaje.js', 'js/sala.js'];
+$extraScripts = ['js/vendor/qrcode.min.js', 'js/personaje.js', 'js/musica.js', 'js/sala.js'];
 
 require LUDIA_ROOT . '/includes/partials/header.php';
 ?>
@@ -161,6 +161,7 @@ require LUDIA_ROOT . '/includes/partials/header.php';
           ? 'Al cerrarla quedará su informe en «Informes» · tu paquete no se toca'
           : 'Esta sesión no deja informe · caduca en ' . SESION_HORAS_VIDA . ' horas' ?></span>
         <span class="acciones-sala">
+          <button class="btn btn-ghost" type="button" id="btn-musica" hidden aria-pressed="true" title="Música de fondo (tecla M)">🔊 Música</button>
           <button class="btn btn-ghost" type="button" id="btn-terminar" hidden>Terminar</button>
           <button class="btn btn-primary" type="button" id="btn-comenzar" disabled>Comenzar sesión</button>
           <button class="btn btn-primary" type="button" id="btn-siguiente" hidden>Siguiente →</button>

@@ -82,6 +82,12 @@ if (is_string($respuesta)) {
     }
 }
 
+// En vivo, durante el tramo de un vídeo la pregunta aún no existe para el
+// público: se abre cuando el proyector llega a su minuto.
+if (!$enviado && (int) ($sesion['pregunta_abierta'] ?? 1) === 0) {
+    api_error('Espera: la pregunta aparece cuando el vídeo se detenga.', 409);
+}
+
 // Tiempo disponible y rapidez, calculados contra el reloj del servidor.
 $tiempo = max(1, (int) ($actividad['tiempo'] ?? 20));
 $segundos = null;

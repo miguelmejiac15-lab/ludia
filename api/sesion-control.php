@@ -21,7 +21,7 @@ if (!sesion_es_anfitrion($sesion, api_texto($datos, 'anfitrion_token', 32, false
 }
 
 $accion = api_opcion($datos, 'accion', [
-    'comenzar', 'siguiente', 'terminar', 'saltar', 'sacar',
+    'comenzar', 'siguiente', 'terminar', 'saltar', 'sacar', 'abrir_pregunta',
     // Equipos: se arman en la sala, antes de empezar.
     'equipos_azar', 'equipos_vacios', 'equipo_mover', 'equipos_deshacer',
 ], '');
@@ -43,7 +43,9 @@ switch ($accion) {
         if ($sesion['estado'] !== 'lobby') {
             api_error('La sesión ya había comenzado', 409);
         }
-        db()->prepare('UPDATE sesiones SET estado = "en_curso", actividad_indice = 0, item_indice = 0, item_inicio_at = NOW() WHERE id = ?')->execute([$id]);
+        $contenido = json_decode((string) $sesion['contenido'], true) ?: [];
+        $abierta = in_array($contenido[0]['tipo'] ?? '', SESION_ABRE_PROYECTOR, true) ? 0 : 1;
+        db()->prepare('UPDATE sesiones SET estado = "en_curso", actividad_indice = 0, item_indice = 0, item_inicio_at = NOW(), pregunta_abierta = ? WHERE id = ?')->execute([$abierta, $id]);
         db()->prepare('UPDATE participantes SET estado = "jugando" WHERE sesion_id = ? AND estado = "esperando"')->execute([$id]);
         break;
 
@@ -69,8 +71,26 @@ switch ($accion) {
             break;
         }
 
-        db()->prepare('UPDATE sesiones SET actividad_indice = ?, item_indice = ?, item_inicio_at = NOW() WHERE id = ?')
-            ->execute([$a, $i, $id]);
+        // Un tramo de vídeo empieza con la pregunta CERRADA: los celulares
+        // esperan mientras el proyector reproduce, y se abre al llegar al minuto.
+        $abierta = in_array($contenido[$a]['tipo'] ?? '', SESION_ABRE_PROYECTOR, true) ? 0 : 1;
+        db()->prepare('UPDATE sesiones SET actividad_indice = ?, item_indice = ?, item_inicio_at = NOW(), pregunta_abierta = ? WHERE id = ?')
+            ->execute([$a, $i, $abierta, $id]);
+        break;
+    }
+
+    // El proyector llegó al minuto de la pregunta (o el docente pulsó «Mostrar
+    // la pregunta»): se abre en los celulares y el cronómetro arranca AHORA.
+    // Solo si sigue en la pregunta que el proyector cree, para que un aviso
+    // atrasado no abra la siguiente antes de tiempo.
+    case 'abrir_pregunta': {
+        if ($sesion['estado'] !== 'en_curso') {
+            api_error('La sesión no está en curso', 409);
+        }
+        db()->prepare(
+            'UPDATE sesiones SET pregunta_abierta = 1, item_inicio_at = NOW()
+              WHERE id = ? AND pregunta_abierta = 0 AND actividad_indice = ? AND item_indice = ?'
+        )->execute([$id, (int) ($datos['actividad'] ?? -1), (int) ($datos['item'] ?? -1)]);
         break;
     }
 

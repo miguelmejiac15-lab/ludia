@@ -861,12 +861,14 @@ section { padding-block: 64px; }
 /* ---------- Colores compartidos de opciones y notas ----------
    Los usan el editor (vista previa), la pantalla del participante y la
    proyección del anfitrión, así que viven en la hoja base. */
-.opt-0 { background: var(--coral); }
-.opt-1 { background: var(--violet); }
-.opt-2 { background: var(--mint); }
-.opt-3 { background: #D9912A; }
-.opt-4 { background: #3A87C9; }
-.opt-5 { background: #B04F9B; }
+/* Vivos a propósito (19/10/2026): son los botones del juego, y en un salón
+   tienen que distinguirse de lejos, como en Kahoot. */
+.opt-0 { background: #FF3B5C; }
+.opt-1 { background: #3B6BFF; }
+.opt-2 { background: #0EA371; }
+.opt-3 { background: #F29A0D; }
+.opt-4 { background: #8B5CF6; }
+.opt-5 { background: #EC4899; }
 
 .nota-0 { background: #FFE6A7; }
 .nota-1 { background: #CFE8FF; }

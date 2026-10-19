@@ -292,3 +292,24 @@
 .form-invitacion .btn { justify-self: start; }
 .celda-enlace { min-width: 260px; }
 .input-copiar { font-size: .78rem; padding: 6px 8px; width: 100%; margin-bottom: 4px; }
+
+
+/* ---------- Paquetes de usuarios ---------- */
+.filtros-paquetes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filtros-paquetes .input { flex: 1 1 240px; }
+.filtros-paquetes .select { flex: 0 1 200px; }
+.paquete-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.paquete-acciones form { margin: 0; }
+.items-revision { display: grid; gap: 10px; }
+.item-revision { display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.item-num { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--violet-soft); color: var(--violet); }
+.item-fila { display: grid; grid-template-columns: 140px 1fr; gap: 10px; padding: 3px 0; font-size: .9rem; }
+.item-fila > span { color: var(--text-soft); font-weight: 600; }
+.item-lista { list-style: none; display: grid; gap: 3px; }
+.item-lista li.ok, .item-fila .ok { color: var(--mint); font-weight: 700; }
+.item-imagen { max-width: 220px; max-height: 140px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 8px; display: block; }
+.item-crudo { font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.paginacion { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.paginacion a { min-width: 34px; padding: 6px 10px; text-align: center; border-radius: 10px; border: 1px solid var(--border); font-weight: 700; text-decoration: none; color: var(--text); }
+.paginacion a.actual { background: var(--violet); border-color: var(--violet); color: #fff; }
+@media (max-width: 640px) { .item-fila { grid-template-columns: 1fr; gap: 2px; } }

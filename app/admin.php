@@ -25,6 +25,7 @@ $avisoTipo = 'ok';
 $secciones = [
     'resumen'  => ['Resumen', '📊'],
     'cuentas'  => ['Cuentas', '👥'],
+    'paquetes' => ['Paquetes de usuarios', '📦'],
     'sesiones' => ['Sesiones abiertas', '📽️'],
     'metricas' => ['Métricas', '📈'],
     'planes'   => ['Planes y precios', '💳'],
@@ -110,6 +111,11 @@ if ($esAdmin && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     (int) $usuario['id']
                 );
             })(),
+            // Soporte: copiar el paquete de alguien a la cuenta propia para probarlo.
+            'copiar_paquete' => (static function () use ($usuario): array {
+                require_once __DIR__ . '/../includes/AdminPaquetes.php';
+                return admin_paquete_copiar((int) ($_POST['paquete_id'] ?? 0), (int) $usuario['id']);
+            })(),
             'activar_invitacion' => (static function (): array {
                 require_once __DIR__ . '/../includes/Invitaciones.php';
                 return invitacion_activar((int) ($_POST['invitacion_id'] ?? 0), ($_POST['activa'] ?? '') === '1');
@@ -128,6 +134,9 @@ if ($esAdmin && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
     // Tras tocar permisos se vuelve a la ficha de esa cuenta: es donde estabas
     // y donde se ve el efecto del cambio.
+    if ($accion === 'copiar_paquete' && (int) ($_POST['paquete_id'] ?? 0) > 0) {
+        $volverA['ver'] = (int) $_POST['paquete_id'];
+    }
     if ($accion === 'guardar_permisos' && (int) ($_POST['usuario_id'] ?? 0) > 0) {
         $volverA['permisos'] = (int) $_POST['usuario_id'];
     }
@@ -157,6 +166,20 @@ if ($esAdmin) {
     }
     if ($seccion === 'sesiones') {
         $sesiones = admin_sesiones();
+    }
+    if ($seccion === 'paquetes') {
+        require_once LUDIA_ROOT . '/includes/AdminPaquetes.php';
+        require_once LUDIA_ROOT . '/includes/Juego.php';
+        // Los filtros viajan en la URL: así «Volver a la lista» deja todo como estaba.
+        $filtrosPaquetes = array_filter([
+            'q'         => trim((string) ($_GET['q'] ?? '')),
+            'usuario'   => (int) ($_GET['usuario'] ?? 0) ?: null,
+            'formato'   => (string) ($_GET['formato'] ?? ''),
+            'audiencia' => (string) ($_GET['audiencia'] ?? ''),
+            'orden'     => (string) ($_GET['orden'] ?? ''),
+        ], static fn ($v) => $v !== '' && $v !== null);
+        $paqueteVer = ((int) ($_GET['ver'] ?? 0) > 0) ? admin_paquete_ver((int) $_GET['ver']) : null;
+        $listaPaquetes = $paqueteVer ? null : admin_paquetes($filtrosPaquetes, (int) ($_GET['pagina'] ?? 1));
     }
     if ($seccion === 'colegios') {
         require_once LUDIA_ROOT . '/includes/Colegios.php';
@@ -453,7 +476,9 @@ require LUDIA_ROOT . '/includes/partials/header.php';
                   </form>
                 </td>
                 <td class="num">
-                  <?= (int) $u['paquetes'] ?>
+                  <?php if ((int) $u['paquetes'] > 0): ?>
+                    <a href="<?= e(base_url('app/admin.php')) ?>?seccion=paquetes&amp;usuario=<?= (int) $u['id'] ?>" title="Ver sus paquetes"><?= (int) $u['paquetes'] ?></a>
+                  <?php else: ?>0<?php endif; ?>
                   <?php /* Carga los paquetes de demostración («Las plantas»,
                            los 23 formatos) en ESTA cuenta, sin entrar con ella. */ ?>
                   <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=<?= e($seccion) ?>" style="display:inline">
@@ -861,6 +886,129 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       </form>
     </section>
 
+    <?php endif; ?>
+
+    <?php if ($seccion === 'paquetes'): ?>
+      <?php if ($paqueteVer): ?>
+        <?php /* ---------- Un paquete, entero y de solo lectura ---------- */ ?>
+        <section class="panel">
+          <a class="link-btn" href="<?= e(base_url('app/admin.php') . '?' . http_build_query(['seccion' => 'paquetes'] + $filtrosPaquetes)) ?>">← Volver a la lista</a>
+          <h2 class="panel-title" style="margin-top:10px; font-size:1.4rem"><?= e($paqueteVer['nombre']) ?></h2>
+          <p class="cuenta-sub">
+            De <b><?= e($paqueteVer['usuario_nombre']) ?></b> (<?= e($paqueteVer['usuario_email']) ?> · plan <?= e(plan_nombre((string) $paqueteVer['usuario_plan'])) ?>)
+            · <?= count($paqueteVer['actividades']) ?> actividades
+            · jugado <?= (int) $paqueteVer['jugadas'] ?> <?= (int) $paqueteVer['jugadas'] === 1 ? 'vez' : 'veces' ?>
+            · actualizado <?= e(admin_cuando($paqueteVer['updated_at'])) ?>
+          </p>
+          <div class="paquete-acciones">
+            <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=paquetes&amp;ver=<?= (int) $paqueteVer['id'] ?>">
+              <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+              <input type="hidden" name="accion" value="copiar_paquete">
+              <input type="hidden" name="paquete_id" value="<?= (int) $paqueteVer['id'] ?>">
+              <button class="btn btn-primary btn-sm" type="submit" title="Para jugarlo o abrirlo en el editor sin tocar el original">📋 Copiar a mis paquetes para probarlo</button>
+            </form>
+            <a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/admin.php')) ?>?seccion=paquetes&amp;usuario=<?= (int) $paqueteVer['usuario_id'] ?>">Ver todos los de esta cuenta</a>
+            <a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/admin.php')) ?>?seccion=cuentas&amp;q=<?= e(urlencode((string) $paqueteVer['usuario_email'])) ?>">Ir a la cuenta</a>
+          </div>
+        </section>
+
+        <?php foreach ($paqueteVer['actividades'] as $n => $act): ?>
+          <section class="panel actividad-revision">
+            <h3 class="panel-title"><?= $n + 1 ?>. <?= e(formato_nombre((string) ($act['tipo'] ?? ''))) ?>
+              <span class="celda-sub" style="display:inline; margin-left:8px">
+                <?= count($act['items'] ?? []) ?> <?= count($act['items'] ?? []) === 1 ? 'ítem' : 'ítems' ?>
+                <?php if (!in_array($act['tipo'] ?? '', JUEGO_TIPOS_LECTURA, true)): ?> · <?= (int) ($act['tiempo'] ?? 20) ?> s<?php endif; ?>
+                <?php if (!empty($act['video'])): ?> · vídeo <a href="https://www.youtube.com/watch?v=<?= e($act['video']) ?>" target="_blank" rel="noopener">youtube.com/watch?v=<?= e($act['video']) ?></a><?php endif; ?>
+              </span>
+            </h3>
+            <div class="items-revision">
+              <?php foreach (($act['items'] ?? []) as $k => $item): ?>
+                <div class="item-revision">
+                  <span class="item-num"><?= $k + 1 ?></span>
+                  <div><?= is_array($item) ? admin_item_html((string) ($act['tipo'] ?? ''), $item) : '' ?></div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </section>
+        <?php endforeach; ?>
+
+      <?php else: ?>
+        <?php /* ---------- Lista con filtros ---------- */ ?>
+        <section class="panel">
+          <h2 class="panel-title">Paquetes de usuarios</h2>
+          <p class="cuenta-sub" style="margin-bottom:14px">
+            Busca por el nombre del paquete o por el correo o nombre de la cuenta. Ábrelo para ver cada pregunta con su
+            respuesta correcta; si necesitas probarlo, cópialo a tus paquetes (el original no se toca).
+          </p>
+          <form method="get" action="<?= e(base_url('app/admin.php')) ?>" class="filtros-paquetes">
+            <input type="hidden" name="seccion" value="paquetes">
+            <?php if (!empty($filtrosPaquetes['usuario'])): ?><input type="hidden" name="usuario" value="<?= (int) $filtrosPaquetes['usuario'] ?>"><?php endif; ?>
+            <input class="input" type="search" name="q" value="<?= e($filtrosPaquetes['q'] ?? '') ?>" placeholder="Tema, nombre del paquete, correo…" aria-label="Buscar">
+            <select class="select" name="formato" aria-label="Actividad">
+              <option value="">Todas las actividades</option>
+              <?php foreach (admin_formatos_lista() as $fmt): ?>
+                <option value="<?= e($fmt['clave']) ?>"<?= ($filtrosPaquetes['formato'] ?? '') === $fmt['clave'] ? ' selected' : '' ?>><?= e($fmt['nombre']) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <select class="select" name="audiencia" aria-label="Público">
+              <option value="">Todo público</option>
+              <?php foreach (['estudiantes' => 'Estudiantes', 'auditorio' => 'Auditorio', 'capacitacion' => 'Capacitación'] as $k => $v): ?>
+                <option value="<?= $k ?>"<?= ($filtrosPaquetes['audiencia'] ?? '') === $k ? ' selected' : '' ?>><?= $v ?></option>
+              <?php endforeach; ?>
+            </select>
+            <select class="select" name="orden" aria-label="Orden">
+              <?php foreach (['' => 'Editados recientemente', 'creados' => 'Creados recientemente', 'jugados' => 'Más jugados', 'actividades' => 'Más actividades', 'nombre' => 'Nombre (A-Z)'] as $k => $v): ?>
+                <option value="<?= $k ?>"<?= ($filtrosPaquetes['orden'] ?? '') === $k ? ' selected' : '' ?>><?= $v ?></option>
+              <?php endforeach; ?>
+            </select>
+            <button class="btn btn-primary btn-sm" type="submit">Filtrar</button>
+            <?php if (array_filter($filtrosPaquetes)): ?>
+              <a class="link-btn" href="<?= e(base_url('app/admin.php')) ?>?seccion=paquetes">Quitar filtros</a>
+            <?php endif; ?>
+          </form>
+          <?php if (!empty($filtrosPaquetes['usuario']) && $listaPaquetes['filas']): ?>
+            <p class="mensaje ok" style="margin-top:12px">Mostrando solo los paquetes de <b><?= e($listaPaquetes['filas'][0]['usuario_email']) ?></b>.</p>
+          <?php endif; ?>
+        </section>
+
+        <section class="panel">
+          <p class="cuenta-sub" style="margin-bottom:10px"><?= (int) $listaPaquetes['total'] ?> <?= (int) $listaPaquetes['total'] === 1 ? 'paquete' : 'paquetes' ?></p>
+          <?php if (!$listaPaquetes['filas']): ?>
+            <p class="hint">No hay paquetes con esos filtros.</p>
+          <?php else: ?>
+            <div class="tabla-scroll">
+              <table class="tabla">
+                <thead><tr><th>Paquete</th><th>Cuenta</th><th>Actividades</th><th class="num">Jugado</th><th>Actualizado</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($listaPaquetes['filas'] as $p): ?>
+                  <tr>
+                    <td><b><?= e($p['nombre']) ?></b><span class="celda-sub"><?= e(['estudiantes' => 'Estudiantes', 'auditorio' => 'Auditorio', 'capacitacion' => 'Capacitación'][$p['audiencia']] ?? '') ?></span></td>
+                    <td>
+                      <a href="<?= e(base_url('app/admin.php')) ?>?seccion=paquetes&amp;usuario=<?= (int) $p['usuario_id'] ?>" title="Ver todos sus paquetes"><?= e($p['usuario_nombre']) ?></a>
+                      <span class="celda-sub"><?= e($p['usuario_email']) ?> · <?= e(plan_nombre((string) $p['usuario_plan'])) ?></span>
+                    </td>
+                    <td>
+                      <?= (int) $p['total_actividades'] ?>
+                      <span class="celda-sub"><?= e(implode(', ', array_map('formato_nombre', array_slice($p['formatos'], 0, 4)))) ?><?= count($p['formatos']) > 4 ? '…' : '' ?></span>
+                    </td>
+                    <td class="num"><?= (int) $p['jugadas'] ?></td>
+                    <td><span class="celda-sub"><?= e(admin_cuando($p['updated_at'])) ?></span></td>
+                    <td><a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/admin.php') . '?' . http_build_query(['seccion' => 'paquetes', 'ver' => (int) $p['id']] + $filtrosPaquetes)) ?>">Ver</a></td>
+                  </tr>
+                <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <?php if ($listaPaquetes['paginas'] > 1): ?>
+              <nav class="paginacion" aria-label="Páginas">
+                <?php for ($n = 1; $n <= $listaPaquetes['paginas']; $n++): ?>
+                  <a class="<?= $n === $listaPaquetes['pagina'] ? 'actual' : '' ?>" href="<?= e(base_url('app/admin.php') . '?' . http_build_query(['seccion' => 'paquetes', 'pagina' => $n] + $filtrosPaquetes)) ?>"><?= $n ?></a>
+                <?php endfor; ?>
+              </nav>
+            <?php endif; ?>
+          <?php endif; ?>
+        </section>
+      <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($seccion === 'invitaciones'): ?>

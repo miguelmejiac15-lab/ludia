@@ -691,44 +691,67 @@ window.LudiaJugar = (function () {
    * peor que uno que se salte un trozo.
    */
   function montarVideo(item) {
-    var hueco = contenedor.querySelector('[data-video-hueco]');
+    var caja = contenedor;
+    var hueco = caja.querySelector('[data-video-hueco]');
     if (!hueco) return;
+    // OJO: el reproductor de YouTube REEMPLAZA a `hueco` por su iframe. Para
+    // saber si seguimos en esta pregunta se mira el MARCO, que no cambia.
+    // Mirar `hueco` apagaba el reloj nada más arrancar (08→19/10/2026): el
+    // vídeo no se detenía en la pregunta y se podía adelantar sin responder.
+    var marco = caja.querySelector('.j-video-marco');
+    var sigue = function () { return contenedor === caja && caja.contains(marco); };
 
     var desde = Math.max(0, Number(item.desde) || 0);
     var hasta = Math.max(desde + 1, Number(item.hasta) || 0);
     var marcas = (item.marcas || []).map(Number).filter(function (m) { return m > 0; });
     var fin = Math.max.apply(null, marcas.concat([hasta])) * 1.08;
 
-    var avance = contenedor.querySelector('[data-video-avance]');
-    var ayuda = contenedor.querySelector('[data-video-ayuda]');
+    var avance = caja.querySelector('[data-video-avance]');
+    var ayuda = caja.querySelector('[data-video-ayuda]');
+    var enviar = caja.querySelector('[data-enviar]');
     var reloj = null;
     var destapado = false;
+    var reproductor = null;
+    var listo = false;
+
+    // Hasta que no aparece la pregunta no hay nada que enviar.
+    if (enviar) enviar.hidden = true;
 
     function destapar() {
       if (destapado) return;
       destapado = true;
-      if (reloj) clearInterval(reloj);
 
-      var pregunta = contenedor.querySelector('[data-video-pregunta]');
+      var pregunta = caja.querySelector('[data-video-pregunta]');
       if (pregunta) pregunta.hidden = false;
+      if (enviar) enviar.hidden = false;
       if (ayuda) ayuda.textContent = 'Responde para continuar.';
       if (avance) avance.style.width = (hasta / fin * 100).toFixed(2) + '%';
       refrescarEnviar();
     }
 
-    cargarApiYouTube(function () {
-      // El contenedor pudo cambiar mientras cargaba la API (otra pregunta).
-      if (!contenedor.contains(hueco)) return;
+    // Detiene el vídeo en el punto de la pregunta (o lo devuelve ahí si lo
+    // adelantaron) y destapa la pregunta. No se fía del `end` de YouTube, que
+    // se ignora en cuanto alguien arrastra la barra.
+    function frenar(t) {
+      try {
+        if (t > hasta + 0.5) reproductor.seekTo(hasta, true);
+        reproductor.pauseVideo();
+      } catch (e) { /* reproductor a medio cargar */ }
+      destapar();
+    }
 
-      var reproductor;
+    cargarApiYouTube(function () {
+      if (!sigue()) return;
+
       try {
         reproductor = new window.YT.Player(hueco, {
           videoId: String(item.video || ''),
           playerVars: {
-            start: desde, end: hasta, autoplay: 1, rel: 0,
-            modestbranding: 1, playsinline: 1
+            start: desde, autoplay: 1, rel: 0,
+            modestbranding: 1, playsinline: 1, disablekb: 1
           },
           events: {
+            onReady: function () { listo = true; },
             onStateChange: function (e) {
               if (e.data === window.YT.PlayerState.ENDED) destapar();
             },
@@ -740,17 +763,30 @@ window.LudiaJugar = (function () {
         return;
       }
 
-      var limite = Date.now() + (hasta - desde + 8) * 1000;
+      // Red de seguridad: si el reproductor NUNCA llega a funcionar (YouTube
+      // bloqueado en la red del colegio, sin conexión), la pregunta aparece
+      // igual. Solo en ese caso: pausar el vídeo ya no deja saltarse el tramo.
+      var limite = Date.now() + 20000;
+
       reloj = setInterval(function () {
-        if (!contenedor.contains(hueco)) { clearInterval(reloj); return; }
+        if (!sigue()) { clearInterval(reloj); return; }
 
-        var t = desde;
-        try { t = reproductor.getCurrentTime ? reproductor.getCurrentTime() : desde; } catch (e) { /* aún no */ }
+        var t = null;
+        try { if (listo && reproductor.getCurrentTime) t = reproductor.getCurrentTime(); } catch (e) { t = null; }
 
-        if (avance) avance.style.width = Math.min(100, t / fin * 100).toFixed(2) + '%';
-        // Medio segundo de margen: `end` de YouTube no es exacto al fotograma.
-        if (t >= hasta - 0.5 || Date.now() > limite) destapar();
-      }, 500);
+        if (t === null) {
+          if (!listo && Date.now() > limite) destapar();
+          return;
+        }
+
+        if (avance) avance.style.width = Math.min(100, Math.min(t, hasta) / fin * 100).toFixed(2) + '%';
+
+        // Llegó a la pregunta, o la adelantaron: se frena aquí. Si ya está
+        // destapada y siguen intentando adelantar, se devuelve al punto.
+        if (t >= hasta - 0.3) {
+          if (!destapado || t > hasta + 0.5) frenar(t);
+        }
+      }, 250);
     });
   }
 

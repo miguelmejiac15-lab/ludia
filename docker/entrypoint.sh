@@ -46,6 +46,11 @@ echo "[ludia] base de datos accesible"
 # 2. Permisos del volumen de imágenes
 # ---------------------------------------------------------------------------
 if [ -d /var/www/html/uploads ]; then
+    # Las reglas de la carpeta (no ejecutar PHP, solo imágenes, caché larga)
+    # viajan con la imagen y se reinstalan aquí: el volumen no se actualiza solo.
+    if [ -f /usr/local/share/ludia/uploads.htaccess ]; then
+        cp /usr/local/share/ludia/uploads.htaccess /var/www/html/uploads/.htaccess
+    fi
     chown -R www-data:www-data /var/www/html/uploads || \
         echo "[ludia] aviso: no se pudieron ajustar los permisos de uploads"
 fi

@@ -76,7 +76,13 @@ RUN set -eux; \
     chown www-data:www-data /var/www/html/config/config.php; \
     chmod 640 /var/www/html/config/config.php; \
     mkdir -p /var/www/html/uploads; \
-    chown -R www-data:www-data /var/www/html/uploads
+    chown -R www-data:www-data /var/www/html/uploads; \
+    install -D -m 644 /var/www/html/uploads/.htaccess /usr/local/share/ludia/uploads.htaccess
+
+# Esa última línea guarda una copia de las reglas de uploads FUERA de la
+# carpeta: en el servidor uploads es un volumen que tapa lo que trae la
+# imagen, así que su .htaccess se quedaría para siempre en la versión del
+# primer despliegue. entrypoint.sh la reinstala en cada arranque.
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

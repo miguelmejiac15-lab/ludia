@@ -134,6 +134,7 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
           <button class="link-btn" type="submit">Salir</button>
         </form>
       <?php else: ?>
+        <a class="btn btn-ghost btn-sm" href="<?= e(base_url('jugar/')) ?>" title="Para estudiantes: entra con el código de la pantalla">🎮 Tengo un código</a>
         <a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/ingresar.php')) ?>">Ingresar</a>
         <a class="btn btn-primary btn-sm" href="<?= e(base_url('app/crear.php')) ?>">Probar gratis</a>
       <?php endif; ?>

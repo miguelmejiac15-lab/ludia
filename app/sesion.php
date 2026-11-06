@@ -72,7 +72,8 @@ require LUDIA_ROOT . '/includes/partials/header.php';
         <div class="codigo-caja">
           <span class="codigo-label">Código de entrada</span>
           <strong class="codigo" id="codigo"><?= e(substr($sesion['codigo'], 0, 3) . ' ' . substr($sesion['codigo'], 3)) ?></strong>
-          <span class="codigo-pie">En <b><?= e($_SERVER['HTTP_HOST'] ?? 'localhost') ?><?= e(base_url('app/unirse.php')) ?></b></span>
+          <?php /* La dirección corta, como kahoot.it: se dicta y se escribe fácil. */ ?>
+          <span class="codigo-pie">Entra en <b><?= e(preg_replace('~^https?://~', '', rtrim(url_absoluta('jugar'), '/'))) ?></b></span>
         </div>
 
         <div class="qr-caja">

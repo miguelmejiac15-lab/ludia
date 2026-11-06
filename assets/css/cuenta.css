@@ -248,3 +248,15 @@
   color: var(--text-soft);
 }
 .vacio b { font-size: 2rem; }
+
+/* ---------- Licencia Escuela (escuela.php) ---------- */
+.escuela-grid { display: grid; grid-template-columns: 1fr minmax(0, 460px); gap: 40px; align-items: start; padding-top: 40px; padding-bottom: 60px; }
+@media (max-width: 860px) { .escuela-grid { grid-template-columns: 1fr; gap: 24px; } }
+.escuela-titulo { font-size: clamp(2rem, 4.5vw, 3rem); margin: 14px 0 10px; }
+.escuela-lista { list-style: none; display: grid; gap: 12px; margin: 24px 0; }
+.escuela-lista li { padding-left: 28px; position: relative; line-height: 1.5; color: var(--text-soft); }
+.escuela-lista li::before { content: '✓'; position: absolute; left: 0; color: var(--mint); font-weight: 800; }
+.escuela-lista b { color: var(--text); }
+.escuela-precio { font-family: var(--font-title); font-weight: 700; font-size: 2.2rem; }
+.escuela-precio span { font-family: var(--font-body); font-size: 1rem; color: var(--text-soft); font-weight: 600; }
+.campo-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }

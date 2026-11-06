@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../includes/Sesiones.php';
+require_once __DIR__ . '/../includes/Google.php';
 
 auth_iniciar();
 
@@ -26,6 +27,13 @@ $perfiles = [
 $error = null;
 $valores = ['nombre' => '', 'email' => '', 'perfil' => 'docente'];
 
+// Registro solo con Google (REGISTRO_SOLO_GOOGLE): frena las cuentas falsas y
+// el spam, porque Google ya verificó el correo. Solo si Google está
+// configurado: sin credenciales nadie podría registrarse. Quien ya tiene
+// cuenta con contraseña sigue entrando igual por «Ingresar».
+$conGoogle = google_configurado();
+$soloGoogle = $conGoogle && (bool) config('auth.solo_google', false);
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $valores['nombre'] = trim((string) ($_POST['nombre'] ?? ''));
     $valores['email']  = trim((string) ($_POST['email'] ?? ''));
@@ -33,6 +41,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     if (!auth_csrf_valido($_POST['csrf'] ?? null)) {
         $error = 'El formulario caducó. Inténtalo otra vez.';
+    } elseif ($soloGoogle) {
+        $error = 'Las cuentas nuevas se crean con Google. Usa el botón «Crear cuenta con Google».';
     } else {
         $resultado = auth_crear_cuenta(
             $valores['nombre'],
@@ -87,6 +97,20 @@ require LUDIA_ROOT . '/includes/partials/header.php';
         <p class="mensaje error" role="alert"><?= e($error) ?></p>
       <?php endif; ?>
 
+      <?php if ($conGoogle): ?>
+        <a class="btn btn-ghost btn-block btn-google"
+           href="<?= e(base_url('app/google-entrar.php')) ?>?volver=<?= e(urlencode($destino)) ?>">
+          <span class="btn-google-logo" aria-hidden="true">G</span>
+          Crear cuenta con Google
+        </a>
+        <?php if ($soloGoogle): ?>
+          <p class="hint" style="margin-top:12px">Para evitar cuentas falsas, las cuentas nuevas se crean con una cuenta de Google (Gmail o el correo del colegio, si es de Google).</p>
+        <?php else: ?>
+          <p class="separador-o"><span>o con tu correo</span></p>
+        <?php endif; ?>
+      <?php endif; ?>
+
+      <?php if (!$soloGoogle): ?>
       <form method="post" action="<?= e(base_url('app/registrarse.php')) ?>" class="cuenta-form">
         <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
         <input type="hidden" name="volver" value="<?= e($destino) ?>">
@@ -121,6 +145,7 @@ require LUDIA_ROOT . '/includes/partials/header.php';
 
         <button class="btn btn-primary btn-block" type="submit">Crear cuenta gratis</button>
       </form>
+      <?php endif; ?>
 
       <p class="cuenta-pie">¿Ya tienes cuenta?
         <a href="<?= e(base_url('app/ingresar.php')) ?>?volver=<?= e(urlencode($destino)) ?>">Ingresa aquí</a>

@@ -362,3 +362,16 @@
 @media (prefers-reduced-motion: reduce) {
   .puntos-espera span { animation: none; opacity: .7; }
 }
+
+
+/* ---------- Primer paso: solo el código (ludia.click/jugar) ---------- */
+.paso-codigo form { display: grid; gap: 14px; margin-top: 22px; }
+.codigo-grande {
+  font-family: var(--font-title);
+  font-size: clamp(2.2rem, 9vw, 3rem);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-align: center;
+  padding: 14px 10px;
+}
+.paso-codigo .btn { font-size: 1.15rem; padding: 16px; }

@@ -30,6 +30,7 @@ $secciones = [
     'metricas' => ['Métricas', '📈'],
     'planes'   => ['Planes y precios', '💳'],
     'colegios' => ['Colegios', '🏫'],
+    'solicitudes' => ['Solicitudes de colegios', '📨'],
     'catalogo' => ['Actividades por plan', '🧩'],
     'invitaciones' => ['Cortesías y descuentos', '🎁'],
 ];
@@ -120,6 +121,11 @@ if ($esAdmin && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 require_once __DIR__ . '/../includes/Invitaciones.php';
                 return invitacion_activar((int) ($_POST['invitacion_id'] ?? 0), ($_POST['activa'] ?? '') === '1');
             })(),
+            'solicitud_atendida' => (static function (): array {
+                db()->prepare('UPDATE solicitudes_escuela SET atendida = 1 - atendida WHERE id = ?')
+                    ->execute([(int) ($_POST['solicitud_id'] ?? 0)]);
+                return ['ok' => true, 'mensaje' => 'Solicitud actualizada.'];
+            })(),
             default => ['ok' => false, 'mensaje' => 'Acción desconocida.'],
         };
     }
@@ -166,6 +172,12 @@ if ($esAdmin) {
     }
     if ($seccion === 'sesiones') {
         $sesiones = admin_sesiones();
+    }
+    if ($seccion === 'solicitudes') {
+        // Pendientes primero; las atendidas quedan abajo como historial.
+        $solicitudes = db()->query('SELECT * FROM solicitudes_escuela ORDER BY atendida, created_at DESC LIMIT 200')->fetchAll();
+        require_once LUDIA_ROOT . '/includes/Correo.php';
+        $correoListo = correo_configurado();
     }
     if ($seccion === 'paquetes') {
         require_once LUDIA_ROOT . '/includes/AdminPaquetes.php';
@@ -1009,6 +1021,53 @@ require LUDIA_ROOT . '/includes/partials/header.php';
           <?php endif; ?>
         </section>
       <?php endif; ?>
+    <?php endif; ?>
+
+    <?php if ($seccion === 'solicitudes'): ?>
+    <section class="panel">
+      <h2 class="panel-title">Solicitudes de la licencia Escuela</h2>
+      <p class="cuenta-sub" style="margin-bottom:12px">
+        Lo que dejan los colegios en <a href="<?= e(base_url('escuela.php')) ?>" target="_blank" rel="noopener">ludia.click/escuela.php</a>.
+        Se guardan todas aquí, aunque el correo falle.
+        <?php if ($correoListo): ?>
+          También llegan a <b><?= e((string) config('contacto.escuela')) ?></b>.
+        <?php else: ?>
+          <b>El envío por correo aún no está configurado</b> (falta SMTP_CLAVE en el servidor): por ahora solo quedan aquí.
+        <?php endif; ?>
+      </p>
+      <?php if (!$solicitudes): ?>
+        <p class="hint">Todavía no hay solicitudes.</p>
+      <?php else: ?>
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead><tr><th>Institución</th><th>Contacto</th><th class="num">Profes.</th><th>Mensaje</th><th>Recibida</th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($solicitudes as $s): ?>
+              <tr<?= (int) $s['atendida'] ? ' style="opacity:.55"' : '' ?>>
+                <td><b><?= e($s['institucion']) ?></b><span class="celda-sub"><?= e($s['ciudad']) ?></span></td>
+                <td>
+                  <?= e($s['contacto']) ?><span class="celda-sub"><?= e($s['cargo']) ?></span>
+                  <a class="celda-sub" href="mailto:<?= e($s['correo']) ?>?subject=<?= e(rawurlencode('Licencia Escuela de Ludia')) ?>"><?= e($s['correo']) ?></a>
+                  <?php if ($s['telefono'] !== ''): ?><span class="celda-sub">📞 <?= e($s['telefono']) ?></span><?php endif; ?>
+                </td>
+                <td class="num"><?= $s['profesores'] !== null ? (int) $s['profesores'] : '—' ?></td>
+                <td><span class="celda-sub" style="white-space:pre-line"><?= e((string) ($s['mensaje'] ?? '')) ?></span></td>
+                <td><span class="celda-sub"><?= e(admin_cuando($s['created_at'])) ?><?= (int) $s['correo_enviado'] ? ' · ✉️ enviada' : '' ?></span></td>
+                <td>
+                  <form method="post" action="<?= e(base_url('app/admin.php')) ?>?seccion=solicitudes">
+                    <input type="hidden" name="csrf" value="<?= e(auth_csrf()) ?>">
+                    <input type="hidden" name="accion" value="solicitud_atendida">
+                    <input type="hidden" name="solicitud_id" value="<?= (int) $s['id'] ?>">
+                    <button class="link-btn" type="submit"><?= (int) $s['atendida'] ? 'Marcar pendiente' : '✓ Atendida' ?></button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+    </section>
     <?php endif; ?>
 
     <?php if ($seccion === 'invitaciones'): ?>

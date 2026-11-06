@@ -120,6 +120,12 @@ require __DIR__ . '/includes/partials/header.php';
       desactiva en lugar de borrarse, para que el historial de lo que ya respondió no
       quede incompleto y atribuido a nadie.
     </p>
+    <p>
+      Si un colegio pide información en el formulario de la licencia Escuela, Ludia
+      guarda lo que escribe quien lo llena —nombre, cargo, institución, ciudad, correo,
+      teléfono, número aproximado de profesores y su mensaje— y lo recibe por correo,
+      <strong>solo para responderle</strong>. No se usa para nada más ni se comparte.
+    </p>
 
     <h2>6. Cobros</h2>
     <p>

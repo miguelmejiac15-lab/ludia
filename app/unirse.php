@@ -24,7 +24,22 @@ require LUDIA_ROOT . '/includes/partials/header.php';
   <div class="wrap">
 
     <!-- Paso 1: código + personaje -->
-    <section class="panel unirse-card" id="paso-acceso">
+    <?php /* Primer paso, solo si llega SIN código (ludia.click/jugar): un
+             campo grande y nada más, como kahoot.it. Con el código en la URL
+             (QR o enlace) se salta y va directo al personaje. */ ?>
+    <section class="panel unirse-card paso-codigo" id="paso-codigo"<?= $codigo !== '' ? ' hidden' : '' ?>>
+      <span class="eyebrow">🎮 Entrar a jugar</span>
+      <h1>Escribe el código</h1>
+      <p>Es el número que ves en la pantalla del salón.</p>
+      <form id="form-codigo" novalidate>
+        <input class="input codigo-grande" id="codigo-inicial" type="text" inputmode="numeric" autocomplete="off"
+               maxlength="7" placeholder="000 000" aria-label="Código de la sesión" autofocus>
+        <button class="btn btn-primary btn-block" type="submit" id="btn-codigo">Entrar</button>
+      </form>
+      <p class="mensaje error" id="mensaje-codigo" hidden></p>
+    </section>
+
+    <section class="panel unirse-card" id="paso-acceso"<?= $codigo === '' ? ' hidden' : '' ?>>
       <span class="eyebrow">Entrar a una sesión</span>
       <h1>Crea tu personaje</h1>
       <p>Así te verán en la pantalla del anfitrión.</p>

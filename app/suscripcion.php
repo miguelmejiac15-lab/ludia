@@ -205,7 +205,7 @@ require LUDIA_ROOT . '/includes/partials/header.php';
         <?php if (!empty($usuario['colegio_id'])): ?>
           <a class="btn btn-ghost" href="<?= e(base_url('app/colegio.php')) ?>">Ver mi colegio</a>
         <?php else: ?>
-          <p class="hint">Escríbenos y activamos la licencia de tu institución.</p>
+          <a class="btn btn-ghost" href="<?= e(base_url('escuela.php')) ?>">Pedir información para mi colegio</a>
         <?php endif; ?>
       </section>
     <?php endif; ?>

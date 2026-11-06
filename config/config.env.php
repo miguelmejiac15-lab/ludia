@@ -86,6 +86,30 @@ return [
         'integrity_secret' => $env('WOMPI_INTEGRITY_SECRET', ''),
     ],
 
+    // Correo saliente por SMTP (includes/Correo.php). Con Gmail: activar la
+    // verificación en dos pasos de la cuenta y crear una «contraseña de
+    // aplicación»; esa (no la normal) va en SMTP_CLAVE. Sin ella no se envía
+    // nada, y lo que dependa del correo se guarda en la base igual.
+    'smtp' => [
+        'host'      => $env('SMTP_HOST', 'smtp.gmail.com'),
+        'puerto'    => (int) $env('SMTP_PUERTO', '465'),
+        'seguridad' => $env('SMTP_SEGURIDAD', 'ssl'),
+        'usuario'   => $env('SMTP_USUARIO', 'ludia.click@gmail.com'),
+        'clave'     => $env('SMTP_CLAVE', ''),
+        'nombre'    => 'Ludia',
+    ],
+
+    // A dónde llegan las solicitudes de la licencia Escuela.
+    'contacto' => [
+        'escuela' => $env('CONTACTO_ESCUELA', 'ludia.click@gmail.com'),
+    ],
+
+    // REGISTRO_SOLO_GOOGLE=true: las cuentas nuevas solo se crean con Google
+    // (frena el spam). Las que ya existen siguen entrando con contraseña.
+    'auth' => [
+        'solo_google' => $booleano($env('REGISTRO_SOLO_GOOGLE', 'false')),
+    ],
+
     'google' => [
         'client_id'     => $env('GOOGLE_CLIENT_ID', ''),
         'client_secret' => $env('GOOGLE_CLIENT_SECRET', ''),

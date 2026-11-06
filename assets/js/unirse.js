@@ -173,6 +173,7 @@
   /* ---------- Pasos visibles ---------- */
 
   function mostrarPaso(cual) {
+    if (el.pasoCodigo) el.pasoCodigo.hidden = cual !== 'codigo';
     el.acceso.hidden = cual !== 'acceso';
     el.espera.hidden = cual !== 'espera';
     el.juego.hidden = cual !== 'juego';
@@ -443,6 +444,57 @@
     else if (token && el.final.hidden) arrancarSondeo();
   });
 
+  /* ---------- Primer paso: solo el código ---------- */
+
+  el.pasoCodigo = document.getElementById('paso-codigo');
+  var formCodigo = document.getElementById('form-codigo');
+  var codigoInicialCampo = document.getElementById('codigo-inicial');
+  var mensajeCodigo = document.getElementById('mensaje-codigo');
+
+  function avisoCodigo(texto) {
+    mensajeCodigo.textContent = texto;
+    mensajeCodigo.hidden = !texto;
+  }
+
+  if (formCodigo) {
+    // Se ve «123 456», como en la pantalla del salón.
+    codigoInicialCampo.addEventListener('input', function () {
+      var d = codigoInicialCampo.value.replace(/\D/g, '').slice(0, 6);
+      codigoInicialCampo.value = d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d;
+      avisoCodigo('');
+    });
+
+    formCodigo.addEventListener('submit', function (evento) {
+      evento.preventDefault();
+      var codigo = codigoInicialCampo.value.replace(/\D/g, '');
+      if (codigo.length !== 6) { avisoCodigo('El código tiene 6 números.'); return; }
+      var boton = document.getElementById('btn-codigo');
+      boton.disabled = true;
+      boton.textContent = 'Buscando…';
+
+      // Se comprueba que la sesión exista ANTES de pedir el personaje: si no,
+      // el error llegaba al final, después de elegirlo todo.
+      fetch(R.api('sesion-estado.php') + '?codigo=' + codigo)
+        .then(function (r) { return r.json(); })
+        .then(function (datos) {
+          boton.disabled = false;
+          boton.textContent = 'Entrar';
+          if (!datos.ok) { avisoCodigo('No encontramos ese código. Revisa los números de la pantalla.'); return; }
+          if (datos.sesion && datos.sesion.estado === 'terminada') { avisoCodigo('Esa sesión ya terminó.'); return; }
+          el.codigo.value = codigo;
+          raiz.setAttribute('data-codigo', codigo);
+          try { history.replaceState(null, '', location.pathname + '?c=' + codigo); } catch (e) { /* nada */ }
+          mostrarPaso('acceso');
+          el.nombre.focus();
+        })
+        .catch(function () {
+          boton.disabled = false;
+          boton.textContent = 'Entrar';
+          avisoCodigo('No hay conexión. Inténtalo otra vez.');
+        });
+    });
+  }
+
   /* ---------- Inicio ---------- */
 
   pintarPersonaje();
@@ -458,7 +510,7 @@
     miNombre = guardado.nombre;
     mostrarEspera(guardado.nombre, 'tu paquete');
     arrancarSondeo();
-  } else if (!codigoInicial) {
-    el.codigo.focus();
+  } else if (!codigoInicial && codigoInicialCampo) {
+    codigoInicialCampo.focus();
   }
 })();

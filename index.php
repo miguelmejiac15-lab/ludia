@@ -119,7 +119,7 @@ foreach (planes_todos() as $clave => $p) {
     if ($gratis) {
         $accion = ['url' => base_url('app/registrarse.php'), 'texto' => 'Empezar gratis'];
     } elseif ($escuela) {
-        $accion = ['url' => base_url('app/colegio.php'), 'texto' => 'Hablar con nosotros'];
+        $accion = ['url' => base_url('escuela.php'), 'texto' => 'Pedir información'];
     } else {
         $accion = ['url' => base_url('app/suscripcion.php'), 'texto' => 'Suscribirme a ' . $p['nombre']];
     }

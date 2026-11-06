@@ -31,7 +31,13 @@ $error = null;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     foreach ($valores as $k => $_) {
-        $valores[$k] = trim((string) ($_POST[$k] ?? ''));
+        $valor = trim((string) ($_POST[$k] ?? ''));
+        // Un texto que no sea UTF-8 válido (un cliente viejo, un robot) hacía
+        // que la base lo rechazara con un error 500: se convierte, no se cae.
+        if (!mb_check_encoding($valor, 'UTF-8')) {
+            $valor = mb_convert_encoding($valor, 'UTF-8', 'ISO-8859-1');
+        }
+        $valores[$k] = $valor;
     }
 
     $enviadas = (int) ($_SESSION['escuela_enviadas'] ?? 0);

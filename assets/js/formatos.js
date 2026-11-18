@@ -75,6 +75,13 @@ window.LudiaFormatos = (function () {
       }
     },
 
+    globos: {
+      nombre: 'Globos', icono: '🎈', grupo: 'preguntas', puntua: true,
+      descripcion: 'Suben globos con las respuestas: hay que reventar el correcto antes de que se escape.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
       descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',

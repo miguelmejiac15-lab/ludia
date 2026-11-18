@@ -186,6 +186,7 @@ window.LudiaEditor = (function () {
 
     // Mismos datos que un quiz: lo que cambia es cómo se juega.
     avion: function (it, ctx) { return campos.quiz(it, ctx); },
+    globos: function (it, ctx) { return campos.quiz(it, ctx); },
 
     verdadero_falso: function (it, ctx) {
       return campoTexto('f-afirmacion', 'Afirmación', 'afirmacion', it.afirmacion, { textarea: true, placeholder: 'Ej. La Segunda Guerra Mundial comenzó en 1939.' }) +
@@ -387,6 +388,14 @@ window.LudiaEditor = (function () {
           return '<span class="pv-nube" style="top:' + (8 + n * (78 / Math.max(1, opciones.length || 2))) + '%">' + esc(o.t) + '</span>';
         }).join('') + '</div>';
     },
+    globos: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-cielo pv-globos">' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-globo opt-' + (n % 6) + '" style="left:' + (6 + (n % 3) * 31) + '%;top:' + (10 + (n % 2) * 26) + '%">' + esc(t) + '</span>';
+        }).join('') + '</div>';
+    },
     verdadero_falso: function (it) {
       return '<div class="pv-question">' + textoO(it.afirmacion, 'Aquí va tu afirmación…') + '</div>' +
         '<div class="pv-options grid-2"><div class="pv-option opt-2">✔ Verdadero</div><div class="pv-option opt-0">✘ Falso</div></div>';
@@ -573,7 +582,7 @@ window.LudiaEditor = (function () {
 
   /** Formatos donde la imagen acompaña al enunciado. */
   var CON_IMAGEN = [
-    'quiz', 'avion', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
+    'quiz', 'avion', 'globos', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
     'completar', 'relacionar', 'clasificar', 'ordenar',
     'encuesta', 'pregunta_abierta', 'escala', 'mural',
     'anagrama', 'numerica', 'linea_tiempo', 'pagina'

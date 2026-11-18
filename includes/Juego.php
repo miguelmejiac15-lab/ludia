@@ -22,7 +22,7 @@ const JUEGO_TIPOS_PUNTUABLES = [
     'completar', 'ordenar_palabras', 'sopa_letras', 'crucigrama',
     'relacionar', 'memoria', 'clasificar', 'ordenar',
     'ortografia', 'anagrama', 'numerica', 'linea_tiempo',
-    'video_preguntas', 'avion',
+    'video_preguntas', 'avion', 'globos',
 ];
 
 function juego_puntua(string $tipo): bool
@@ -111,6 +111,7 @@ function juego_item_publico(array $actividad, int $itemIndice, string $semilla):
     switch ($tipo) {
         case 'quiz':
         case 'avion':
+        case 'globos':
         case 'respuesta_multiple':
             $publico['enunciado'] = $item['enunciado'] ?? '';
             $publico['opciones']  = array_values($item['opciones'] ?? []);
@@ -333,6 +334,7 @@ function juego_calificar(string $tipo, array $item, $respuesta, float $proporcio
     switch ($tipo) {
         case 'quiz':
         case 'avion':
+        case 'globos':
         case 'video_preguntas':
             $aciertos = ((int) $respuesta === (int) ($item['correcta'] ?? -1)) ? 1 : 0;
             break;

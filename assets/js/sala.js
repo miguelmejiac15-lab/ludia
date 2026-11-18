@@ -206,6 +206,9 @@
   var vistas = {
     // En el proyector el avión se ve como un quiz: el juego de acción
     // ocurre en cada celular.
+    globos: function (it, clave) {
+      return '<p class="proy-avion-aviso">🎈 ¡Revienta en tu celular el globo correcto!</p>' + vistas.quiz(it, clave);
+    },
     avion: function (it, clave) {
       return '<p class="proy-avion-aviso">✈️ ¡Vuela en tu celular y atraviesa la nube correcta!</p>' + vistas.quiz(it, clave);
     },

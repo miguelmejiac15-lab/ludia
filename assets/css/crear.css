@@ -913,3 +913,11 @@ label.btn { cursor: pointer; }
   box-shadow: 0 4px 10px -6px rgba(42, 33, 64, .5);
 }
 .pv-nube:nth-child(odd) { right: 18%; }
+
+/* Vista previa de «Globos» */
+.pv-globos { background: linear-gradient(#7CC6FF, #D3EEFF 75%, #8FD9B6 75%, #1FA98A); }
+.pv-globo {
+  position: absolute; width: 30%; padding: 14px 6px; border-radius: 50% 50% 48% 48%;
+  color: #fff; font-size: .68rem; font-weight: 800; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

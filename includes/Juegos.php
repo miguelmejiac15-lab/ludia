@@ -36,6 +36,7 @@ const JUEGO_PLANTILLAS = [
     'relacionar'      => ['nombre' => 'Relacionar',        'icono' => '🔗', 'nativo' => 'parejas',   'tiempo' => 60,  'descripcion' => 'Une cada palabra con su pareja.'],
     'memoria'         => ['nombre' => 'Memoria',           'icono' => '🃏', 'nativo' => 'parejas',   'tiempo' => 90,  'descripcion' => 'Voltea dos tarjetas y encuentra las parejas.'],
     'avion'           => ['nombre' => 'Vuela a la respuesta', 'icono' => '✈️', 'nativo' => 'preguntas', 'tiempo' => 30, 'descripcion' => 'Mueve el avión y atraviesa la nube con la respuesta correcta.'],
+    'globos'          => ['nombre' => 'Globos',            'icono' => '🎈', 'nativo' => 'preguntas', 'tiempo' => 25,  'descripcion' => 'Revienta el globo con la respuesta antes de que se escape.'],
     'quiz'            => ['nombre' => 'Quiz',              'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 20,  'descripcion' => 'Una pregunta y varias opciones.'],
     'verdadero_falso' => ['nombre' => 'Verdadero o falso', 'icono' => '⚖️', 'nativo' => 'preguntas', 'tiempo' => 15,  'descripcion' => '¿Es cierto o no? Rápido.'],
     'palabra_secreta' => ['nombre' => 'Palabra secreta',   'icono' => '🔡', 'nativo' => 'parejas',   'tiempo' => 45,  'descripcion' => 'Adivina la palabra letra por letra con una pista.'],
@@ -261,8 +262,9 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
 
         case 'quiz':
         case 'avion':
-            // El avión lleva los mismos datos que un quiz: cambia el juego,
-            // no la pregunta ni la forma de calificarla.
+        case 'globos':
+            // Los juegos de acción llevan los mismos datos que un quiz: cambia
+            // el juego, no la pregunta ni la forma de calificarla.
             if ($tipo === 'preguntas') {
                 return ['ok' => true, 'items' => array_map(static fn (array $p): array => [
                     'enunciado' => $p['enunciado'], 'opciones' => $p['opciones'],

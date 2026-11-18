@@ -82,6 +82,13 @@ window.LudiaFormatos = (function () {
       validar: function (it) { return tipos.avion.validar(it); }
     },
 
+    atrapa: {
+      nombre: 'Atrapa la correcta', icono: '🐹', grupo: 'preguntas', puntua: true,
+      descripcion: 'Se asoman animalitos con carteles: hay que tocar el que lleva la respuesta correcta.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
       descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',

@@ -35,7 +35,8 @@ window.LudiaJugar = (function () {
   /** Juegos de acción y lo que se le explica al estudiante en cada uno. */
   var ARCADE = {
     avion: '👆 Arrastra el dedo para subir o bajar el avión y atraviesa la nube correcta',
-    globos: '👆 Toca el globo con la respuesta correcta antes de que se escape'
+    globos: '👆 Toca el globo con la respuesta correcta antes de que se escape',
+    atrapa: '👆 Toca al animalito que lleva la respuesta correcta antes de que se esconda'
   };
   function esArcade(tipo) { return Object.prototype.hasOwnProperty.call(ARCADE, tipo); }
 
@@ -64,6 +65,7 @@ window.LudiaJugar = (function () {
     // pantalla: elegir ahí también envía al instante.
     avion: function (it) { return vistaArcade(it); },
     globos: function (it) { return vistaArcade(it); },
+    atrapa: function (it) { return vistaArcade(it); },
 
     video_preguntas: function (it) {
       // `it.video` llega ya como identificador: lo extrae el servidor, porque
@@ -464,6 +466,7 @@ window.LudiaJugar = (function () {
       case 'quiz':
       case 'avion':
       case 'globos':
+      case 'atrapa':
       case 'video_preguntas':
       case 'encuesta':
         return seleccion;
@@ -514,6 +517,7 @@ window.LudiaJugar = (function () {
       case 'quiz':
       case 'avion':
       case 'globos':
+      case 'atrapa':
       case 'video_preguntas':
       case 'encuesta':
       case 'escala':

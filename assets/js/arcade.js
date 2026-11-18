@@ -11,6 +11,7 @@
 
      avion   — «Vuela a la respuesta»: atravesar la nube correcta.
      globos  — «Globos»: reventar el globo correcto antes de que se escape.
+     atrapa  — «Atrapa la correcta»: tocar al animalito que asoma con ella.
 
    Arte propio: nada de imágenes ni sonidos externos.
    ===================================================================== */
@@ -68,7 +69,7 @@ window.LudiaArcade = (function () {
       var dpr = Math.min(2, window.devicePixelRatio || 1);
       var antes = { W: b.W || 1, H: b.H || 1 };
       b.W = Math.max(260, marco.clientWidth);
-      b.H = Math.round(Math.min(440, Math.max(280, b.W * 0.72)));
+      b.H = Math.round(Math.min(460, Math.max(280, b.W * (b.proporcion || 0.72))));
       lienzo.width = Math.round(b.W * dpr);
       lienzo.height = Math.round(b.H * dpr);
       lienzo.style.height = b.H + 'px';
@@ -492,10 +493,230 @@ window.LudiaArcade = (function () {
     });
   }
 
-  var JUEGOS = { avion: avion, globos: globos };
+  /* =================================================================
+     🐹 Atrapa la correcta
+     En un jardín con madrigueras se asoman animalitos con un cartel. Hay
+     que tocar el que lleva la respuesta correcta antes de que se esconda.
+     Salen de a pocos, en hoyos al azar; cuando han salido todas las
+     respuestas, la ronda siguiente va un poco más rápida.
+     ================================================================= */
+  var ANIMALES = ['🐹', '🐰', '🦔', '🐿️', '🐻', '🐼', '🐨', '🐸', '🐱', '🦊'];
+
+  function atrapa(b, piloto) {
+    var ctx = b.ctx;
+    // Más alto que los otros: caben tres filas de madrigueras con su cartel.
+    b.proporcion = 1.08;
+    b.medir();
+
+    var hoyos = [], asomados = [], cola = [], ronda = 0, espera = 0.5, festejo = 0, golpes = [];
+
+    function armarHoyos() {
+      var columnas = b.W < 420 ? 2 : 3, filas = 3;
+      var arriba = b.H * 0.2, alto = (b.H - arriba - 8) / filas;
+      hoyos = [];
+      for (var f = 0; f < filas; f++) {
+        for (var c = 0; c < columnas; c++) {
+          hoyos.push({
+            x: (b.W / columnas) * (c + 0.5) + (f % 2 ? 1 : -1) * (columnas === 2 ? b.W * 0.04 : 0),
+            y: arriba + alto * (f + 0.78),
+            w: Math.min(110, b.W / columnas * 0.62),
+            alto: alto
+          });
+        }
+      }
+    }
+    armarHoyos();
+    b.alRedimensionar = function () { armarHoyos(); };
+
+    var tiempoArriba = function () { return (b.reducido ? 3.2 : 2.4) / Math.min(1.8, 1 + ronda * 0.1); };
+
+    function asomar() {
+      if (!cola.length) { cola = barajar(b.opciones); ronda++; }
+      var libres = hoyos.filter(function (h) { return !asomados.some(function (a) { return a.hoyo === h; }); });
+      if (!libres.length) return;
+      // Nunca la misma respuesta dos veces a la vez (pasa al empezar ronda).
+      var visibles = asomados.map(function (x) { return x.op.i; });
+      var pos = -1;
+      for (var k = 0; k < cola.length; k++) { if (visibles.indexOf(cola[k].i) === -1) { pos = k; break; } }
+      if (pos === -1) return;
+      var hoyo = libres[Math.floor(Math.random() * libres.length)];
+      var op = cola.splice(pos, 1)[0];
+      var ancho = Math.min(hoyo.w * 1.5, b.W * 0.46);
+      asomados.push({
+        op: op, hoyo: hoyo, t: 0, dura: tiempoArriba(),
+        animal: ANIMALES[Math.floor(Math.random() * ANIMALES.length)],
+        cartel: { w: ancho, h: Math.min(54, hoyo.alto * 0.5) },
+        texto: b.ajustar(op.texto, ancho - 34, Math.min(54, hoyo.alto * 0.5) - 8, 2, 14),
+        viva: true
+      });
+    }
+
+    /** Cuánto asoma (0 escondido, 1 fuera), con subida y bajada suaves. */
+    function altura(a) {
+      var sube = 0.22, baja = 0.22;
+      if (a.t < sube) return a.t / sube;
+      if (a.t > a.dura - baja) return Math.max(0, (a.dura - a.t) / baja);
+      return 1;
+    }
+
+    function zona(a) {
+      var tam = Math.min(54, a.hoyo.alto * 0.52);
+      var sale = altura(a);
+      var cy = a.hoyo.y - tam * 0.62 * sale;
+      var cartelY = cy - tam * 0.5 - a.cartel.h / 2 - 4;
+      var cartelX = Math.max(6, Math.min(b.W - 6 - a.cartel.w, a.hoyo.x - a.cartel.w / 2));
+      return { tam: tam, cy: cy, cartelY: cartelY, cartelX: cartelX, sale: sale };
+    }
+
+    function atrapar(a) {
+      var z = zona(a);
+      a.viva = false;
+      a.atrapado = b.tiempo;
+      golpes.push({ x: a.hoyo.x, y: z.cy, t: 0 });
+      b.explotar(a.hoyo.x, z.cartelY, COLORES[a.op.i % COLORES.length], 26);
+      sonar(330, 0.16, 'triangle', 0.14, 2.4);
+      festejo = 1;
+      b.elegir(a.op);
+    }
+
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) {
+      if (b.yaEligio()) return;
+      var p = b.punto(ev);
+      for (var i = asomados.length - 1; i >= 0; i--) {
+        var a = asomados[i];
+        if (!a.viva) continue;
+        var z = zona(a);
+        if (z.sale < 0.35) continue;
+        var enCartel = p.x >= z.cartelX - 6 && p.x <= z.cartelX + a.cartel.w + 6 && Math.abs(p.y - z.cartelY) <= a.cartel.h / 2 + 6;
+        var enAnimal = Math.abs(p.x - a.hoyo.x) <= z.tam * 0.7 && p.y >= z.cy - z.tam * 0.7 && p.y <= a.hoyo.y + 6;
+        if (enCartel || enAnimal) {
+          atrapar(a);
+          if (ev.cancelable) ev.preventDefault();
+          return;
+        }
+      }
+    });
+    // Teclado: la letra atrapa a quien la lleve, si está asomado.
+    b.escuchar(document, 'keydown', function (ev) {
+      if (b.yaEligio() || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      if (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      var indice = LETRAS.indexOf(String(ev.key || '').toUpperCase());
+      var a = asomados.filter(function (x) { return x.viva && x.op.i === indice && altura(x) > 0.35; })[0];
+      if (!a) return;
+      ev.preventDefault();
+      atrapar(a);
+    });
+
+    function jardin() {
+      var g = ctx.createLinearGradient(0, 0, 0, b.H);
+      g.addColorStop(0, '#7CC6FF'); g.addColorStop(0.16, '#CFEFFF'); g.addColorStop(0.161, '#7ED98C'); g.addColorStop(1, '#3FB56A');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, b.W, b.H);
+      // Franjas de césped recién cortado
+      ctx.fillStyle = 'rgba(255,255,255,.07)';
+      for (var x = -b.H; x < b.W; x += 46) {
+        ctx.beginPath(); ctx.moveTo(x, b.H); ctx.lineTo(x + 23, b.H); ctx.lineTo(x + 23 + b.H * 0.5, b.H * 0.16); ctx.lineTo(x + b.H * 0.5, b.H * 0.16); ctx.fill();
+      }
+      // Seto del fondo
+      ctx.fillStyle = '#2E9E58';
+      for (var k = 0; k <= b.W; k += 26) { ctx.beginPath(); ctx.arc(k, b.H * 0.16, 16, Math.PI, 0); ctx.fill(); }
+      // Florecitas
+      for (var f = 0; f < 9; f++) {
+        var fx = (f * 97.3) % b.W, fy = b.H * 0.2 + ((f * 53.7) % (b.H * 0.75));
+        ctx.fillStyle = ['#FFD24D', '#FF8FB1', '#FFFFFF'][f % 3];
+        ctx.beginPath(); ctx.arc(fx, fy, 3, 0, 7); ctx.fill();
+      }
+    }
+
+    function hoyoAtras(h) {
+      ctx.fillStyle = '#5A3A22';
+      ctx.beginPath(); ctx.ellipse(h.x, h.y, h.w / 2, h.w * 0.16, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#2B1A10';
+      ctx.beginPath(); ctx.ellipse(h.x, h.y + 2, h.w / 2 - 6, h.w * 0.12, 0, 0, 7); ctx.fill();
+    }
+    function hoyoDelante(h) {
+      ctx.fillStyle = '#7A5233';
+      ctx.beginPath(); ctx.ellipse(h.x, h.y + 3, h.w / 2, h.w * 0.16, 0, 0, Math.PI); ctx.fill();
+    }
+
+    function dibujarAnimal(a) {
+      var z = zona(a), h = a.hoyo;
+      if (z.sale <= 0) return;
+      // El animal sale del hoyo: se recorta por debajo del borde.
+      ctx.save();
+      ctx.beginPath(); ctx.rect(h.x - h.w, 0, h.w * 2, h.y + 2); ctx.clip();
+      ctx.font = Math.round(z.tam) + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(a.animal, h.x, z.cy + (1 - z.sale) * z.tam);
+      ctx.restore();
+    }
+
+    /* Los carteles van al final, encima de todo: si no, el borde de un hoyo
+       de la fila de arriba tapa el cartel del que asoma más abajo. */
+    function dibujarCartel(a) {
+      var z = zona(a), h = a.hoyo;
+      if (z.sale < 0.3) return;
+      // Palito y cartel con la respuesta
+      ctx.globalAlpha = Math.min(1, (z.sale - 0.3) / 0.4);
+      ctx.strokeStyle = '#8A5A35'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(h.x + z.tam * 0.35, z.cy); ctx.lineTo(h.x + z.tam * 0.35, z.cartelY + a.cartel.h / 2); ctx.stroke();
+      var cx = z.cartelX, cy = z.cartelY - a.cartel.h / 2;
+      ctx.save();
+      ctx.shadowColor = 'rgba(42,33,64,.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(cx, cy, a.cartel.w, a.cartel.h, 12); else ctx.rect(cx, cy, a.cartel.w, a.cartel.h);
+      ctx.fill();
+      ctx.restore();
+      b.letra(a.op, cx + 15, z.cartelY, 10);
+      b.escribir(a.texto, cx + 30, z.cartelY, '#2A2140');
+      ctx.globalAlpha = 1;
+    }
+
+    b.correr(function (dt) {
+      var eligio = b.yaEligio();
+      asomados.forEach(function (a) { a.t += dt * (eligio && a.viva ? 2 : 1); });
+      asomados = asomados.filter(function (a) { return a.viva ? a.t < a.dura : b.tiempo - a.atrapado < 0.5; });
+      if (!eligio) {
+        espera -= dt;
+        var maximo = Math.min(3, b.opciones.length);
+        if (espera <= 0 && asomados.filter(function (a) { return a.viva; }).length < maximo) {
+          asomar();
+          espera = tiempoArriba() / maximo;
+        }
+      }
+      festejo = Math.max(0, festejo - dt);
+
+      jardin();
+      // El personaje del estudiante mira desde el seto; salta al atrapar.
+      var tamP = Math.max(26, Math.min(40, b.H * 0.09));
+      ctx.font = tamP + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(piloto, b.W - 26, b.H * 0.16 - 2 - Math.abs(Math.sin(b.tiempo * (festejo ? 14 : 2.5))) * (festejo ? 16 : 3));
+      hoyos.forEach(hoyoAtras);
+      var visibles = asomados.filter(function (a) { return a.viva; });
+      visibles.forEach(dibujarAnimal);
+      hoyos.forEach(hoyoDelante);
+      visibles.forEach(dibujarCartel);
+      // Estrellitas del «¡te atrapé!»
+      golpes.forEach(function (g) { g.t += dt; });
+      golpes = golpes.filter(function (g) { return g.t < 0.8; });
+      golpes.forEach(function (g) {
+        ctx.globalAlpha = 1 - g.t / 0.8;
+        ctx.font = '22px system-ui, "Segoe UI Emoji", sans-serif'; ctx.textAlign = 'center';
+        for (var k = 0; k < 3; k++) {
+          var ang = b.tiempo * 6 + k * 2.1;
+          ctx.fillText('⭐', g.x + Math.cos(ang) * 26, g.y - 10 + Math.sin(ang) * 10);
+        }
+        ctx.globalAlpha = 1;
+      });
+      b.dibujarChispas(dt);
+    });
+  }
+
+  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa };
 
   /**
-   * @param {string} tipo            'avion' | 'globos'
+   * @param {string} tipo            'avion' | 'globos' | 'atrapa'
    * @param {HTMLElement} marco      contenedor con un <canvas>
    * @param {string[]} textos        las opciones, en su orden original
    * @param {function(number)} alElegir  recibe el índice ORIGINAL elegido

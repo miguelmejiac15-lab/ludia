@@ -38,6 +38,7 @@ const JUEGO_PLANTILLAS = [
     'avion'           => ['nombre' => 'Vuela a la respuesta', 'icono' => '✈️', 'nativo' => 'preguntas', 'tiempo' => 30, 'descripcion' => 'Mueve el avión y atraviesa la nube con la respuesta correcta.'],
     'globos'          => ['nombre' => 'Globos',            'icono' => '🎈', 'nativo' => 'preguntas', 'tiempo' => 25,  'descripcion' => 'Revienta el globo con la respuesta antes de que se escape.'],
     'atrapa'          => ['nombre' => 'Atrapa la correcta', 'icono' => '🐹', 'nativo' => 'preguntas', 'tiempo' => 25,  'descripcion' => 'Toca al animalito que asoma con la respuesta correcta.'],
+    'laberinto'       => ['nombre' => 'Laberinto',         'icono' => '🌀', 'nativo' => 'preguntas', 'tiempo' => 45,  'descripcion' => 'Llega a la puerta correcta escapando de las abejas.'],
     'quiz'            => ['nombre' => 'Quiz',              'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 20,  'descripcion' => 'Una pregunta y varias opciones.'],
     'verdadero_falso' => ['nombre' => 'Verdadero o falso', 'icono' => '⚖️', 'nativo' => 'preguntas', 'tiempo' => 15,  'descripcion' => '¿Es cierto o no? Rápido.'],
     'palabra_secreta' => ['nombre' => 'Palabra secreta',   'icono' => '🔡', 'nativo' => 'parejas',   'tiempo' => 45,  'descripcion' => 'Adivina la palabra letra por letra con una pista.'],
@@ -265,8 +266,16 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
         case 'avion':
         case 'globos':
         case 'atrapa':
+        case 'laberinto':
             // Los juegos de acción llevan los mismos datos que un quiz: cambia
             // el juego, no la pregunta ni la forma de calificarla.
+            if ($plantilla === 'laberinto' && $tipo === 'preguntas') {
+                foreach ($contenido['items'] as $n => $p) {
+                    if (count($p['opciones']) > 4) {
+                        return ['ok' => false, 'motivo' => 'El laberinto tiene 4 puertas y la pregunta ' . ($n + 1) . ' tiene ' . count($p['opciones']) . ' respuestas.'];
+                    }
+                }
+            }
             if ($tipo === 'preguntas') {
                 return ['ok' => true, 'items' => array_map(static fn (array $p): array => [
                     'enunciado' => $p['enunciado'], 'opciones' => $p['opciones'],

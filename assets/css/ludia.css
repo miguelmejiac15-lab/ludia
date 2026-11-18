@@ -1029,3 +1029,11 @@ section { padding-block: 64px; }
   flex-wrap: wrap;
   gap: 14px;
 }
+
+/* Barra de visitantes en celular: «Tengo un código» se queda (es la puerta de
+   los estudiantes); «Ingresar» y «Probar gratis» pasan al menú. */
+.nav-links .solo-movil { display: none; }
+@media (max-width: 560px) {
+  .topbar-actions .solo-escritorio { display: none; }
+  .topbar.is-open .nav-links .solo-movil { display: block; }
+}

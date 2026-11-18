@@ -27,7 +27,7 @@ const SESION_TIPOS = [
     'relacionar', 'memoria', 'clasificar', 'ordenar',
     'mural', 'encuesta', 'pregunta_abierta', 'escala', 'panel',
     'ortografia', 'anagrama', 'numerica', 'linea_tiempo', 'pagina',
-    'video_preguntas', 'avion', 'globos', 'atrapa',
+    'video_preguntas', 'avion', 'globos', 'atrapa', 'laberinto',
 ];
 
 /**

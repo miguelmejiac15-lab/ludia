@@ -36,13 +36,23 @@ window.LudiaJugar = (function () {
   var ARCADE = {
     avion: '👆 Arrastra el dedo para subir o bajar el avión y atraviesa la nube correcta',
     globos: '👆 Toca el globo con la respuesta correcta antes de que se escape',
-    atrapa: '👆 Toca al animalito que lleva la respuesta correcta antes de que se esconda'
+    atrapa: '👆 Toca al animalito que lleva la respuesta correcta antes de que se esconda',
+    laberinto: '👆 Toca hacia dónde ir o desliza el dedo · llega a la puerta correcta y escapa de las abejas'
   };
   function esArcade(tipo) { return Object.prototype.hasOwnProperty.call(ARCADE, tipo); }
 
   function vistaArcade(it) {
+    var laberinto = it.tipo === 'laberinto';
     return '<p class="j-pregunta">' + esc(it.enunciado) + '</p>' +
-      '<div class="j-arcade" data-arcade><canvas aria-hidden="true"></canvas></div>' +
+      // En el laberinto las puertas solo llevan su letra: la leyenda dice qué es cada una.
+      (laberinto ? '<ol class="j-leyenda">' + it.opciones.slice(0, 4).map(function (t, i) {
+        return '<li><b class="opt-' + i + '">' + LETRAS[i] + '</b> ' + esc(t) + '</li>';
+      }).join('') + '</ol>' : '') +
+      '<div class="j-arcade" data-arcade><canvas aria-hidden="true"></canvas>' +
+      (laberinto ? '<div class="j-cruceta" aria-hidden="true">' +
+        '<button type="button" data-dir="arriba">▲</button><button type="button" data-dir="izquierda">◀</button>' +
+        '<button type="button" data-dir="abajo">▼</button><button type="button" data-dir="derecha">▶</button></div>' : '') +
+      '</div>' +
       '<p class="j-arcade-ayuda">' + ARCADE[it.tipo] + '</p>' +
       '<details class="j-arcade-alterno"><summary>¿Prefieres tocar la respuesta?</summary><div class="j-opciones">' +
       it.opciones.map(function (t, i) {
@@ -66,6 +76,7 @@ window.LudiaJugar = (function () {
     avion: function (it) { return vistaArcade(it); },
     globos: function (it) { return vistaArcade(it); },
     atrapa: function (it) { return vistaArcade(it); },
+    laberinto: function (it) { return vistaArcade(it); },
 
     video_preguntas: function (it) {
       // `it.video` llega ya como identificador: lo extrae el servidor, porque
@@ -467,6 +478,7 @@ window.LudiaJugar = (function () {
       case 'avion':
       case 'globos':
       case 'atrapa':
+      case 'laberinto':
       case 'video_preguntas':
       case 'encuesta':
         return seleccion;
@@ -518,6 +530,7 @@ window.LudiaJugar = (function () {
       case 'avion':
       case 'globos':
       case 'atrapa':
+      case 'laberinto':
       case 'video_preguntas':
       case 'encuesta':
       case 'escala':

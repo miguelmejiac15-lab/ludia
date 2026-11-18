@@ -939,3 +939,28 @@ main.sala, main.unirse {
 .j-arcade-alterno { margin-top: 6px; }
 .j-arcade-alterno summary { cursor: pointer; font-size: .85rem; font-weight: 700; color: var(--violet); text-align: center; padding: 6px; }
 .j-arcade-alterno .j-opciones { margin-top: 10px; }
+
+/* Laberinto: leyenda de las puertas y cruceta táctil */
+.j-leyenda {
+  list-style: none; margin: 6px 0 0; padding: 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-weight: 700; font-size: .92rem;
+}
+.j-leyenda li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.j-leyenda b {
+  flex: none; width: 26px; height: 26px; border-radius: 8px; color: #fff;
+  display: grid; place-items: center; font-family: var(--font-title);
+}
+.j-cruceta {
+  display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 48px);
+  gap: 6px; justify-content: center; padding: 10px 0 12px; background: #7ED98C;
+}
+.j-cruceta button {
+  font-size: 1.2rem; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .85);
+  color: #2A2140; cursor: pointer; touch-action: none;
+  box-shadow: 0 4px 0 rgba(42, 33, 64, .18);
+}
+.j-cruceta button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(42, 33, 64, .18); }
+.j-cruceta [data-dir="arriba"] { grid-column: 2; grid-row: 1; }
+.j-cruceta [data-dir="izquierda"] { grid-column: 1; grid-row: 2; }
+.j-cruceta [data-dir="abajo"] { grid-column: 2; grid-row: 2; }
+.j-cruceta [data-dir="derecha"] { grid-column: 3; grid-row: 2; }

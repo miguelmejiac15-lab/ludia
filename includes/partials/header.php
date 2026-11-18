@@ -121,6 +121,12 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
       <?php if (($usuarioActual['rol'] ?? '') === 'admin'): ?>
         <a href="<?= e(base_url('app/admin.php')) ?>">Panel</a>
       <?php endif; ?>
+      <?php if (!$usuarioActual): ?>
+        <?php /* En celulares angostos estos dos salen de la barra (no caben
+                 junto a «Tengo un código») y viven aquí, en el menú. */ ?>
+        <a class="solo-movil" href="<?= e(base_url('app/ingresar.php')) ?>">Ingresar</a>
+        <a class="solo-movil" href="<?= e(base_url('app/crear.php')) ?>">Probar gratis</a>
+      <?php endif; ?>
     </nav>
 
     <div class="topbar-actions">
@@ -135,8 +141,8 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
         </form>
       <?php else: ?>
         <a class="btn btn-ghost btn-sm" href="<?= e(base_url('jugar/')) ?>" title="Para estudiantes: entra con el código de la pantalla">🎮 Tengo un código</a>
-        <a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/ingresar.php')) ?>">Ingresar</a>
-        <a class="btn btn-primary btn-sm" href="<?= e(base_url('app/crear.php')) ?>">Probar gratis</a>
+        <a class="btn btn-ghost btn-sm solo-escritorio" href="<?= e(base_url('app/ingresar.php')) ?>">Ingresar</a>
+        <a class="btn btn-primary btn-sm solo-escritorio" href="<?= e(base_url('app/crear.php')) ?>">Probar gratis</a>
       <?php endif; ?>
       <button class="menu-toggle" type="button" aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menú">
         <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>

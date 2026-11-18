@@ -188,6 +188,7 @@ window.LudiaEditor = (function () {
     avion: function (it, ctx) { return campos.quiz(it, ctx); },
     globos: function (it, ctx) { return campos.quiz(it, ctx); },
     atrapa: function (it, ctx) { return campos.quiz(it, ctx); },
+    laberinto: function (it, ctx) { return campos.quiz(it, ctx); },
 
     verdadero_falso: function (it, ctx) {
       return campoTexto('f-afirmacion', 'Afirmación', 'afirmacion', it.afirmacion, { textarea: true, placeholder: 'Ej. La Segunda Guerra Mundial comenzó en 1939.' }) +
@@ -387,6 +388,15 @@ window.LudiaEditor = (function () {
         '<div class="pv-cielo"><span class="pv-avion" aria-hidden="true">✈️</span>' +
         (opciones.length ? opciones : [{ t: 'Respuesta A', i: 0 }, { t: 'Respuesta B', i: 1 }]).map(function (o, n) {
           return '<span class="pv-nube" style="top:' + (8 + n * (78 / Math.max(1, opciones.length || 2))) + '%">' + esc(o.t) + '</span>';
+        }).join('') + '</div>';
+    },
+    laberinto: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); }).slice(0, 4);
+      var esquinas = ['left:6%;top:8%', 'right:6%;top:8%', 'left:6%;bottom:8%', 'right:6%;bottom:8%'];
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-laberinto"><span class="pv-centro">🐼</span><span class="pv-abeja">🐝</span>' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-puerta opt-' + n + '" style="' + esquinas[n] + '" title="' + esc(t) + '">' + LETRAS[n] + '</span>';
         }).join('') + '</div>';
     },
     atrapa: function (it) {
@@ -592,7 +602,7 @@ window.LudiaEditor = (function () {
 
   /** Formatos donde la imagen acompaña al enunciado. */
   var CON_IMAGEN = [
-    'quiz', 'avion', 'globos', 'atrapa', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
+    'quiz', 'avion', 'globos', 'atrapa', 'laberinto', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
     'completar', 'relacionar', 'clasificar', 'ordenar',
     'encuesta', 'pregunta_abierta', 'escala', 'mural',
     'anagrama', 'numerica', 'linea_tiempo', 'pagina'

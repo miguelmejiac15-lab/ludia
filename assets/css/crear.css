@@ -932,3 +932,18 @@ label.btn { cursor: pointer; }
   max-width: 100%; padding: 3px 8px; border-radius: 8px; background: #fff; color: #2A2140;
   font-size: .66rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* Vista previa de «Laberinto» */
+.pv-laberinto {
+  position: relative; height: 150px; margin-top: 10px; border-radius: 14px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 22px, #2E9E58 22px 30px),
+    repeating-linear-gradient(0deg, #F1DFBB 0 22px, #2E9E58 22px 26px);
+}
+.pv-centro, .pv-abeja { position: absolute; font-size: 1.3rem; }
+.pv-centro { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.pv-abeja { left: 30%; top: 20%; }
+.pv-puerta {
+  position: absolute; width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center; color: #fff; font-weight: 800;
+}

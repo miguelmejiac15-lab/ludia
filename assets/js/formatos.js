@@ -89,6 +89,13 @@ window.LudiaFormatos = (function () {
       validar: function (it) { return tipos.avion.validar(it); }
     },
 
+    laberinto: {
+      nombre: 'Laberinto', icono: '🌀', grupo: 'preguntas', puntua: true,
+      descripcion: 'Un laberinto con una puerta por respuesta: hay que llegar a la correcta escapando de las abejas.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
       descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',

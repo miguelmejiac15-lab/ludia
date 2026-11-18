@@ -56,6 +56,7 @@ const ORDEN = [
     'migracion-avion.sql',
     'migracion-globos.sql',
     'migracion-atrapa.sql',
+    'migracion-laberinto.sql',
 ];
 
 $base = __DIR__;

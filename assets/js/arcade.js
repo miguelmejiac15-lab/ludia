@@ -12,6 +12,7 @@
      avion   — «Vuela a la respuesta»: atravesar la nube correcta.
      globos  — «Globos»: reventar el globo correcto antes de que se escape.
      atrapa  — «Atrapa la correcta»: tocar al animalito que asoma con ella.
+     laberinto — «Laberinto»: llegar a la puerta correcta sin que te pillen.
 
    Arte propio: nada de imágenes ni sonidos externos.
    ===================================================================== */
@@ -713,10 +714,303 @@ window.LudiaArcade = (function () {
     });
   }
 
-  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa };
+  /* =================================================================
+     🌀 Laberinto
+     El personaje del estudiante sale del centro de un laberinto de setos
+     y elige llegando a una de las puertas de las esquinas. Lo persiguen
+     dos abejas, más lentas que él: si lo alcanzan, vuelve al centro (sin
+     vidas que perder: nadie se queda sin responder). Un laberinto nuevo en
+     cada pregunta, con algunos atajos para poder escapar.
+     Se mueve tocando hacia dónde ir, deslizando el dedo, con la cruceta o
+     con las flechas del teclado.
+     ================================================================= */
+  function laberinto(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 1;
+    b.medir();
+
+    var N = 15;                      // casillas por lado (impar)
+    var CENTRO = 7;
+    var muro = [];                   // muro[y][x] = true si es seto
+    var y, x;
+    for (y = 0; y < N; y++) { muro.push([]); for (x = 0; x < N; x++) muro[y].push(true); }
+
+    // Laberinto perfecto por retroceso, y luego unos atajos.
+    (function cavar() {
+      var pila = [[1, 1]], visto = {};
+      muro[1][1] = false; visto['1,1'] = true;
+      while (pila.length) {
+        var c = pila[pila.length - 1];
+        var vecinos = barajar([[2, 0], [-2, 0], [0, 2], [0, -2]]).map(function (d) { return [c[0] + d[0], c[1] + d[1], d]; })
+          .filter(function (v) { return v[0] > 0 && v[1] > 0 && v[0] < N - 1 && v[1] < N - 1 && !visto[v[0] + ',' + v[1]]; });
+        if (!vecinos.length) { pila.pop(); continue; }
+        var v = vecinos[0];
+        muro[c[1] + v[2][1] / 2][c[0] + v[2][0] / 2] = false;
+        muro[v[1]][v[0]] = false;
+        visto[v[0] + ',' + v[1]] = true;
+        pila.push([v[0], v[1]]);
+      }
+      for (var k = 0; k < 18; k++) {
+        var ax = 1 + Math.floor(Math.random() * (N - 2)), ay = 1 + Math.floor(Math.random() * (N - 2));
+        if ((ax + ay) % 2 === 1 && muro[ay][ax]) muro[ay][ax] = false;
+      }
+      // Plaza libre en el centro para arrancar con calma.
+      for (var cy2 = CENTRO - 1; cy2 <= CENTRO + 1; cy2++) for (var cx2 = CENTRO - 1; cx2 <= CENTRO + 1; cx2++) muro[cy2][cx2] = false;
+    })();
+
+    // Puertas: una por esquina, hasta 4 respuestas.
+    var esquinas = barajar([[1, 1], [N - 2, 1], [1, N - 2], [N - 2, N - 2]]);
+    var puertas = b.opciones.slice(0, 4).map(function (op, i) { return { op: op, x: esquinas[i][0], y: esquinas[i][1] }; });
+    function puertaEn(px, py) { return puertas.filter(function (p) { return p.x === px && p.y === py; })[0]; }
+
+    var DIRS = { arriba: [0, -1], abajo: [0, 1], izquierda: [-1, 0], derecha: [1, 0] };
+    var CONTRARIA = { arriba: 'abajo', abajo: 'arriba', izquierda: 'derecha', derecha: 'izquierda' };
+    function libre(px, py, paraAbeja) {
+      if (px < 0 || py < 0 || px >= N || py >= N || muro[py][px]) return false;
+      return !(paraAbeja && puertaEn(px, py));
+    }
+
+    var jugador = { x: CENTRO, y: CENTRO, px: CENTRO, py: CENTRO, dir: null, quiere: null, avance: 0, invulnerable: 0 };
+    var abejas = [
+      { x: CENTRO, y: 1, px: CENTRO, py: 1, dir: null, avance: 0 },
+      { x: CENTRO, y: N - 2, px: CENTRO, py: N - 2, dir: null, avance: 0 }
+    ].filter(function (a) { return !muro[a.y][a.x]; });
+    abejas.forEach(function (a) { a.casa = [a.x, a.y]; });
+    var atrapadoEn = -10, festejo = 0, abejasQuietas = 1.5;
+    // Solo lectura, para las pruebas automáticas: el mapa y dónde está cada uno.
+    b.marco.ludiaLaberinto = { muro: muro, puertas: puertas, jugador: jugador, abejas: abejas };
+
+    var vJugador = b.reducido ? 3.6 : 5;
+    var vAbeja = b.reducido ? 2 : 2.9;
+
+    function geometria() {
+      var lado = Math.min(b.W, b.H) - 8;
+      var t = lado / N;
+      return { t: t, ox: (b.W - t * N) / 2, oy: (b.H - t * N) / 2 };
+    }
+
+    /* ---------- Controles ---------- */
+    function pedir(dir) {
+      if (!DIRS[dir]) return;
+      jugador.quiere = dir;
+      // Darse la vuelta a medio pasillo es inmediato, como en cualquier
+      // laberinto: si no, el personaje tendría que llegar a la casilla
+      // siguiente para poder regresar.
+      if (jugador.dir && dir === CONTRARIA[jugador.dir] && jugador.avance > 0) {
+        var d = DIRS[jugador.dir];
+        jugador.x += d[0]; jugador.y += d[1];
+        jugador.avance = 1 - jugador.avance;
+        jugador.dir = dir;
+      }
+    }
+    var inicio = null;
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) {
+      var p = b.punto(ev), g = geometria();
+      inicio = p;
+      // Tocar: ir hacia donde se tocó, por el eje con más distancia.
+      var dx = p.x - (g.ox + (jugador.px + 0.5) * g.t), dy = p.y - (g.oy + (jugador.py + 0.5) * g.t);
+      if (Math.abs(dx) > g.t * 0.4 || Math.abs(dy) > g.t * 0.4) {
+        pedir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'derecha' : 'izquierda') : (dy > 0 ? 'abajo' : 'arriba'));
+      }
+      if (b.lienzo.setPointerCapture) { try { b.lienzo.setPointerCapture(ev.pointerId); } catch (e) {} }
+      sonar(220, 0.04, 'triangle', 0.02);
+      if (ev.cancelable) ev.preventDefault();
+    });
+    b.escuchar(b.lienzo, 'pointermove', function (ev) {
+      if (!inicio || !(ev.buttons || ev.pressure > 0)) return;
+      var p = b.punto(ev), dx = p.x - inicio.x, dy = p.y - inicio.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 16) return;
+      pedir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'derecha' : 'izquierda') : (dy > 0 ? 'abajo' : 'arriba'));
+      inicio = p;
+    });
+    b.escuchar(b.lienzo, 'pointerup', function () { inicio = null; });
+    [].forEach.call(b.marco.querySelectorAll('[data-dir]'), function (boton) {
+      b.escuchar(boton, 'pointerdown', function (ev) { pedir(boton.getAttribute('data-dir')); ev.preventDefault(); });
+      b.escuchar(boton, 'click', function (ev) { pedir(boton.getAttribute('data-dir')); ev.preventDefault(); });
+    });
+    b.escuchar(document, 'keydown', function (ev) {
+      if (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      var mapa = { ArrowUp: 'arriba', ArrowDown: 'abajo', ArrowLeft: 'izquierda', ArrowRight: 'derecha', w: 'arriba', s: 'abajo', a: 'izquierda', d: 'derecha' };
+      var dir = mapa[ev.key];
+      if (!dir) return;
+      ev.preventDefault();
+      pedir(dir);
+    });
+
+    /* ---------- Movimiento por casillas ---------- */
+
+    /** Avanza a alguien por la cuadrícula. `elegir` decide la dirección en cada casilla. */
+    function mover(quien, velocidad, dt, elegir) {
+      if (quien.dir === null) {
+        quien.dir = elegir(quien);
+        if (quien.dir === null) return;
+      }
+      quien.avance += velocidad * dt;
+      while (quien.avance >= 1) {
+        quien.avance -= 1;
+        var d = DIRS[quien.dir];
+        quien.x += d[0]; quien.y += d[1];
+        var siguiente = elegir(quien);
+        if (siguiente === null) { quien.dir = null; quien.avance = 0; break; }
+        quien.dir = siguiente;
+      }
+      var dd = quien.dir ? DIRS[quien.dir] : [0, 0];
+      quien.px = quien.x + dd[0] * quien.avance;
+      quien.py = quien.y + dd[1] * quien.avance;
+    }
+
+    function elegirJugador(j) {
+      if (j.quiere) {
+        var q = DIRS[j.quiere];
+        if (libre(j.x + q[0], j.y + q[1])) { return j.quiere; }
+      }
+      if (j.dir) {
+        var d = DIRS[j.dir];
+        if (libre(j.x + d[0], j.y + d[1])) return j.dir;
+      }
+      return null;
+    }
+
+    /** Distancias desde el jugador por los pasillos (búsqueda en anchura). */
+    function distancias() {
+      var dist = {}, cola = [[jugador.x, jugador.y]];
+      dist[jugador.x + ',' + jugador.y] = 0;
+      while (cola.length) {
+        var c = cola.shift();
+        Object.keys(DIRS).forEach(function (k) {
+          var nx = c[0] + DIRS[k][0], ny = c[1] + DIRS[k][1], clave = nx + ',' + ny;
+          if (libre(nx, ny, true) && dist[clave] === undefined) { dist[clave] = dist[c[0] + ',' + c[1]] + 1; cola.push([nx, ny]); }
+        });
+      }
+      return dist;
+    }
+    var mapaDist = distancias(), recalcular = 0;
+
+    function elegirAbeja(a) {
+      var opciones = Object.keys(DIRS).filter(function (k) {
+        return libre(a.x + DIRS[k][0], a.y + DIRS[k][1], true);
+      });
+      if (!opciones.length) return null;
+      var sinVolver = opciones.filter(function (k) { return k !== CONTRARIA[a.dir]; });
+      if (sinVolver.length) opciones = sinVolver;
+      // Casi siempre se acerca; a veces se distrae con una flor.
+      if (Math.random() < 0.72) {
+        opciones.sort(function (p, q) {
+          var dp = mapaDist[(a.x + DIRS[p][0]) + ',' + (a.y + DIRS[p][1])], dq = mapaDist[(a.x + DIRS[q][0]) + ',' + (a.y + DIRS[q][1])];
+          return (dp === undefined ? 999 : dp) - (dq === undefined ? 999 : dq);
+        });
+        return opciones[0];
+      }
+      return opciones[Math.floor(Math.random() * opciones.length)];
+    }
+
+    /* ---------- Dibujo ---------- */
+
+    function tablero(g) {
+      ctx.fillStyle = '#7ED98C'; ctx.fillRect(0, 0, b.W, b.H);
+      for (var yy = 0; yy < N; yy++) {
+        for (var xx = 0; xx < N; xx++) {
+          var x0 = g.ox + xx * g.t, y0 = g.oy + yy * g.t;
+          if (muro[yy][xx]) {
+            ctx.fillStyle = '#2E9E58';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(x0 + 0.5, y0 + 0.5, g.t - 1, g.t - 1, g.t * 0.3); else ctx.rect(x0, y0, g.t, g.t);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.12)';
+            ctx.fillRect(x0 + g.t * 0.2, y0 + g.t * 0.18, g.t * 0.6, g.t * 0.14);
+          } else {
+            ctx.fillStyle = (xx + yy) % 2 ? '#F6E7C8' : '#F1DFBB';
+            ctx.fillRect(x0, y0, g.t, g.t);
+          }
+        }
+      }
+      // Puertas
+      puertas.forEach(function (p) {
+        var cx = g.ox + (p.x + 0.5) * g.t, cy = g.oy + (p.y + 0.5) * g.t;
+        var pulso = 1 + Math.sin(b.tiempo * 4 + p.op.i) * 0.06;
+        ctx.fillStyle = COLORES[p.op.i % COLORES.length];
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(cx - g.t * 0.5 * pulso, cy - g.t * 0.5 * pulso, g.t * pulso, g.t * pulso, g.t * 0.25); else ctx.rect(cx - g.t / 2, cy - g.t / 2, g.t, g.t);
+        ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(g.t * 0.7) + 'px Fredoka, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(LETRAS[p.op.i], cx, cy + 1);
+      });
+    }
+
+    function emoji(texto, cx, cy, tam) {
+      ctx.font = Math.round(tam) + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(texto, cx, cy);
+    }
+
+    b.correr(function (dt) {
+      var g = geometria(), eligio = b.yaEligio();
+      if (!eligio) {
+        var antes = jugador.x + ',' + jugador.y;
+        mover(jugador, vJugador, dt, elegirJugador);
+        if (jugador.x + ',' + jugador.y !== antes) { recalcular = 0; mapaDist = distancias(); }
+        var puerta = puertaEn(jugador.x, jugador.y);
+        if (puerta) {
+          b.explotar(g.ox + (puerta.x + 0.5) * g.t, g.oy + (puerta.y + 0.5) * g.t, COLORES[puerta.op.i % COLORES.length], 34);
+          sonar(523, 0.2, 'sine', 0.14, 1.5);
+          festejo = 1;
+          b.elegir(puerta.op);
+        }
+        abejasQuietas = Math.max(0, abejasQuietas - dt);
+        if (!abejasQuietas) abejas.forEach(function (a) { mover(a, vAbeja, dt, elegirAbeja); });
+        jugador.invulnerable = Math.max(0, jugador.invulnerable - dt);
+        abejas.forEach(function (a) {
+          if (jugador.invulnerable > 0) return;
+          if (Math.abs(a.px - jugador.px) < 0.6 && Math.abs(a.py - jugador.py) < 0.6) {
+            // ¡Pillado! De vuelta al centro, sin perder nada más que tiempo.
+            jugador.x = jugador.px = CENTRO; jugador.y = jugador.py = CENTRO;
+            jugador.dir = jugador.quiere = null; jugador.avance = 0;
+            jugador.invulnerable = 1.6;
+            atrapadoEn = b.tiempo;
+            // Las abejas vuelven a su colmena y esperan un poco: si se
+            // quedaran en el centro, atraparían al personaje en bucle.
+            abejas.forEach(function (ab) {
+              ab.x = ab.px = ab.casa[0]; ab.y = ab.py = ab.casa[1]; ab.dir = null; ab.avance = 0;
+            });
+            abejasQuietas = 1.2;
+            mapaDist = distancias();
+            sonar(160, 0.3, 'sawtooth', 0.06, 0.6);
+          }
+        });
+      }
+      festejo = Math.max(0, festejo - dt);
+
+      tablero(g);
+      abejas.forEach(function (a, i) {
+        emoji('🐝', g.ox + (a.px + 0.5) * g.t + Math.sin(b.tiempo * 9 + i) * g.t * 0.08,
+          g.oy + (a.py + 0.5) * g.t + Math.cos(b.tiempo * 7 + i) * g.t * 0.08, g.t * 0.95);
+      });
+      var parpadea = jugador.invulnerable > 0 && Math.floor(b.tiempo * 10) % 2 === 0;
+      if (!parpadea) {
+        emoji(piloto, g.ox + (jugador.px + 0.5) * g.t, g.oy + (jugador.py + 0.5) * g.t - (festejo ? Math.abs(Math.sin(b.tiempo * 14)) * g.t * 0.4 : 0), g.t * 1.05);
+      }
+      if (b.tiempo - atrapadoEn < 1.2) {
+        ctx.globalAlpha = 1 - (b.tiempo - atrapadoEn) / 1.2;
+        var aviso = '¡Bzzz! Otra vez desde el centro';
+        ctx.font = '800 ' + Math.max(12, Math.round(g.t * 0.62)) + 'px Fredoka, system-ui, sans-serif';
+        var anchoAviso = Math.min(b.W - 16, ctx.measureText(aviso).width + 24);
+        ctx.fillStyle = 'rgba(42,33,64,.82)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(b.W / 2 - anchoAviso / 2, b.H / 2 - g.t * 2.2, anchoAviso, g.t * 1.2, g.t * 0.6); else ctx.rect(b.W / 2 - anchoAviso / 2, b.H / 2 - g.t * 2.2, anchoAviso, g.t * 1.2);
+        ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(aviso, b.W / 2, b.H / 2 - g.t * 1.6);
+        ctx.globalAlpha = 1;
+      }
+      b.dibujarChispas(dt);
+    });
+  }
+
+  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa, laberinto: laberinto };
 
   /**
-   * @param {string} tipo            'avion' | 'globos' | 'atrapa'
+   * @param {string} tipo            'avion' | 'globos' | 'atrapa' | 'laberinto'
    * @param {HTMLElement} marco      contenedor con un <canvas>
    * @param {string[]} textos        las opciones, en su orden original
    * @param {function(number)} alElegir  recibe el índice ORIGINAL elegido

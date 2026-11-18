@@ -62,6 +62,19 @@ window.LudiaFormatos = (function () {
       }
     },
 
+    avion: {
+      nombre: 'Vuela a la respuesta', icono: '✈️', grupo: 'preguntas', puntua: true,
+      descripcion: 'Un avioncito vuela entre nubes con las respuestas: hay que atravesar la correcta.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) {
+        var e = [];
+        if (vacio(it.enunciado)) e.push('Escribe la pregunta');
+        if (llenas(it.opciones).length < 2) e.push('Agrega al menos 2 opciones');
+        if (vacio(it.opciones[it.correcta])) e.push('Marca una opción correcta que tenga texto');
+        return e;
+      }
+    },
+
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
       descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',

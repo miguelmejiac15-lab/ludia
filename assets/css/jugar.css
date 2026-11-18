@@ -927,3 +927,15 @@ main.sala, main.unirse {
 .j-espera-video b { font-size: 3.4rem; line-height: 1; }
 .j-espera-video p { font-family: var(--font-title); font-weight: 600; font-size: 1.35rem; }
 .j-espera-video span { color: var(--text-soft); font-size: .92rem; }
+
+/* ---------- Vuela a la respuesta (assets/js/avion.js) ---------- */
+.j-avion {
+  position: relative; margin: 12px 0 8px; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 14px 30px -18px rgba(42, 33, 64, .45);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.j-avion canvas { display: block; width: 100%; cursor: ns-resize; }
+.j-avion-ayuda { font-size: .85rem; color: var(--text-soft); text-align: center; margin: 4px 0 10px; }
+.j-avion-alterno { margin-top: 6px; }
+.j-avion-alterno summary { cursor: pointer; font-size: .85rem; font-weight: 700; color: var(--violet); text-align: center; padding: 6px; }
+.j-avion-alterno .j-opciones { margin-top: 10px; }

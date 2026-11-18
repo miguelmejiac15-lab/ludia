@@ -899,3 +899,17 @@ label.btn { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .pv-mural.postit .nota, .pv-mural.postit .nota:nth-child(even) { transform: none; }
 }
+
+/* Vista previa de «Vuela a la respuesta» */
+.pv-cielo {
+  position: relative; height: 150px; margin-top: 10px; border-radius: 14px; overflow: hidden;
+  background: linear-gradient(#5BB8FF, #BEE6FF 70%, #8FD9B6 70%, #1FA98A);
+}
+.pv-avion { position: absolute; left: 8%; top: 42%; font-size: 1.5rem; }
+.pv-nube {
+  position: absolute; right: 8%; max-width: 55%; padding: 4px 12px; border-radius: 999px;
+  background: #fff; color: #2A2140; font-size: .72rem; font-weight: 800;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 4px 10px -6px rgba(42, 33, 64, .5);
+}
+.pv-nube:nth-child(odd) { right: 18%; }

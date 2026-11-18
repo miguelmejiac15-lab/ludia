@@ -375,3 +375,10 @@
   padding: 14px 10px;
 }
 .paso-codigo .btn { font-size: 1.15rem; padding: 16px; }
+
+/* «Vuela a la respuesta»: el juego ocurre en los celulares */
+.proy-avion-aviso {
+  text-align: center; font-weight: 800; color: var(--violet);
+  background: var(--violet-soft); border-radius: 999px; padding: 6px 16px;
+  width: fit-content; margin: 0 auto 10px;
+}

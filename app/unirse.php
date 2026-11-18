@@ -15,7 +15,7 @@ $page = [
 ];
 
 $extraStyles  = ['css/sesion.css', 'css/jugar.css'];
-$extraScripts = ['js/personaje.js', 'js/jugar.js', 'js/unirse.js'];
+$extraScripts = ['js/personaje.js', 'js/avion.js', 'js/jugar.js', 'js/unirse.js'];
 
 require LUDIA_ROOT . '/includes/partials/header.php';
 ?>

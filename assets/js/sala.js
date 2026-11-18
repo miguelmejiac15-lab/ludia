@@ -204,6 +204,11 @@
 
   // Cada vista recibe el ítem público, la clave (solo la ve el anfitrión) y los aportes recibidos.
   var vistas = {
+    // En el proyector el avión se ve como un quiz: el juego de acción
+    // ocurre en cada celular.
+    avion: function (it, clave) {
+      return '<p class="proy-avion-aviso">✈️ ¡Vuela en tu celular y atraviesa la nube correcta!</p>' + vistas.quiz(it, clave);
+    },
     quiz: function (it, clave) {
       return '<p class="proy-pregunta">' + esc(it.enunciado) + '</p><div class="proy-opciones">' +
         it.opciones.map(function (t, i) {

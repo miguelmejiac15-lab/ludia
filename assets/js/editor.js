@@ -184,6 +184,9 @@ window.LudiaEditor = (function () {
         listaSimple(ctx, it, 'opciones', 'radio', 2, 4, 'Opción') + '</div>';
     },
 
+    // Mismos datos que un quiz: lo que cambia es cómo se juega.
+    avion: function (it, ctx) { return campos.quiz(it, ctx); },
+
     verdadero_falso: function (it, ctx) {
       return campoTexto('f-afirmacion', 'Afirmación', 'afirmacion', it.afirmacion, { textarea: true, placeholder: 'Ej. La Segunda Guerra Mundial comenzó en 1939.' }) +
         '<div class="field"><span class="field-label">Respuesta correcta</span><div class="toggle-vf">' +
@@ -375,6 +378,15 @@ window.LudiaEditor = (function () {
           return '<div class="pv-option opt-' + i + '">' + LETRAS[i] + ' · ' + textoO(t, 'Opción ' + LETRAS[i]) + '</div>';
         }).join('') + '</div>';
     },
+    avion: function (it) {
+      var opciones = it.opciones.map(function (t, i) { return { t: t, i: i }; })
+        .filter(function (o) { return !F.vacio(o.t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-cielo"><span class="pv-avion" aria-hidden="true">✈️</span>' +
+        (opciones.length ? opciones : [{ t: 'Respuesta A', i: 0 }, { t: 'Respuesta B', i: 1 }]).map(function (o, n) {
+          return '<span class="pv-nube" style="top:' + (8 + n * (78 / Math.max(1, opciones.length || 2))) + '%">' + esc(o.t) + '</span>';
+        }).join('') + '</div>';
+    },
     verdadero_falso: function (it) {
       return '<div class="pv-question">' + textoO(it.afirmacion, 'Aquí va tu afirmación…') + '</div>' +
         '<div class="pv-options grid-2"><div class="pv-option opt-2">✔ Verdadero</div><div class="pv-option opt-0">✘ Falso</div></div>';
@@ -561,7 +573,7 @@ window.LudiaEditor = (function () {
 
   /** Formatos donde la imagen acompaña al enunciado. */
   var CON_IMAGEN = [
-    'quiz', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
+    'quiz', 'avion', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
     'completar', 'relacionar', 'clasificar', 'ordenar',
     'encuesta', 'pregunta_abierta', 'escala', 'mural',
     'anagrama', 'numerica', 'linea_tiempo', 'pagina'

@@ -41,6 +41,20 @@ window.LudiaJugar = (function () {
         }).join('') + '</div>';
     },
 
+    // Juego de acción: el avión elige atravesando una nube (assets/js/avion.js).
+    // Debajo, las mismas opciones como botones para quien prefiera tocar o use
+    // lector de pantalla: elegir ahí también envía al instante.
+    avion: function (it) {
+      return '<p class="j-pregunta">' + esc(it.enunciado) + '</p>' +
+        '<div class="j-avion" data-avion><canvas aria-hidden="true"></canvas></div>' +
+        '<p class="j-avion-ayuda">👆 Arrastra el dedo para subir o bajar el avión y atraviesa la nube correcta</p>' +
+        '<details class="j-avion-alterno"><summary>¿Prefieres tocar la respuesta?</summary><div class="j-opciones">' +
+        it.opciones.map(function (t, i) {
+          return '<button type="button" class="j-opcion opt-' + i + '" data-elegir="' + i + '">' +
+            '<b>' + LETRAS[i] + '</b> ' + esc(t) + '</button>';
+        }).join('') + '</div></details>';
+    },
+
     video_preguntas: function (it) {
       // `it.video` llega ya como identificador: lo extrae el servidor, porque
       // esta pantalla no carga formatos.js.
@@ -438,6 +452,7 @@ window.LudiaJugar = (function () {
 
     switch (tipo) {
       case 'quiz':
+      case 'avion':
       case 'video_preguntas':
       case 'encuesta':
         return seleccion;
@@ -486,6 +501,7 @@ window.LudiaJugar = (function () {
 
     switch (tipo) {
       case 'quiz':
+      case 'avion':
       case 'video_preguntas':
       case 'encuesta':
       case 'escala':
@@ -568,6 +584,7 @@ window.LudiaJugar = (function () {
       [].forEach.call(contenedor.querySelectorAll('[data-elegir]'), function (b) {
         b.classList.toggle('elegida', b === boton);
       });
+      if (actual.item.tipo === 'avion') { enviar(); return; }
     } else if (boton.hasAttribute('data-marcar')) {
       var indice = Number(boton.getAttribute('data-marcar'));
       var posicion = seleccion.indexOf(indice);
@@ -804,7 +821,9 @@ window.LudiaJugar = (function () {
 
     // Mientras sea la misma pregunta y no se haya respondido, no se redibuja:
     // así no se borra lo que el participante está escribiendo.
-    if (mismaPregunta && !mia && caja.querySelector('[data-enviar]')) return;
+    // El avión no tiene botón de enviar, pero tampoco se puede redibujar:
+    // reiniciaría el vuelo cada 3 s.
+    if (mismaPregunta && !mia && (caja.querySelector('[data-enviar]') || caja.querySelector('[data-avion]'))) return;
 
     actual = actividad;
     var item = actividad.item;
@@ -846,7 +865,7 @@ window.LudiaJugar = (function () {
         }).join('') + '</div>'
       : (vistas[tipo] ? vistas[tipo](item) : '<p class="j-pregunta">Actividad no disponible</p>');
     caja.innerHTML = imagen + cuerpo +
-      (soloLectura ? '' : '<button class="btn btn-primary btn-block" type="button" data-enviar disabled>' +
+      (soloLectura || tipo === 'avion' ? '' : '<button class="btn btn-primary btn-block" type="button" data-enviar disabled>' +
         (tipo === 'mural' ? 'Enviar aporte' : 'Enviar respuesta') + '</button>');
 
     // Entrada de la pregunta nueva (css/animaciones.css). Solo aquí, que es
@@ -854,6 +873,13 @@ window.LudiaJugar = (function () {
     if (!mismaPregunta && window.LudiaAnim) window.LudiaAnim.marcar(caja, 'entra', 900);
 
     if (tipo === 'video_preguntas' && !enProyector) montarVideo(item);
+    if (tipo === 'avion' && window.LudiaAvion) {
+      window.LudiaAvion.montar(caja.querySelector('[data-avion]'), item.opciones, function (indice) {
+        if (!actual || actual.item !== item) return;
+        seleccion = indice;
+        enviar();
+      }, (document.querySelector('#juego-yo .avatar-cara') || {}).textContent);
+    }
     if (tipo === 'ordenar' || tipo === 'linea_tiempo') refrescarOrden();
     if (tipo === 'ordenar_palabras' || tipo === 'anagrama') refrescarArmada();
     if (tipo === 'clasificar') {

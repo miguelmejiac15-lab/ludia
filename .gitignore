@@ -38,3 +38,7 @@ ludia-documento-maestro.md
 *.pem
 *.key
 *.sql.gz
+
+# Carpeta de entrada: material nuevo que se revisa antes de integrarlo al
+# proyecto. No se versiona (el repositorio es PÚBLICO) ni viaja al servidor.
+_por-integrar/

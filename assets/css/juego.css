@@ -1,0 +1,142 @@
+/* =====================================================================
+   Ludia — juegos (app/juego.php) y la elección «paquete o juego» (crear.php).
+   Usa los tokens de ludia.css; la barra de pasos y el teléfono vienen de crear.css.
+   ===================================================================== */
+
+.juego-pagina { padding-bottom: 80px; }
+.juego-pagina > .wrap { padding-top: 30px; }
+
+.paso-chip-txt {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .85rem; font-weight: 700; color: var(--text-soft);
+  padding: 8px 14px; border-radius: 999px; white-space: nowrap;
+}
+.paso-chip.actual .paso-chip-txt { background: var(--violet-soft); color: var(--violet); }
+.paso-chip.hecho .paso-chip-txt { color: var(--mint); }
+
+/* ---------- Elegir: paquete o juego ---------- */
+.elegir-crear {
+  display: grid; gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  max-width: 860px;
+}
+.elegir-op {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 26px; border-radius: var(--radius-lg);
+  background: var(--surface); border: 2px solid var(--border);
+  color: var(--text); text-decoration: none;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.elegir-op:hover, .elegir-op:focus-visible { transform: translateY(-3px); border-color: var(--violet); box-shadow: var(--shadow); }
+.elegir-op .elegir-icono { font-size: 2.6rem; line-height: 1; }
+.elegir-op h2 { font-size: 1.45rem; }
+.elegir-op p { color: var(--text-soft); }
+.elegir-op ul { margin: 0; padding-left: 18px; color: var(--text-soft); font-size: .92rem; }
+.elegir-op .btn { align-self: flex-start; margin-top: auto; }
+.elegir-op.juego { border-color: color-mix(in srgb, var(--coral) 45%, var(--border)); }
+.elegir-op.juego:hover { border-color: var(--coral); }
+.elegir-nuevo {
+  display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .04em;
+  text-transform: uppercase; color: #fff; background: var(--coral);
+  padding: 3px 9px; border-radius: 999px; vertical-align: middle;
+}
+
+/* ---------- Paso 1: plantillas ---------- */
+.plantillas {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+}
+.plantilla {
+  display: flex; flex-direction: column; gap: 6px; height: 100%;
+  padding: 18px; border-radius: var(--radius-md);
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); text-decoration: none;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.plantilla:hover, .plantilla:focus-visible { transform: translateY(-2px); border-color: var(--violet); }
+.plantilla-icono { font-size: 2rem; }
+.plantilla small { color: var(--text-soft); }
+.plantilla.bloqueada { opacity: .6; }
+.candado { font-size: .85em; }
+
+/* ---------- Paso 2: editor ---------- */
+.juego-editor { max-width: 900px; display: flex; flex-direction: column; gap: 14px; }
+.columnas-cabeza, .fila-pareja {
+  display: grid; gap: 8px; align-items: center;
+  grid-template-columns: 28px 1fr 1fr auto;
+}
+.columnas-cabeza { font-size: .85rem; color: var(--text-soft); }
+.columnas-cabeza .link-btn { grid-column: 4; }
+.lista-parejas, .lista-preguntas, .opciones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fila-num { font-weight: 800; color: var(--text-soft); text-align: right; }
+.campo-con-img { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.campo-con-img .input { flex: 1; min-width: 0; }
+.fila-acciones { display: flex; gap: 2px; }
+.btn-icono {
+  font: inherit; font-size: .95rem; line-height: 1; cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 10px;
+  padding: 7px 8px; color: var(--text-soft);
+}
+.btn-icono:hover:not(:disabled) { background: var(--bg-soft); color: var(--text); }
+.btn-icono:disabled { opacity: .3; cursor: default; }
+.btn-icono.bloqueado { font-size: .8rem; }
+.img-mini { position: relative; flex: none; }
+.img-mini img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.img-quitar {
+  position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+  border-radius: 50%; border: 0; background: var(--coral); color: #fff;
+  font-size: .65rem; cursor: pointer; line-height: 1;
+}
+.tarjeta-pregunta {
+  padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--surface-2); display: flex; flex-direction: column; gap: 10px;
+}
+.tarjeta-cabeza { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; }
+.opciones { padding-left: 36px; }
+.opcion { display: flex; gap: 8px; align-items: center; }
+.opcion .input { flex: 1; min-width: 0; }
+.opcion-correcta { position: relative; cursor: pointer; flex: none; }
+.opcion-correcta input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.opcion-correcta span {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid var(--border); font-weight: 800; color: var(--text-soft);
+}
+.opcion-correcta input:checked + span { background: var(--mint); border-color: var(--mint); color: #fff; }
+.opcion-correcta input:focus-visible + span { outline: 3px solid var(--violet); outline-offset: 2px; }
+.tarjeta-pregunta .link-btn, .tarjeta-pregunta .hint { margin-left: 36px; align-self: flex-start; }
+.editor-pie { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.editor-final { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 16px; }
+
+/* ---------- Paso 3: jugar y cambiar ---------- */
+.juego-cabeza { margin-bottom: 20px; }
+.juego-cabeza h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); margin: 8px 0 6px; }
+.juego-grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+.juego-jugar { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.juego-acciones { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.juego-acciones form { margin: 0; }
+.cambiar-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cambiar-lista form { margin: 0; }
+.cambiar-op {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%;
+  font: inherit; font-weight: 700; text-align: left; color: var(--text); text-decoration: none;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 12px; cursor: pointer;
+}
+button.cambiar-op:hover { border-color: var(--violet); background: var(--violet-soft); }
+.cambiar-op.actual { background: var(--violet-soft); border-color: var(--violet); color: var(--violet); cursor: default; }
+.cambiar-op.deshabilitada { opacity: .55; cursor: default; font-weight: 600; }
+.cambiar-op small { flex-basis: 100%; font-weight: 500; color: var(--text-soft); font-size: .8rem; }
+.cambiar-op.actual small { flex-basis: auto; color: inherit; }
+
+@media (max-width: 860px) {
+  .juego-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .columnas-cabeza { display: none; }
+  .fila-pareja { grid-template-columns: 24px 1fr; }
+  .fila-pareja .campo-con-img:nth-of-type(3), .fila-pareja .fila-acciones { grid-column: 2; }
+  .opciones, .tarjeta-pregunta .link-btn, .tarjeta-pregunta .hint { padding-left: 0; margin-left: 0; }
+  .tarjeta-cabeza { grid-template-columns: 24px 1fr; }
+  .tarjeta-cabeza .fila-acciones { grid-column: 2; }
+}

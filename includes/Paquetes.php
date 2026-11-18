@@ -100,10 +100,14 @@ function paquetes_del_usuario(int $usuarioId): array
     return $consulta->fetchAll();
 }
 
-/** Cuántos paquetes guarda la cuenta (el tope del plan se mide aquí). */
+/**
+ * Cuántos paquetes guarda la cuenta (el tope del plan se mide aquí).
+ * Los juegos llevan su propia cuenta (juegos_contar, en Juegos.php): un juego
+ * no le quita sitio a un paquete.
+ */
 function paquetes_contar(int $usuarioId): int
 {
-    $consulta = db()->prepare('SELECT COUNT(*) FROM paquetes WHERE usuario_id = ?');
+    $consulta = db()->prepare("SELECT COUNT(*) FROM paquetes WHERE usuario_id = ? AND clase = 'paquete'");
     $consulta->execute([$usuarioId]);
 
     return (int) $consulta->fetchColumn();

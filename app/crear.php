@@ -29,6 +29,12 @@ $idEditar = (int) ($_GET['editar'] ?? 0);
 if ($idEditar > 0) {
     $paquete = paquete_de($idEditar, (int) $usuario['id']);
 
+    // Un juego se edita en su propia pantalla: aquí se rompería su contenido.
+    if ($paquete && ($paquete['clase'] ?? 'paquete') === 'juego') {
+        header('Location: ' . base_url('app/juego.php') . '?id=' . (int) $paquete['id'] . '&editar=1');
+        exit;
+    }
+
     if ($paquete) {
         $editar = [
             'id'          => (int) $paquete['id'],
@@ -37,6 +43,56 @@ if ($idEditar > 0) {
             'actividades' => paquete_actividades($paquete),
         ];
     }
+}
+
+/*
+ * Antes de armar nada: ¿un paquete o un juego? (18/11/2026)
+ * Paquete = una clase con varias pantallas. Juego = una lista de palabras que
+ * se juega de muchas formas (app/juego.php). Se salta al editar y con
+ * ?nuevo=paquete, que es a donde lleva la tarjeta de la izquierda.
+ */
+if (!$editar && ($_GET['nuevo'] ?? '') !== 'paquete') {
+    $page = [
+        'title'       => 'Crear — Ludia',
+        'description' => 'Crea un paquete para tu clase o un juego con tus palabras.',
+        'home'        => false,
+    ];
+    $extraStyles = ['css/crear.css', 'css/juego.css'];
+    require LUDIA_ROOT . '/includes/partials/header.php';
+    ?>
+    <main id="contenido" class="juego-pagina">
+      <div class="wrap">
+        <div class="paso-head">
+          <span class="eyebrow">Crear</span>
+          <h1>¿Qué quieres crear hoy?</h1>
+        </div>
+        <div class="elegir-crear">
+          <a class="elegir-op" href="<?= e(base_url('app/crear.php')) ?>?nuevo=paquete" data-elegir="paquete">
+            <span class="elegir-icono" aria-hidden="true">📚</span>
+            <h2>Un paquete</h2>
+            <p>Una clase completa: varias pantallas seguidas.</p>
+            <ul>
+              <li>Página informativa, preguntas, vídeo, mural, encuesta…</li>
+              <li>En vivo o por enlace, con informe.</li>
+            </ul>
+            <span class="btn btn-ghost">Crear paquete →</span>
+          </a>
+          <a class="elegir-op juego" href="<?= e(base_url('app/juego.php')) ?>" data-elegir="juego">
+            <span class="elegir-icono" aria-hidden="true">🎲</span>
+            <h2>Un juego <span class="elegir-nuevo">Nuevo</span></h2>
+            <p>Escribes tus palabras una vez y las juegas de muchas formas.</p>
+            <ul>
+              <li>Relacionar, memoria, quiz, sopa de letras…</li>
+              <li>Cambias de juego con un clic, sin reescribir nada.</li>
+            </ul>
+            <span class="btn btn-primary">Crear juego →</span>
+          </a>
+        </div>
+      </div>
+    </main>
+    <?php
+    require LUDIA_ROOT . '/includes/partials/footer.php';
+    exit;
 }
 
 $page = [

@@ -44,8 +44,13 @@ sesion_exigir_formatos_del_plan($actividades, $usuario);
 $usuarioId = (int) $usuario['id'];
 
 if ($id > 0) {
-    if (!paquete_de($id, $usuarioId)) {
+    $actual = paquete_de($id, $usuarioId);
+    if (!$actual) {
         api_error('Ese paquete no es tuyo', 403);
+    }
+    // Un juego guarda su contenido de otra forma: este editor lo estropearía.
+    if (($actual['clase'] ?? 'paquete') === 'juego') {
+        api_error('Esto es un juego: edítalo desde su página.', 409, ['juego' => base_url('app/juego.php') . '?id=' . $id]);
     }
     paquete_actualizar($id, $usuarioId, $nombre, $audiencia, $actividades);
     $creado = false;

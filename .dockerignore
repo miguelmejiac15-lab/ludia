@@ -32,3 +32,6 @@ uploads/*
 .DS_Store
 Thumbs.db
 *.log
+
+# Material por integrar: se revisa en local, nunca entra en la imagen.
+_por-integrar/

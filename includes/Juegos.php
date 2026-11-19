@@ -41,6 +41,8 @@ const JUEGO_PLANTILLAS = [
     'laberinto'       => ['nombre' => 'Laberinto',         'icono' => '🌀', 'nativo' => 'preguntas', 'tiempo' => 45,  'descripcion' => 'Llega a la puerta correcta escapando de las abejas.'],
     'ruleta'          => ['nombre' => 'Ruleta',            'icono' => '🎡', 'nativo' => 'parejas',   'tiempo' => 30,  'descripcion' => 'Gírala en el proyector: sale una palabra o pregunta al azar.'],
     'cajas'           => ['nombre' => 'Cajas sorpresa',    'icono' => '🎁', 'nativo' => 'parejas',   'tiempo' => 30,  'descripcion' => 'Abre una caja numerada y descubre lo que esconde.'],
+    'tren'            => ['nombre' => 'Tren de respuestas', 'icono' => '🚂', 'nativo' => 'preguntas', 'tiempo' => 35,  'descripcion' => 'Suelta la caja en el vagón correcto mientras el tren avanza.'],
+    'catapulta'       => ['nombre' => 'Catapulta',         'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 35,  'descripcion' => 'Tensa la honda y lánzate contra el cartel correcto.'],
     'quiz'            => ['nombre' => 'Quiz',              'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 20,  'descripcion' => 'Una pregunta y varias opciones.'],
     'verdadero_falso' => ['nombre' => 'Verdadero o falso', 'icono' => '⚖️', 'nativo' => 'preguntas', 'tiempo' => 15,  'descripcion' => '¿Es cierto o no? Rápido.'],
     'palabra_secreta' => ['nombre' => 'Palabra secreta',   'icono' => '🔡', 'nativo' => 'parejas',   'tiempo' => 45,  'descripcion' => 'Adivina la palabra letra por letra con una pista.'],
@@ -269,6 +271,8 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
         case 'globos':
         case 'atrapa':
         case 'laberinto':
+        case 'tren':
+        case 'catapulta':
             // Los juegos de acción llevan los mismos datos que un quiz: cambia
             // el juego, no la pregunta ni la forma de calificarla.
             if ($plantilla === 'laberinto' && $tipo === 'preguntas') {

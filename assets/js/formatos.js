@@ -96,6 +96,20 @@ window.LudiaFormatos = (function () {
       validar: function (it) { return tipos.avion.validar(it); }
     },
 
+    tren: {
+      nombre: 'Tren de respuestas', icono: '🚂', grupo: 'preguntas', puntua: true,
+      descripcion: 'Un tren con un vagón por respuesta: hay que soltar la caja en el vagón correcto mientras avanza.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
+    catapulta: {
+      nombre: 'Catapulta', icono: '🎯', grupo: 'preguntas', puntua: true,
+      descripcion: 'Se tensa la honda y el personaje sale volando contra el cartel de la respuesta correcta.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
       descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',

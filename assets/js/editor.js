@@ -196,6 +196,8 @@ window.LudiaEditor = (function () {
     globos: function (it, ctx) { return campos.quiz(it, ctx); },
     atrapa: function (it, ctx) { return campos.quiz(it, ctx); },
     laberinto: function (it, ctx) { return campos.quiz(it, ctx); },
+    tren: function (it, ctx) { return campos.quiz(it, ctx); },
+    catapulta: function (it, ctx) { return campos.quiz(it, ctx); },
 
     verdadero_falso: function (it, ctx) {
       return campoTexto('f-afirmacion', 'Afirmación', 'afirmacion', it.afirmacion, { textarea: true, placeholder: 'Ej. La Segunda Guerra Mundial comenzó en 1939.' }) +
@@ -399,6 +401,22 @@ window.LudiaEditor = (function () {
         (opciones.length ? opciones : [{ t: 'Respuesta A', i: 0 }, { t: 'Respuesta B', i: 1 }]).map(function (o, n) {
           return '<span class="pv-nube" style="top:' + (8 + n * (78 / Math.max(1, opciones.length || 2))) + '%">' + esc(o.t) + '</span>';
         }).join('') + '</div>';
+    },
+    tren: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-tren"><span class="pv-loco">🚂</span>' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-vagon opt-' + (n % 6) + '">' + esc(t) + '</span>';
+        }).join('') + '</div>';
+    },
+    catapulta: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-catapulta"><span class="pv-honda">🪃</span><div class="pv-blancos">' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-blanco" style="border-color:var(--o' + (n % 6) + ', #5B3DF5)">' + LETRAS[n] + ' · ' + esc(t) + '</span>';
+        }).join('') + '</div></div>';
     },
     laberinto: function (it) {
       var opciones = it.opciones.filter(function (t) { return !F.vacio(t); }).slice(0, 4);
@@ -628,7 +646,7 @@ window.LudiaEditor = (function () {
 
   /** Formatos donde la imagen acompaña al enunciado. */
   var CON_IMAGEN = [
-    'quiz', 'avion', 'globos', 'atrapa', 'laberinto', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
+    'quiz', 'avion', 'globos', 'atrapa', 'laberinto', 'tren', 'catapulta', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
     'completar', 'relacionar', 'clasificar', 'ordenar',
     'encuesta', 'pregunta_abierta', 'escala', 'mural',
     'anagrama', 'numerica', 'linea_tiempo', 'pagina'

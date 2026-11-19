@@ -37,7 +37,9 @@ window.LudiaJugar = (function () {
     avion: '👆 Arrastra el dedo para subir o bajar el avión y atraviesa la nube correcta',
     globos: '👆 Toca el globo con la respuesta correcta antes de que se escape',
     atrapa: '👆 Toca al animalito que lleva la respuesta correcta antes de que se esconda',
-    laberinto: '👆 Toca hacia dónde ir o desliza el dedo · llega a la puerta correcta y escapa de las abejas'
+    laberinto: '👆 Toca hacia dónde ir o desliza el dedo · llega a la puerta correcta y escapa de las abejas',
+    tren: '👆 Toca para soltar la caja: tiene que caer en el vagón de la respuesta correcta',
+    catapulta: '👆 Arrastra hacia atrás, apunta y suelta: dale al cartel de la respuesta correcta'
   };
   function esArcade(tipo) { return Object.prototype.hasOwnProperty.call(ARCADE, tipo); }
 
@@ -86,6 +88,8 @@ window.LudiaJugar = (function () {
     globos: function (it) { return vistaArcade(it); },
     atrapa: function (it) { return vistaArcade(it); },
     laberinto: function (it) { return vistaArcade(it); },
+    tren: function (it) { return vistaArcade(it); },
+    catapulta: function (it) { return vistaArcade(it); },
 
     video_preguntas: function (it) {
       // `it.video` llega ya como identificador: lo extrae el servidor, porque
@@ -492,6 +496,8 @@ window.LudiaJugar = (function () {
       case 'globos':
       case 'atrapa':
       case 'laberinto':
+      case 'tren':
+      case 'catapulta':
       case 'video_preguntas':
       case 'encuesta':
         return seleccion;
@@ -544,6 +550,8 @@ window.LudiaJugar = (function () {
       case 'globos':
       case 'atrapa':
       case 'laberinto':
+      case 'tren':
+      case 'catapulta':
       case 'video_preguntas':
       case 'encuesta':
       case 'escala':

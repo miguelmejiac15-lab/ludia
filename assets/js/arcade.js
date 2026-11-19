@@ -13,6 +13,8 @@
      globos  — «Globos»: reventar el globo correcto antes de que se escape.
      atrapa  — «Atrapa la correcta»: tocar al animalito que asoma con ella.
      laberinto — «Laberinto»: llegar a la puerta correcta sin que te pillen.
+     tren    — «Tren de respuestas»: soltar la caja en el vagón correcto.
+     catapulta — «Catapulta»: lanzarse con la honda contra el cartel correcto.
 
    Arte propio: nada de imágenes ni sonidos externos.
    ===================================================================== */
@@ -276,9 +278,14 @@ window.LudiaArcade = (function () {
         tormentas.push({ x: b.W + 40, y: arriba + carril * (k + 0.5), r: Math.min(34, carril * 0.38), tocada: false, fase: Math.random() * 6 });
       });
       if (oleada >= 2) avisoRapido = 1.4;
+      // Intercaladas: cada nube llega a su tiempo, en su carril y en otro
+      // orden cada tanda. Todas juntas eran un muro; así hay que leer y
+      // decidir una por una, que es lo que da la emoción.
+      var turnos = barajar(b.opciones.map(function (_, k) { return k; }));
+      var paso = Math.max(ancho * 0.7, b.W * 0.32);
       barajar(b.opciones).forEach(function (o, i) {
         nubes.push({
-          op: o, x: b.W + adelanto + ancho / 2 + 20 + (i % 2) * 26, y: arriba + carril * (i + 0.5), w: ancho, h: alto,
+          op: o, x: b.W + adelanto + ancho / 2 + 20 + turnos[i] * paso, y: arriba + carril * (i + 0.5), w: ancho, h: alto,
           texto: b.ajustar(o.texto, ancho - 52, alto * 0.8, 3, Math.min(17, Math.max(11, alto * 0.24))),
           viva: true, bamboleo: Math.random() * 6
         });
@@ -382,7 +389,7 @@ window.LudiaArcade = (function () {
       if (!eligio) {
         recorrido += v * dt;
         // Una oleada nueva cuando la anterior ya pasó la mitad de la pantalla.
-        var enCamino = nubes.filter(function (n) { return n.viva && n.x > b.W * 0.45; }).length;
+        var enCamino = nubes.filter(function (n) { return n.viva && n.x > b.W * 0.3; }).length;
         if (!enCamino && b.tiempo > 0.9) lanzarOleada();
       }
 
@@ -1136,7 +1143,346 @@ window.LudiaArcade = (function () {
     });
   }
 
-  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa, laberinto: laberinto };
+  /* =================================================================
+     🚂 Tren de respuestas
+     Un tren con un vagón por respuesta pasa bajo una grúa. Se toca (o
+     Espacio) para soltar la caja: hay que calcular para que caiga en el
+     vagón correcto mientras el tren avanza. Si cae al suelo, sale otra.
+     Cada vuelta, los vagones cambian de orden y el tren va un poco más
+     rápido (con tope, para que siga siendo jugable).
+     ================================================================= */
+  function tren(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 0.86;
+    b.medir();
+
+    var vuelta = 0, avisoVuelta = 0, avisoCasi = 0;
+    var tren = null, caja = null, rotas = [], humo = [], festejo = 0;
+
+    var suelo = function () { return b.H * 0.84; };
+    var anchoVagon = function () { return Math.min(140, Math.max(96, b.W * 0.34)); };
+    var altoVagon = function () { return Math.min(78, b.H * 0.2); };
+    var velocidad = function () { return b.W * (b.reducido ? 0.08 : 0.11) * Math.min(1.6, 1 + b.ronda * 0.05 + vuelta * 0.08); };
+    var xGrua = function () { return b.W * 0.5; };
+    var yGrua = function () { return b.H * 0.13; };
+
+    function nuevoTren() {
+      var ancho = anchoVagon(), alto = altoVagon();
+      var vagones = barajar(b.opciones).map(function (o) {
+        return { op: o, texto: b.ajustar(o.texto, ancho - 40, alto * 0.62, 2, 15) };
+      });
+      tren = { x: b.W + 30, vagones: vagones, ancho: ancho, alto: alto, hueco: 14, loco: Math.min(96, ancho * 0.8) };
+      if (vuelta > 0) avisoVuelta = 1.3;
+    }
+    function nuevaCaja() { caja = { y: yGrua() + 26, vy: 0, cae: false, x: xGrua() }; }
+    nuevoTren();
+    nuevaCaja();
+    b.alRedimensionar = function () { nuevaCaja(); };
+
+    function soltar(ev) {
+      if (b.yaEligio() || !caja || caja.cae) return;
+      caja.cae = true;
+      sonar(300, 0.08, 'triangle', 0.05);
+      if (ev && ev.cancelable) ev.preventDefault();
+    }
+    b.escuchar(b.lienzo, 'pointerdown', soltar);
+    b.escuchar(document, 'keydown', function (ev) {
+      if (document.activeElement && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(document.activeElement.tagName)) return;
+      if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'ArrowDown') soltar(ev);
+    });
+
+    /** Dónde está cada vagón ahora (la locomotora va delante, a la izquierda). */
+    function vagonesEn() {
+      var x = tren.x + tren.loco + tren.hueco;
+      return tren.vagones.map(function (v) {
+        var r = { v: v, x: x, y: suelo() - 16 - tren.alto, w: tren.ancho, h: tren.alto };
+        x += tren.ancho + tren.hueco;
+        return r;
+      });
+    }
+    function largoTren() { return tren.loco + tren.hueco + tren.vagones.length * (tren.ancho + tren.hueco); }
+
+    function rueda(x, y, r) {
+      ctx.fillStyle = '#2A2140'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#9AA3B5'; ctx.lineWidth = 2;
+      var a = -tren.x / r;
+      ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * 0.7, y + Math.sin(a) * r * 0.7); ctx.lineTo(x - Math.cos(a) * r * 0.7, y - Math.sin(a) * r * 0.7); ctx.stroke();
+    }
+
+    function dibujarLocomotora() {
+      var x = tren.x, w = tren.loco, base = suelo() - 16, h = tren.alto * 1.05;
+      ctx.fillStyle = '#5B3DF5';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x + w * 0.42, base - h, w * 0.58, h, 10); else ctx.rect(x + w * 0.42, base - h, w * 0.58, h); ctx.fill();
+      ctx.fillStyle = '#E8492C';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, base - h * 0.62, w * 0.62, h * 0.62, 12); else ctx.rect(x, base - h * 0.62, w * 0.62, h * 0.62); ctx.fill();
+      ctx.fillStyle = '#2A2140'; ctx.fillRect(x + w * 0.12, base - h * 0.95, w * 0.14, h * 0.36);
+      ctx.fillStyle = '#DFF3FF';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x + w * 0.52, base - h * 0.86, w * 0.38, h * 0.4, 8); else ctx.rect(x + w * 0.52, base - h * 0.86, w * 0.38, h * 0.4); ctx.fill();
+      ctx.font = Math.round(h * 0.34) + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(piloto, x + w * 0.71, base - h * 0.64 + Math.sin(b.tiempo * 8) * 1.5);
+      rueda(x + w * 0.2, base, 9); rueda(x + w * 0.52, base, 9); rueda(x + w * 0.82, base, 9);
+    }
+
+    function dibujarVagon(r) {
+      var color = COLORES[r.v.op.i % COLORES.length];
+      ctx.fillStyle = 'rgba(42,33,64,.18)'; ctx.fillRect(r.x - tren.hueco, r.y + r.h - 10, tren.hueco, 5);
+      ctx.fillStyle = color;
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(r.x, r.y, r.w, r.h, 10); else ctx.rect(r.x, r.y, r.w, r.h); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.92)';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(r.x + 6, r.y + 8, r.w - 12, r.h - 18, 8); else ctx.rect(r.x + 6, r.y + 8, r.w - 12, r.h - 18); ctx.fill();
+      b.letra(r.v.op, r.x + 20, r.y + r.h * 0.46, 10);
+      b.escribir(r.v.texto, r.x + 34, r.y + r.h * 0.46, '#2A2140');
+      rueda(r.x + r.w * 0.22, r.y + r.h + 4, 8); rueda(r.x + r.w * 0.78, r.y + r.h + 4, 8);
+    }
+
+    function dibujarGrua() {
+      var x = xGrua(), y = yGrua();
+      ctx.fillStyle = '#F29A0D'; ctx.fillRect(0, y - 14, b.W, 10);
+      ctx.fillStyle = '#2A2140'; ctx.fillRect(x - 14, y - 18, 28, 16);
+      ctx.strokeStyle = '#2A2140'; ctx.lineWidth = 2;
+      if (caja && !caja.cae) { ctx.beginPath(); ctx.moveTo(x, y - 2); ctx.lineTo(caja.x, caja.y - 16); ctx.stroke(); }
+    }
+
+    function dibujarCaja(c) {
+      var lado = 30, oscila = c.cae ? 0 : Math.sin(b.tiempo * 3) * 0.12;
+      ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(oscila);
+      ctx.fillStyle = '#B7793F'; ctx.fillRect(-lado / 2, -lado / 2, lado, lado);
+      ctx.strokeStyle = '#7A5233'; ctx.lineWidth = 3; ctx.strokeRect(-lado / 2, -lado / 2, lado, lado);
+      ctx.beginPath(); ctx.moveTo(-lado / 2, -lado / 2); ctx.lineTo(lado / 2, lado / 2); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = '800 18px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('?', 0, 1);
+      ctx.restore();
+    }
+
+    b.correr(function (dt) {
+      var eligio = b.yaEligio(), v = velocidad();
+      tren.x -= v * dt * (eligio ? 1.6 : 1);
+      if (tren.x + largoTren() < -20 && !eligio) { vuelta++; nuevoTren(); }
+      avisoVuelta = Math.max(0, avisoVuelta - dt);
+      avisoCasi = Math.max(0, avisoCasi - dt);
+      festejo = Math.max(0, festejo - dt);
+      if (Math.random() < dt * 8) humo.push({ x: tren.x + tren.loco * 0.19, y: suelo() - 16 - tren.alto * 1.05, r: 5, vida: 1 });
+      humo.forEach(function (h) { h.y -= 24 * dt; h.x += 10 * dt; h.r += 9 * dt; h.vida -= dt * 0.9; });
+      humo = humo.filter(function (h) { return h.vida > 0; });
+
+      if (caja && caja.cae && !eligio) {
+        caja.vy += b.H * 2.2 * dt;
+        caja.y += caja.vy * dt;
+        var r = vagonesEn().filter(function (w) { return caja.x > w.x + 4 && caja.x < w.x + w.w - 4; })[0];
+        if (r && caja.y + 15 >= r.y + 8) {
+          b.explotar(caja.x, r.y, COLORES[r.v.op.i % COLORES.length], 28);
+          sonar(523, 0.2, 'sine', 0.14, 1.5);
+          festejo = 1;
+          caja = null;
+          b.elegir(r.v.op);
+        } else if (caja.y + 15 >= suelo()) {
+          // ¡Al suelo! Se rompe y sale otra: solo se pierde tiempo.
+          for (var k = 0; k < 8; k++) rotas.push({ x: caja.x, y: suelo() - 6, vx: (Math.random() - 0.5) * 160, vy: -80 - Math.random() * 120, vida: 1 });
+          sonar(160, 0.2, 'square', 0.05, 0.6);
+          avisoCasi = 1.1;
+          caja = null;
+          setTimeout(function () { if (b.vivo && !b.yaEligio()) nuevaCaja(); }, 500);
+        }
+      }
+      rotas.forEach(function (p) { p.x += p.vx * dt; p.vy += 500 * dt; p.y += p.vy * dt; p.vida -= dt * 1.5; });
+      rotas = rotas.filter(function (p) { return p.vida > 0; });
+
+      b.cielo();
+      b.nubesFondo(dt, v * 0.15);
+      b.colinas(b.tiempo * 6, b.H * 0.3, '#8FD9B6', 170);
+      // Vía
+      ctx.fillStyle = '#7ED98C'; ctx.fillRect(0, suelo() - 6, b.W, b.H - suelo() + 6);
+      ctx.fillStyle = '#A0703F';
+      for (var t = ((tren.x % 22) + 22) % 22 - 22; t < b.W; t += 22) ctx.fillRect(t, suelo() - 8, 12, 6);
+      ctx.fillStyle = '#5E6678'; ctx.fillRect(0, suelo() - 12, b.W, 3);
+      humo.forEach(function (h) { ctx.fillStyle = 'rgba(255,255,255,' + (h.vida * 0.85) + ')'; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, 7); ctx.fill(); });
+      vagonesEn().forEach(dibujarVagon);
+      dibujarLocomotora();
+      dibujarGrua();
+      if (caja) dibujarCaja(caja);
+      rotas.forEach(function (p) { ctx.globalAlpha = Math.max(0, p.vida); ctx.fillStyle = '#B7793F'; ctx.fillRect(p.x, p.y, 6, 6); ctx.globalAlpha = 1; });
+      b.dibujarChispas(dt);
+      function aviso(texto, color, y, alfa) {
+        ctx.globalAlpha = Math.min(1, alfa);
+        ctx.font = '800 ' + Math.max(15, Math.round(b.H * 0.06)) + 'px Fredoka, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(texto, b.W / 2, y);
+        ctx.fillStyle = color; ctx.fillText(texto, b.W / 2, y);
+        ctx.globalAlpha = 1;
+      }
+      if (avisoVuelta > 0 && !eligio) aviso('🚂 ¡Otra vuelta, más rápido!', '#E8492C', b.H * 0.32, avisoVuelta);
+      if (avisoCasi > 0) aviso('¡Casi! Suelta otra caja', '#3F4A60', b.H * 0.4, avisoCasi);
+      if (!eligio && caja && !caja.cae && b.tiempo < 4) aviso('👆 Toca para soltar la caja', '#5B3DF5', b.H * 0.32, Math.min(1, 4 - b.tiempo));
+    });
+  }
+
+  /* =================================================================
+     🎯 Catapulta
+     Se tensa la honda arrastrando hacia atrás y se suelta: el personaje
+     del estudiante sale volando hacia los carteles de las respuestas, en
+     islas flotantes a distintas alturas. Acertar un cartel es elegirlo; si
+     no toca ninguno, vuelve a la honda. Una línea de puntos ayuda a apuntar.
+     ================================================================= */
+  function catapulta(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 0.82;
+    b.medir();
+
+    var suelo = function () { return b.H * 0.88; };
+    var radio = function () { return Math.max(14, Math.min(22, b.H * 0.055)); };
+    var maxTiro = function () { return b.H * 0.24; };
+    // La honda queda lo bastante adentro para que, tensada al máximo hacia
+    // atrás, el personaje no se salga por el borde.
+    var ancla = function () { return { x: Math.max(b.W * 0.17, maxTiro() + radio() + 6), y: suelo() - b.H * 0.2 }; };
+    var gravedad = function () { return b.H * 1.5; };
+    // La mayor tensión alcanza un poco más allá del cartel más lejano.
+    var fuerza = function () { return Math.sqrt(gravedad() * b.W * 1.05) / maxTiro(); };
+
+    var carteles = [], bola = null, tirando = null, intentos = 0, avisoFallo = 0, festejo = 0;
+
+    function armar() {
+      var n = b.opciones.length;
+      var columnas = n <= 2 ? n : 2, filas = Math.ceil(n / columnas);
+      var x0 = b.W * 0.36, ancho = b.W - x0 - 8;
+      var w = Math.min(150, ancho / columnas - 8), h = Math.min(56, b.H * 0.15);
+      var alto = suelo() - b.H * 0.12;
+      carteles = barajar(b.opciones).map(function (o, i) {
+        var c = i % columnas, f = Math.floor(i / columnas);
+        var x = x0 + (ancho / columnas) * (c + 0.5) - w / 2;
+        var y = b.H * 0.1 + (alto / filas) * f + (c % 2 ? alto / filas * 0.35 : 0);
+        return { op: o, x: x, y: y, w: w, h: h, texto: b.ajustar(o.texto, w - 44, h - 10, 2, 14) };
+      });
+    }
+    armar();
+    b.alRedimensionar = function () { armar(); bola = null; };
+
+    function lista() { var a = ancla(); return { x: a.x, y: a.y, vx: 0, vy: 0, vuela: false }; }
+    bola = lista();
+
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) {
+      if (b.yaEligio() || (bola && bola.vuela)) return;
+      if (b.lienzo.setPointerCapture) { try { b.lienzo.setPointerCapture(ev.pointerId); } catch (e) {} }
+      tirando = b.punto(ev);
+      sonar(220, 0.04, 'triangle', 0.02);
+      if (ev.cancelable) ev.preventDefault();
+    });
+    function tension(p) {
+      var a = ancla(), dx = p.x - a.x, dy = p.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      var m = Math.min(maxTiro(), d);
+      return { dx: dx / d * m, dy: dy / d * m };
+    }
+    b.escuchar(b.lienzo, 'pointermove', function (ev) {
+      if (!tirando) return;
+      var t = tension(b.punto(ev)), a = ancla();
+      bola.x = a.x + t.dx; bola.y = a.y + t.dy;
+    });
+    b.escuchar(b.lienzo, 'pointerup', function () {
+      if (!tirando) return;
+      tirando = null;
+      var a = ancla(), dx = bola.x - a.x, dy = bola.y - a.y;
+      if (Math.sqrt(dx * dx + dy * dy) < maxTiro() * 0.12) { bola = lista(); return; }
+      bola.vx = -dx * fuerza(); bola.vy = -dy * fuerza(); bola.vuela = true;
+      intentos++;
+      sonar(420, 0.15, 'sine', 0.1, 1.6);
+    });
+
+    function puntosGuia() {
+      var a = ancla(), vx = -(bola.x - a.x) * fuerza(), vy = -(bola.y - a.y) * fuerza(), ps = [];
+      for (var t = 0.06; t < 0.7; t += 0.06) ps.push({ x: bola.x + vx * t, y: bola.y + vy * t + gravedad() * t * t / 2 });
+      return ps;
+    }
+
+    function isla(x, y, w) {
+      ctx.fillStyle = '#A0703F';
+      ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + w + 6, y); ctx.lineTo(x + w * 0.6, y + 26); ctx.lineTo(x + w * 0.35, y + 30); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#1FA98A'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x - 8, y - 6, w + 16, 10, 5); else ctx.rect(x - 8, y - 6, w + 16, 10); ctx.fill();
+    }
+
+    function dibujarCartel(c) {
+      isla(c.x, c.y + c.h + 10, c.w);
+      ctx.fillStyle = '#8A5A35'; ctx.fillRect(c.x + c.w / 2 - 3, c.y + c.h, 6, 12);
+      ctx.save(); ctx.shadowColor = 'rgba(42,33,64,.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(c.x, c.y, c.w, c.h, 12); else ctx.rect(c.x, c.y, c.w, c.h); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = COLORES[c.op.i % COLORES.length]; ctx.lineWidth = 3;
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(c.x + 1.5, c.y + 1.5, c.w - 3, c.h - 3, 11); else ctx.rect(c.x, c.y, c.w, c.h); ctx.stroke();
+      b.letra(c.op, c.x + 16, c.y + c.h / 2, 10);
+      b.escribir(c.texto, c.x + 31, c.y + c.h / 2, '#2A2140');
+    }
+
+    function dibujarHonda() {
+      var a = ancla();
+      ctx.strokeStyle = '#7A5233'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a.x, suelo()); ctx.lineTo(a.x, a.y + 26); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a.x, a.y + 26); ctx.lineTo(a.x - 16, a.y - 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a.x, a.y + 26); ctx.lineTo(a.x + 16, a.y - 8); ctx.stroke();
+      return a;
+    }
+
+    b.correr(function (dt) {
+      var eligio = b.yaEligio(), r = radio();
+      avisoFallo = Math.max(0, avisoFallo - dt);
+      festejo = Math.max(0, festejo - dt);
+      if (bola && bola.vuela && !eligio) {
+        bola.vy += gravedad() * dt;
+        bola.x += bola.vx * dt; bola.y += bola.vy * dt;
+        var golpe = carteles.filter(function (c) {
+          return bola.x + r > c.x && bola.x - r < c.x + c.w && bola.y + r > c.y && bola.y - r < c.y + c.h;
+        })[0];
+        if (golpe) {
+          b.explotar(bola.x, bola.y, COLORES[golpe.op.i % COLORES.length], 34);
+          sonar(523, 0.2, 'sine', 0.14, 1.5);
+          festejo = 1;
+          bola.vuela = false; bola.vx = bola.vy = 0;
+          b.elegir(golpe.op);
+        } else if (bola.y > suelo() || bola.x > b.W + 40 || bola.x < -40) {
+          b.explotar(Math.min(b.W - 10, Math.max(10, bola.x)), Math.min(bola.y, suelo()), '#B7793F', 10);
+          sonar(150, 0.2, 'square', 0.05, 0.6);
+          avisoFallo = 1.1;
+          bola = lista();
+        }
+      }
+
+      b.cielo('#7CC6FF', '#D3EEFF');
+      b.nubesFondo(dt, b.W * 0.02);
+      b.colinas(0, b.H * 0.16, '#8FD9B6', 160);
+      ctx.fillStyle = '#7ED98C'; ctx.fillRect(0, suelo(), b.W, b.H - suelo());
+      carteles.forEach(dibujarCartel);
+      var a = dibujarHonda();
+      if (tirando && bola) {
+        ctx.fillStyle = 'rgba(42,33,64,.45)';
+        puntosGuia().forEach(function (p, k) { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.5, 4 - k * 0.25), 0, 7); ctx.fill(); });
+      }
+      if (bola) {
+        if (!bola.vuela) {
+          ctx.strokeStyle = '#2A2140'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(a.x - 16, a.y - 8); ctx.lineTo(bola.x, bola.y); ctx.lineTo(a.x + 16, a.y - 8); ctx.stroke();
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(bola.x, bola.y, r, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#5B3DF5'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.save(); ctx.translate(bola.x, bola.y); if (bola.vuela) ctx.rotate(b.tiempo * 8);
+        ctx.font = Math.round(r * 1.3) + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(piloto, 0, 1);
+        ctx.restore();
+      }
+      b.dibujarChispas(dt);
+      function aviso(texto, color, y, alfa) {
+        ctx.globalAlpha = Math.min(1, alfa);
+        ctx.font = '800 ' + Math.max(14, Math.round(b.H * 0.055)) + 'px Fredoka, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(texto, b.W * 0.3, y);
+        ctx.fillStyle = color; ctx.fillText(texto, b.W * 0.3, y);
+        ctx.globalAlpha = 1;
+      }
+      if (!intentos && !tirando && !eligio) aviso('👆 Arrastra hacia atrás y suelta', '#5B3DF5', b.H * 0.12, 1);
+      if (avisoFallo > 0) aviso('¡Uy! Otra vez', '#3F4A60', b.H * 0.12, avisoFallo);
+    });
+  }
+
+  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa, laberinto: laberinto, tren: tren, catapulta: catapulta };
 
   /**
    * @param {string} tipo            'avion' | 'globos' | 'atrapa' | 'laberinto'

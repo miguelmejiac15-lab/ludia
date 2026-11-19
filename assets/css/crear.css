@@ -953,3 +953,24 @@ label.btn { cursor: pointer; }
 .pv-hint { text-align: center; font-size: .75rem; color: var(--text-soft); }
 .pv-cajas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
 .pv-caja { aspect-ratio: 1; border-radius: 8px; color: #fff; font-weight: 800; display: grid; place-items: center; }
+
+/* Vista previa de «Tren de respuestas» y «Catapulta» */
+.pv-tren {
+  display: flex; align-items: flex-end; gap: 4px; margin-top: 12px; padding: 30px 6px 10px; overflow: hidden;
+  border-radius: 14px; background: linear-gradient(#5BB8FF, #BEE6FF 72%, #7ED98C 72%);
+}
+.pv-loco { font-size: 1.6rem; flex: none; }
+.pv-vagon {
+  flex: 0 0 auto; max-width: 74px; padding: 8px 6px; border-radius: 8px; color: #fff;
+  font-size: .62rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pv-catapulta {
+  display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; padding: 12px 10px;
+  border-radius: 14px; background: linear-gradient(#7CC6FF, #D3EEFF 78%, #7ED98C 78%);
+}
+.pv-honda { font-size: 1.6rem; }
+.pv-blancos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; }
+.pv-blanco {
+  background: #fff; border: 2px solid #5B3DF5; border-radius: 8px; padding: 4px 6px;
+  font-size: .62rem; font-weight: 800; color: #2A2140; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

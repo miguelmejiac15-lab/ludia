@@ -208,6 +208,12 @@
     // ocurre en cada celular.
     ruleta: function () { return '<div data-sorteo></div>'; },
     cajas: function () { return '<div data-sorteo></div>'; },
+    tren: function (it, clave) {
+      return '<p class="proy-avion-aviso">🚂 ¡Suelta la caja en el vagón correcto desde tu celular!</p>' + vistas.quiz(it, clave);
+    },
+    catapulta: function (it, clave) {
+      return '<p class="proy-avion-aviso">🎯 ¡Lánzate en tu celular contra el cartel correcto!</p>' + vistas.quiz(it, clave);
+    },
     laberinto: function (it, clave) {
       return '<p class="proy-avion-aviso">🌀 ¡Llega en tu celular a la puerta correcta sin que te pillen las abejas!</p>' + vistas.quiz(it, clave);
     },

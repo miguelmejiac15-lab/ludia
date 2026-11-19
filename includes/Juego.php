@@ -86,9 +86,10 @@ function juego_huecos(string $texto): array
 /**
  * Un lado de una pareja, tal como lo recibe el navegador.
  *
- * La imagen es opcional y NUNCA sustituye al texto: el texto es lo que compara
- * la calificación y lo que oye quien usa lector de pantalla. Si un día se
- * permitiera imagen sin texto, la comparación daría todo por bueno.
+ * En Relacionar el texto es lo que compara la calificación, así que nunca
+ * llega vacío: en los juegos (includes/Juegos.php) una imagen sin nombre de
+ * la derecha se llama «Imagen 1», «Imagen 2»… al adaptarla. Si llegara vacío,
+ * la comparación daría todo por bueno. En Memoria basta la imagen.
  */
 function juego_lado_par(array $par, string $claveTexto, string $claveImagen): array
 {

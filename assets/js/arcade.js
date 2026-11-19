@@ -72,11 +72,44 @@ window.LudiaArcade = (function () {
       limpiezas: []
     };
 
+    /*
+     * El juego debe verse ENTERO: cartel de arriba, lienzo y botones dentro
+     * de la pantalla. Se mide lo que ocupa lo demás y el lienzo toma el alto
+     * que queda; si así queda más bajo, también se angosta para no
+     * deformar el juego. En pantalla completa puede crecer mucho más.
+     */
+    function altoDisponible() {
+      var resto = 0, hermano = marco.previousElementSibling;
+      while (hermano) {
+        if (hermano.offsetParent !== null && !/^(SCRIPT|STYLE)$/.test(hermano.tagName)) {
+          var cs = getComputedStyle(hermano);
+          resto += hermano.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+        }
+        hermano = hermano.previousElementSibling;
+      }
+      [].forEach.call(marco.children, function (hijo) {
+        if (hijo !== lienzo && hijo.offsetParent !== null && getComputedStyle(hijo).position !== 'absolute') resto += hijo.offsetHeight;
+      });
+      return window.innerHeight - resto - 34;
+    }
+    function enCompleta() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+
     b.medir = function () {
       var dpr = Math.min(2, window.devicePixelRatio || 1);
       var antes = { W: b.W || 1, H: b.H || 1 };
-      b.W = Math.max(260, marco.clientWidth);
-      b.H = Math.round(Math.min(460, Math.max(280, b.W * (b.proporcion || 0.72))));
+      var prop = b.proporcion || 0.72;
+      marco.style.maxWidth = '';
+      var ancho = Math.max(260, marco.clientWidth);
+      var tope = enCompleta() ? 1400 : 460;
+      var alto = Math.min(tope, Math.max(280, ancho * prop));
+      var cabe = Math.max(230, altoDisponible());
+      if (alto > cabe) {
+        alto = cabe;
+        ancho = Math.max(260, Math.min(ancho, Math.round(alto / prop)));
+        if (ancho < marco.clientWidth) marco.style.maxWidth = ancho + 'px';
+      }
+      b.W = ancho;
+      b.H = Math.round(alto);
       lienzo.width = Math.round(b.W * dpr);
       lienzo.height = Math.round(b.H * dpr);
       lienzo.style.height = b.H + 'px';
@@ -89,6 +122,40 @@ window.LudiaArcade = (function () {
       b.limpiezas.push(function () { objetivo.removeEventListener(evento, fn, opciones); });
     };
     b.escuchar(window, 'resize', b.medir);
+
+    // Pantalla completa: se agranda el bloque del juego entero (el cartel
+    // con lo que se busca, el lienzo y los botones), no solo el lienzo.
+    var bloque = marco.parentElement;
+    var puede = bloque && (bloque.requestFullscreen || bloque.webkitRequestFullscreen) &&
+      (document.fullscreenEnabled || document.webkitFullscreenEnabled);
+    if (puede && !marco.querySelector('.j-pantalla')) {
+      var boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'j-pantalla';
+      boton.setAttribute('aria-label', enCompleta() ? 'Salir de pantalla completa' : 'Pantalla completa');
+      boton.title = 'Pantalla completa';
+      boton.textContent = enCompleta() ? '✕' : '⛶';
+      marco.appendChild(boton);
+      b.escuchar(boton, 'click', function () {
+        boton.blur();   // si no, las flechas del teclado no llegan al juego
+        if (enCompleta()) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else {
+          bloque.classList.add('arcade-completa');
+          var p = (bloque.requestFullscreen || bloque.webkitRequestFullscreen).call(bloque);
+          if (p && p.catch) p.catch(function () { bloque.classList.remove('arcade-completa'); });
+        }
+      });
+      b.limpiezas.push(function () { if (boton.parentNode) boton.parentNode.removeChild(boton); });
+    }
+    function alCambiarCompleta() {
+      if (!enCompleta()) bloque.classList.remove('arcade-completa');
+      var boton = marco.querySelector('.j-pantalla');
+      if (boton) { boton.textContent = enCompleta() ? '✕' : '⛶'; boton.setAttribute('aria-label', enCompleta() ? 'Salir de pantalla completa' : 'Pantalla completa'); }
+      setTimeout(b.medir, 60);
+    }
+    b.escuchar(document, 'fullscreenchange', alCambiarCompleta);
+    b.escuchar(document, 'webkitfullscreenchange', alCambiarCompleta);
 
     b.apagar = function () {
       if (!b.vivo) return;
@@ -1380,12 +1447,14 @@ window.LudiaArcade = (function () {
     var maxTiro = function () { return b.H * 0.24; };
     // La honda queda lo bastante adentro para que, tensada al máximo hacia
     // atrás, el personaje no se salga por el borde.
-    var ancla = function () { return { x: Math.max(b.W * 0.17, maxTiro() + radio() + 6), y: suelo() - b.H * 0.2 }; };
+    var ancla = function () { return { x: Math.max(b.W * 0.17, maxTiro() + radio() + 6), y: suelo() - b.H * 0.26 }; };
     var gravedad = function () { return b.H * 1.5; };
     // La mayor tensión alcanza un poco más allá del cartel más lejano.
     var fuerza = function () { return Math.sqrt(gravedad() * b.W * 1.05) / maxTiro(); };
 
     var carteles = [], bola = null, tirando = null, intentos = 0, avisoFallo = 0, festejo = 0;
+    // Cuánto se amplifica el arrastre del dedo: con poco recorrido se tensa del todo.
+    var SENSIBLE = 1.6;
 
     function armar() {
       var n = b.opciones.length;
@@ -1409,12 +1478,14 @@ window.LudiaArcade = (function () {
     b.escuchar(b.lienzo, 'pointerdown', function (ev) {
       if (b.yaEligio() || (bola && bola.vuela)) return;
       if (b.lienzo.setPointerCapture) { try { b.lienzo.setPointerCapture(ev.pointerId); } catch (e) {} }
+      // Se apunta arrastrando desde cualquier punto del juego: lo que cuenta
+      // es hacia dónde y cuánto se mueve el dedo, no tener que agarrar la honda.
       tirando = b.punto(ev);
       sonar(220, 0.04, 'triangle', 0.02);
       if (ev.cancelable) ev.preventDefault();
     });
     function tension(p) {
-      var a = ancla(), dx = p.x - a.x, dy = p.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      var dx = (p.x - tirando.x) * SENSIBLE, dy = (p.y - tirando.y) * SENSIBLE, d = Math.sqrt(dx * dx + dy * dy) || 1;
       var m = Math.min(maxTiro(), d);
       return { dx: dx / d * m, dy: dy / d * m };
     }
@@ -1423,19 +1494,45 @@ window.LudiaArcade = (function () {
       var t = tension(b.punto(ev)), a = ancla();
       bola.x = a.x + t.dx; bola.y = a.y + t.dy;
     });
-    b.escuchar(b.lienzo, 'pointerup', function () {
-      if (!tirando) return;
-      tirando = null;
+    // Con teclado: ← → cambian el ángulo, ↑ ↓ la fuerza, espacio lanza.
+    var mira = { angulo: -0.75, fuerza: 0.75 };
+    function apuntarTeclado() {
+      var a = ancla(), m = maxTiro() * mira.fuerza;
+      bola.x = a.x - Math.cos(mira.angulo) * m; bola.y = a.y - Math.sin(mira.angulo) * m;
+    }
+    b.escuchar(document, 'keydown', function (ev) {
+      if (!teclaLibre() || b.yaEligio() || !bola || bola.vuela) return;
+      var k = ev.key;
+      if (k === 'ArrowLeft') mira.angulo = Math.max(-1.45, mira.angulo - 0.08);
+      else if (k === 'ArrowRight') mira.angulo = Math.min(0.2, mira.angulo + 0.08);
+      else if (k === 'ArrowUp') mira.fuerza = Math.min(1, mira.fuerza + 0.06);
+      else if (k === 'ArrowDown') mira.fuerza = Math.max(0.25, mira.fuerza - 0.06);
+      else if (k === ' ' || k === 'Enter') {
+        apuntarTeclado(); lanzar(); ev.preventDefault(); return;
+      } else return;
+      ev.preventDefault();
+      apuntarTeclado(); porTeclado = true;
+    });
+    var porTeclado = false;
+    function lanzar() {
       var a = ancla(), dx = bola.x - a.x, dy = bola.y - a.y;
+      porTeclado = false;
       if (Math.sqrt(dx * dx + dy * dy) < maxTiro() * 0.12) { bola = lista(); return; }
       bola.vx = -dx * fuerza(); bola.vy = -dy * fuerza(); bola.vuela = true;
       intentos++;
       sonar(420, 0.15, 'sine', 0.1, 1.6);
-    });
+    }
+    function soltar() {
+      if (!tirando) return;
+      tirando = null;
+      lanzar();
+    }
+    b.escuchar(b.lienzo, 'pointerup', soltar);
+    b.escuchar(b.lienzo, 'pointercancel', soltar);
 
     function puntosGuia() {
       var a = ancla(), vx = -(bola.x - a.x) * fuerza(), vy = -(bola.y - a.y) * fuerza(), ps = [];
-      for (var t = 0.06; t < 0.7; t += 0.06) ps.push({ x: bola.x + vx * t, y: bola.y + vy * t + gravedad() * t * t / 2 });
+      for (var t = 0.06; t < 1.0; t += 0.06) ps.push({ x: bola.x + vx * t, y: bola.y + vy * t + gravedad() * t * t / 2 });
       return ps;
     }
 
@@ -1497,7 +1594,7 @@ window.LudiaArcade = (function () {
       ctx.fillStyle = '#7ED98C'; ctx.fillRect(0, suelo(), b.W, b.H - suelo());
       carteles.forEach(dibujarCartel);
       var a = dibujarHonda();
-      if (tirando && bola) {
+      if ((tirando || porTeclado) && bola && !bola.vuela) {
         ctx.fillStyle = 'rgba(42,33,64,.45)';
         puntosGuia().forEach(function (p, k) { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.5, 4 - k * 0.25), 0, 7); ctx.fill(); });
       }
@@ -1515,16 +1612,10 @@ window.LudiaArcade = (function () {
         ctx.restore();
       }
       b.dibujarChispas(dt);
-      function aviso(texto, color, y, alfa) {
-        ctx.globalAlpha = Math.min(1, alfa);
-        ctx.font = '800 ' + Math.max(14, Math.round(b.H * 0.055)) + 'px Fredoka, system-ui, sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(texto, b.W * 0.3, y);
-        ctx.fillStyle = color; ctx.fillText(texto, b.W * 0.3, y);
-        ctx.globalAlpha = 1;
-      }
-      if (!intentos && !tirando && !eligio) aviso('👆 Arrastra hacia atrás y suelta', '#5B3DF5', b.H * 0.12, 1);
-      if (avisoFallo > 0) aviso('¡Uy! Otra vez', '#3F4A60', b.H * 0.12, avisoFallo);
+      // Los avisos van sobre el pasto: arriba estorbaban los carteles y el botón ⛶.
+      var yAviso = suelo() + (b.H - suelo()) / 2;
+      if (!intentos && !tirando && !porTeclado && !eligio) aviso(b, '👆 Arrastra hacia atrás y suelta', '#5B3DF5', b.W / 2, yAviso, 1);
+      if (avisoFallo > 0) aviso(b, '¡Uy! Otra vez', '#3F4A60', b.W / 2, yAviso, avisoFallo);
     });
   }
 
@@ -1582,7 +1673,8 @@ window.LudiaArcade = (function () {
     var suelo = function () { return b.H * 0.86; };
     var tam = function () { return Math.max(28, Math.min(42, b.H * 0.11)); };
     var g = function () { return b.H * 2.8; };
-    var bloques = [], largo = 0, camara = 0, cocos = [], proximoCoco = 2.5, aturdido = 0, avisoCoco = 0, festejo = 0;
+    // El primer coco tarda: primero se aprende a correr y a saltar.
+    var bloques = [], largo = 0, camara = 0, cocos = [], proximoCoco = b.reducido ? 9 : 6.5, aturdido = 0, avisoCoco = 0, festejo = 0;
     var mover = { izquierda: false, derecha: false };
     var jugador = { x: 0, y: 0, vy: 0, enSuelo: true, mira: 1 };
 
@@ -1656,10 +1748,11 @@ window.LudiaArcade = (function () {
       proximoCoco -= dt;
       if (!eligio && proximoCoco <= 0) {
         cocos.push({ x: camara + b.W + 20, r: Math.max(11, t * 0.38), giro: 0 });
-        proximoCoco = (b.reducido ? 5 : 3.4) - Math.min(1.2, b.ronda * 0.15);
+        proximoCoco = (b.reducido ? 6 : 4.4) - Math.min(1.2, b.ronda * 0.12);
       }
       cocos.forEach(function (c) {
-        c.x -= b.W * (b.reducido ? 0.18 : 0.26) * dt; c.giro -= dt * 8;
+        // Un poco más lentos que antes: en el celular llegaban encima.
+        c.x -= b.W * (b.reducido ? 0.16 : 0.21) * dt; c.giro -= dt * 8;
         var dx = Math.abs(c.x - jugador.x), alto = suelo() - jugador.y;
         if (!eligio && aturdido <= 0 && dx < c.r + t * 0.3 && alto < c.r * 1.6) {
           aturdido = 0.9; avisoCoco = 1; jugador.vy = -Math.sqrt(2 * g() * b.H * 0.1); jugador.x = Math.max(t, jugador.x - b.W * 0.12);

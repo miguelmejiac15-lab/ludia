@@ -37,8 +37,10 @@
   /* Qué significa cada columna según la plantilla con la que se empezó. */
   var DE_LETRAS = ['palabra_secreta', 'anagrama', 'sopa_letras', 'crucigrama'];
   var etiquetas = DE_LETRAS.indexOf(J.plantilla) > -1
-    ? { izq: 'Palabra', der: 'Pista o definición', ayuda: 'La palabra que hay que encontrar va a la izquierda; su pista, a la derecha.' }
-    : { izq: 'Palabra o pregunta', der: 'Su pareja o respuesta', ayuda: 'Escribe cada palabra con su pareja. Pulsa Enter para pasar a la siguiente fila.' };
+    ? { izq: 'Palabra', der: 'Pista o imagen', phIzq: 'Palabra', phDer: 'Pista, o 🖼 imagen',
+        ayuda: 'La palabra que hay que encontrar va a la izquierda; su pista (o una imagen), a la derecha.' }
+    : { izq: 'Término o imagen', der: 'Definición o imagen', phIzq: 'Palabra, o 🖼 imagen', phDer: 'Su pareja, o 🖼 imagen',
+        ayuda: 'Dos columnas: en cada lado va una palabra o una imagen (toca 🖼). Puedes unir palabra con palabra, palabra con imagen o imagen con palabra. Enter pasa a la siguiente fila.' };
 
   /* ---------- Imágenes ---------- */
 
@@ -85,11 +87,35 @@
 
   /* ---------- Pintar ---------- */
 
+  /*
+   * Una celda de pareja: SOLO dos columnas. Cada celda es una palabra o una
+   * imagen; el botón 🖼 vive dentro del campo. Con imagen, la celda la
+   * muestra grande y deja un nombre opcional (sirve para los juegos de texto).
+   */
+  function celda(i, lado, texto, url) {
+    var campo = i + '.' + (lado === 'izq' ? 'izquierda' : 'derecha');
+    var rutaImg = i + '.imagen_' + lado;
+    var nombre = (lado === 'izq' ? etiquetas.izq : etiquetas.der) + ' ' + (i + 1);
+    if (url) {
+      return '<span class="celda celda-' + lado + ' con-img">' +
+        '<span class="celda-img"><img src="' + esc(url) + '" alt="">' +
+        '<button type="button" class="img-quitar" data-quitar-img="' + rutaImg + '" aria-label="Quitar imagen de ' + esc(nombre) + '">✕</button></span>' +
+        '<input class="celda-texto" data-campo="' + campo + '" value="' + esc(texto) + '" maxlength="160" placeholder="Nombre (opcional)" aria-label="Nombre de la imagen, ' + esc(nombre) + '">' +
+        '</span>';
+    }
+    var subir = J.imagenes
+      ? '<button type="button" class="celda-subir" data-subir-img="' + rutaImg + '" aria-label="Poner una imagen en ' + esc(nombre) + '" title="Poner una imagen">🖼</button>'
+      : '<button type="button" class="celda-subir bloqueado" data-img-plan aria-label="Imágenes: planes de pago" title="Imágenes en los planes de pago">🖼🔒</button>';
+    return '<span class="celda celda-' + lado + '">' +
+      '<input class="input" data-campo="' + campo + '" value="' + esc(texto) + '" maxlength="160" placeholder="' + (lado === 'izq' ? etiquetas.phIzq : etiquetas.phDer) + '" aria-label="' + esc(nombre) + '">' +
+      subir + '</span>';
+  }
+
   function filaPareja(p, i) {
     return '<li class="fila-pareja" data-i="' + i + '">' +
       '<span class="fila-num">' + (i + 1) + '.</span>' +
-      '<span class="campo-con-img"><input class="input" data-campo="' + i + '.izquierda" value="' + esc(p.izquierda) + '" maxlength="160" aria-label="' + etiquetas.izq + ' ' + (i + 1) + '">' + botonImagen(i + '.imagen_izq', p.imagen_izq) + '</span>' +
-      '<span class="campo-con-img"><input class="input" data-campo="' + i + '.derecha" value="' + esc(p.derecha) + '" maxlength="160" aria-label="' + etiquetas.der + ' ' + (i + 1) + '">' + botonImagen(i + '.imagen_der', p.imagen_der) + '</span>' +
+      celda(i, 'izq', p.izquierda, p.imagen_izq) +
+      celda(i, 'der', p.derecha, p.imagen_der) +
       acciones(i) + '</li>';
   }
 

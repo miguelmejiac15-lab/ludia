@@ -102,19 +102,25 @@ function juego_validar(string $tipo, $datos, bool $conImagenes): array
             if (!is_array($fila)) {
                 continue;
             }
+            // Dos columnas: en cada lado va una palabra, una imagen o las dos
+            // (la palabra junto a la imagen es su nombre).
             $izq = juego_texto($fila['izquierda'] ?? '');
             $der = juego_texto($fila['derecha'] ?? '');
-            if ($izq === '' && $der === '') {
+            $imgIzq = juego_imagen_valida($fila['imagen_izq'] ?? '', $conImagenes);
+            $imgDer = juego_imagen_valida($fila['imagen_der'] ?? '', $conImagenes);
+            $hayIzq = $izq !== '' || $imgIzq !== '';
+            $hayDer = $der !== '' || $imgDer !== '';
+            if (!$hayIzq && !$hayDer) {
                 continue;
             }
-            if ($izq === '' || $der === '') {
-                return ['ok' => false, 'error' => 'La pareja ' . ($i + 1) . ' está a medio llenar: escribe las dos palabras.'];
+            if (!$hayIzq || !$hayDer) {
+                return ['ok' => false, 'error' => 'La pareja ' . ($i + 1) . ' está a medio llenar: pon una palabra o una imagen en cada lado.'];
             }
             $items[] = [
                 'izquierda'  => $izq,
                 'derecha'    => $der,
-                'imagen_izq' => juego_imagen_valida($fila['imagen_izq'] ?? '', $conImagenes),
-                'imagen_der' => juego_imagen_valida($fila['imagen_der'] ?? '', $conImagenes),
+                'imagen_izq' => $imgIzq,
+                'imagen_der' => $imgDer,
             ];
         }
         if (count($items) < JUEGO_MIN_PAREJAS) {
@@ -203,7 +209,7 @@ function juego_como_palabras(string $tipo, array $contenido): array
 {
     return array_map(static function (array $p) use ($tipo): array {
         return $tipo === 'parejas'
-            ? ['palabra' => $p['izquierda'], 'pista' => $p['derecha'], 'imagen' => $p['imagen_izq'] ?? '']
+            ? ['palabra' => $p['izquierda'], 'pista' => $p['derecha'], 'imagen' => ($p['imagen_izq'] ?? '') ?: ($p['imagen_der'] ?? '')]
             : ['palabra' => $p['derecha'], 'pista' => $p['izquierda'], 'imagen' => $p['imagen_izq'] ?? ''];
     }, juego_como_pares($tipo, $contenido));
 }
@@ -248,7 +254,14 @@ function juego_trozos(array $lista, int $tamano): array
 function juego_adaptar(string $tipo, array $contenido, string $plantilla, string $semilla): array
 {
     $pares = juego_como_pares($tipo, $contenido);
-    $derechas = array_values(array_unique(array_map(static fn (array $p): string => mb_strtolower($p['derecha']), $pares)));
+    // Una imagen sin nombre se distingue por su archivo.
+    $derechas = array_values(array_unique(array_map(static fn (array $p): string =>
+        $p['derecha'] !== '' ? mb_strtolower($p['derecha']) : 'img:' . ($p['imagen_der'] ?? ''), $pares)));
+    // Lados que son solo imagen: los juegos de texto no los pueden mostrar.
+    $sinTextoIzq = (bool) array_filter($pares, static fn (array $p): bool => $p['izquierda'] === '');
+    $sinTextoDer = (bool) array_filter($pares, static fn (array $p): bool => $p['derecha'] === '');
+    $pideNombreDer = 'Las respuestas de la derecha tienen imágenes sin nombre: escríbeles un nombre para jugarlo aquí.';
+    $pideNombreIzq = 'La columna izquierda tiene imágenes sin nombre: escríbeles un nombre para jugarlo aquí.';
 
     switch ($plantilla) {
         case 'relacionar':
@@ -260,13 +273,25 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
                 return ['ok' => false, 'motivo' => 'Hay respuestas repetidas: cada pareja debe ser distinta.'];
             }
             $instruccion = $plantilla === 'memoria' ? 'Encuentra las parejas' : 'Relaciona cada elemento con su pareja';
-            $items = array_map(static fn (array $grupo): array => [
-                'instruccion' => $instruccion,
-                'pares' => array_map(static fn (array $p): array => [
-                    'izquierda' => $p['izquierda'], 'derecha' => $p['derecha'],
-                    'imagen_izq' => $p['imagen_izq'] ?? '', 'imagen_der' => $p['imagen_der'] ?? '',
-                ], $grupo),
-            ], juego_trozos($pares, JUEGO_POR_PANTALLA));
+            $items = array_map(static function (array $grupo) use ($instruccion, $plantilla): array {
+                // En Relacionar se elige la pareja por su nombre (y así se
+                // califica): una imagen sin nombre de la derecha se llama
+                // «Imagen 1», «Imagen 2»… dentro de su pantalla.
+                $n = 0;
+                return [
+                    'instruccion' => $instruccion,
+                    'pares' => array_map(static function (array $p) use (&$n, $plantilla): array {
+                        $derecha = $p['derecha'];
+                        if ($derecha === '' && $plantilla === 'relacionar') {
+                            $derecha = 'Imagen ' . (++$n);
+                        }
+                        return [
+                            'izquierda' => $p['izquierda'], 'derecha' => $derecha,
+                            'imagen_izq' => $p['imagen_izq'] ?? '', 'imagen_der' => $p['imagen_der'] ?? '',
+                        ];
+                    }, $grupo),
+                ];
+            }, juego_trozos($pares, JUEGO_POR_PANTALLA));
 
             return ['ok' => true, 'items' => $items];
 
@@ -295,6 +320,9 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
                     'enunciado' => $p['enunciado'], 'opciones' => $p['opciones'],
                     'correcta' => $p['correcta'], 'imagen' => $p['imagen'],
                 ], $contenido['items'])];
+            }
+            if ($sinTextoDer) {
+                return ['ok' => false, 'motivo' => $pideNombreDer];
             }
             if (count($derechas) < 2) {
                 return ['ok' => false, 'motivo' => 'Necesita al menos 2 respuestas distintas.'];
@@ -330,6 +358,9 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
 
                 return ['ok' => true, 'items' => $items];
             }
+            if ($sinTextoDer) {
+                return ['ok' => false, 'motivo' => $pideNombreDer];
+            }
             if (count($derechas) < 2) {
                 return ['ok' => false, 'motivo' => 'Necesita al menos 2 respuestas distintas.'];
             }
@@ -337,7 +368,9 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
                 $otras = array_values(array_filter(array_column($pares, 'derecha'), static fn (string $d): bool => mb_strtolower($d) !== mb_strtolower($p['derecha'])));
                 $cierta = juego_azar($semilla . '-v' . $i, 2) === 0;
                 $derecha = $cierta ? $p['derecha'] : $otras[juego_azar($semilla . '-m' . $i, count($otras))];
-                $items[] = ['afirmacion' => $p['izquierda'] . ' → ' . $derecha, 'correcta' => $cierta, 'imagen' => $p['imagen_izq'] ?? ''];
+                // Si la izquierda es solo imagen, la afirmación habla de ella.
+                $afirmacion = $p['izquierda'] !== '' ? $p['izquierda'] . ' → ' . $derecha : 'Esto es: ' . $derecha;
+                $items[] = ['afirmacion' => $afirmacion, 'correcta' => $cierta, 'imagen' => $p['imagen_izq'] ?? ''];
             }
 
             return ['ok' => true, 'items' => $items];
@@ -349,13 +382,19 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
             if (count($pares) < 2) {
                 return ['ok' => false, 'motivo' => 'Necesita al menos 2 elementos.'];
             }
+            if ($sinTextoIzq) {
+                return ['ok' => false, 'motivo' => $pideNombreIzq];
+            }
             return ['ok' => true, 'items' => [[
                 'instruccion' => $plantilla === 'ruleta' ? 'Gira la ruleta' : 'Elige una caja',
-                'sorteo'      => array_map(static fn (array $p): array => ['texto' => $p['izquierda'], 'respuesta' => $p['derecha']], $pares),
+                'sorteo'      => array_map(static fn (array $p): array => ['texto' => $p['izquierda'], 'respuesta' => $p['derecha'] !== '' ? $p['derecha'] : '🖼️ (imagen)'], $pares),
             ]]];
 
         case 'palabra_secreta':
         case 'anagrama':
+            if ($tipo === 'parejas' && $sinTextoIzq) {
+                return ['ok' => false, 'motivo' => 'Las palabras van a la izquierda y ahí hay imágenes sin nombre: escríbeles su palabra.'];
+            }
             $palabras = juego_como_palabras($tipo, $contenido);
             $minimo = $plantilla === 'anagrama' ? 4 : 3;
             $falla = juego_palabra_que_falla($palabras, static function (string $w) use ($minimo): bool {
@@ -372,6 +411,11 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
 
         case 'sopa_letras':
         case 'crucigrama':
+            if ($tipo === 'parejas' && ($sinTextoIzq || ($plantilla === 'crucigrama' && $sinTextoDer))) {
+                return ['ok' => false, 'motivo' => $sinTextoIzq
+                    ? 'Las palabras van a la izquierda y ahí hay imágenes sin nombre: escríbeles su palabra.'
+                    : 'El crucigrama necesita pistas escritas: ponles nombre a las imágenes de la derecha.'];
+            }
             $palabras = juego_como_palabras($tipo, $contenido);
             $falla = juego_palabra_que_falla($palabras, static fn (string $w): bool =>
                 preg_match('/^\p{L}{2,12}$/u', $w) === 1);

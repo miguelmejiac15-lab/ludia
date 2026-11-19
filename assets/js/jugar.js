@@ -39,7 +39,7 @@ window.LudiaJugar = (function () {
     atrapa: '👆 Toca al animalito que lleva la respuesta correcta antes de que se esconda',
     laberinto: '👆 Toca hacia dónde ir o desliza el dedo · llega a la puerta correcta y escapa de las abejas',
     tren: '👆 Toca para soltar la caja: tiene que caer en el vagón de la respuesta correcta',
-    catapulta: '👆 Arrastra hacia atrás, apunta y suelta: dale al cartel de la respuesta correcta',
+    catapulta: '👆 Toca en cualquier parte del juego, arrastra hacia atrás y suelta: dale al cartel correcto (o ← → ↑ ↓ y espacio)',
     salta: '👆 ◀ ▶ para correr y ▲ (o toca) para saltar: golpea desde abajo el bloque correcto',
     mina: '⛏️ Pica hacia abajo (flechas o tocando el bloque) hasta la gema con la letra de la respuesta correcta · las rocas grises necesitan 3 golpes',
     obstaculos: '👆 Toca, ▲ o Espacio para saltar: cruza el arco correcto y salta los demás',
@@ -83,12 +83,21 @@ window.LudiaJugar = (function () {
   /** Juegos donde las respuestas solo llevan su letra: la leyenda dice cuál es cuál. */
   var CON_LEYENDA = ['laberinto', 'mina'];
 
+  /** El cartel de lo que se busca: la palabra y, si hay, su imagen. */
+  function objetivoHtml(it) {
+    return (it.imagen ? '<img src="' + esc(it.imagen) + '" alt="' + (it.enunciado ? '' : 'Imagen de la pregunta') + '">' : '') +
+      (it.enunciado ? '<span>' + esc(it.enunciado) + '</span>' : '');
+  }
+  function objetivoClase(it) {
+    return 'j-pregunta j-objetivo' + (String(it.enunciado || '').length > 45 ? ' larga' : '') + (it.imagen ? ' con-img' : '');
+  }
+
   function vistaArcade(it) {
     var controles = CONTROLES[it.tipo];
     var leyenda = CON_LEYENDA.indexOf(it.tipo) > -1;
     var maximo = it.tipo === 'laberinto' ? 4 : it.opciones.length;
     // La pregunta va grande, como cartel del juego: es lo que el niño busca.
-    return '<p class="j-pregunta j-objetivo' + (String(it.enunciado || '').length > 45 ? ' larga' : '') + '">' + esc(it.enunciado) + '</p>' +
+    return '<p class="' + objetivoClase(it) + '">' + objetivoHtml(it) + '</p>' +
       '<p class="j-arcade-ayuda">' + ARCADE[it.tipo] + '</p>' +
       (leyenda ? '<ol class="j-leyenda">' + it.opciones.slice(0, maximo).map(function (t, i) {
         return '<li><b class="opt-' + i + '">' + LETRAS[i] + '</b> ' + esc(t) + '</li>';
@@ -927,10 +936,7 @@ window.LudiaJugar = (function () {
       actual = actividad;
       seleccion = null;
       var pregunta = caja.querySelector('.j-pregunta');
-      if (pregunta) {
-        pregunta.textContent = actividad.item.enunciado;
-        pregunta.classList.toggle('larga', String(actividad.item.enunciado || '').length > 45);
-      }
+      if (pregunta) { pregunta.className = objetivoClase(actividad.item); pregunta.innerHTML = objetivoHtml(actividad.item); }
       var alternas = caja.querySelector('.j-arcade-alterno .j-opciones');
       if (alternas) alternas.innerHTML = opcionesAlternas(actividad.item);
       juegoActivo.api.nueva(actividad.item.opciones, actividad.item_indice || 0);
@@ -966,7 +972,8 @@ window.LudiaJugar = (function () {
     seleccion = estadoInicial(tipo, item);
     memoria = { abiertas: [], bloqueado: false };
 
-    var imagen = item.imagen
+    // En los juegos de acción la imagen va dentro del cartel de arriba.
+    var imagen = item.imagen && !esArcade(tipo)
       ? '<img class="j-imagen" src="' + esc(item.imagen) + '" alt="Imagen de la pregunta">'
       : '';
 
@@ -999,6 +1006,15 @@ window.LudiaJugar = (function () {
       }, (document.querySelector('#juego-yo .avatar-cara') || {}).textContent,
         { ronda: actividad.item_indice || 0, continuo: esContinuo(tipo) });
       juegoActivo = api && esContinuo(tipo) ? { tipo: tipo, indice: actividad.indice, api: api } : null;
+      // Que se vea entero: si el cartel o los botones quedan fuera de la
+      // pantalla, se acomoda la página (el lienzo ya se midió para caber).
+      var cartel = caja.querySelector('.j-objetivo'), marcoJ = caja.querySelector('[data-arcade]');
+      if (cartel && marcoJ && !document.fullscreenElement && !document.webkitFullscreenElement) {
+        var arriba = cartel.getBoundingClientRect().top, abajo = marcoJ.getBoundingClientRect().bottom;
+        if (arriba < 0 || abajo > window.innerHeight) {
+          window.scrollBy({ top: arriba - 8, behavior: 'smooth' });
+        }
+      }
     }
     if (tipo === 'ordenar' || tipo === 'linea_tiempo') refrescarOrden();
     if (tipo === 'ordenar_palabras' || tipo === 'anagrama') refrescarArmada();

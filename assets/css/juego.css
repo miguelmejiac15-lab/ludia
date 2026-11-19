@@ -88,6 +88,28 @@
   border-radius: 50%; border: 0; background: var(--coral); color: #fff;
   font-size: .65rem; cursor: pointer; line-height: 1;
 }
+/* Celda de pareja: una palabra o una imagen, con el botón 🖼 dentro del campo. */
+.celda { position: relative; display: flex; align-items: center; min-width: 0; }
+.celda > .input { flex: 1; min-width: 0; padding-right: 48px; }
+.celda-subir {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  font: inherit; font-size: 1.05rem; line-height: 1; cursor: pointer;
+  border: 0; background: none; border-radius: 9px; padding: 7px; opacity: .65;
+}
+.celda-subir:hover, .celda-subir:focus-visible { opacity: 1; background: var(--violet-soft); }
+.celda-subir.bloqueado { font-size: .78rem; }
+.celda.con-img {
+  gap: 10px; padding: 5px 10px 5px 5px; min-height: 44px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.celda.con-img:focus-within { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-soft); }
+.celda-img { position: relative; flex: none; }
+.celda-img img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: #fff; display: block; }
+.celda-texto {
+  flex: 1; min-width: 0; font: inherit; font-size: .9rem; color: var(--text);
+  border: 0; background: none; padding: 6px 2px; outline: none;
+}
+.celda-texto::placeholder { color: var(--text-soft); opacity: .8; }
 .tarjeta-pregunta {
   padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md);
   background: var(--surface-2); display: flex; flex-direction: column; gap: 10px;
@@ -135,7 +157,7 @@ button.cambiar-op:hover { border-color: var(--violet); background: var(--violet-
 @media (max-width: 640px) {
   .columnas-cabeza { display: none; }
   .fila-pareja { grid-template-columns: 24px 1fr; }
-  .fila-pareja .campo-con-img:nth-of-type(3), .fila-pareja .fila-acciones { grid-column: 2; }
+  .fila-pareja .celda-der, .fila-pareja .fila-acciones { grid-column: 2; }
   .opciones, .tarjeta-pregunta .link-btn, .tarjeta-pregunta .hint { padding-left: 0; margin-left: 0; }
   .tarjeta-cabeza { grid-template-columns: 24px 1fr; }
   .tarjeta-cabeza .fila-acciones { grid-column: 2; }

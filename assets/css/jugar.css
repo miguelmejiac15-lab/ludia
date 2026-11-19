@@ -935,7 +935,15 @@ main.sala, main.unirse {
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .j-arcade canvas { display: block; width: 100%; cursor: ns-resize; }
-.j-arcade-ayuda { font-size: .85rem; color: var(--text-soft); text-align: center; margin: 4px 0 10px; }
+.j-arcade-ayuda { font-size: .92rem; font-weight: 600; color: var(--text); text-align: center; margin: 0 0 10px; }
+/* Lo que se busca en el juego: grande y resaltado, encima del lienzo. */
+.j-pregunta.j-objetivo {
+  font-size: clamp(1.7rem, 7vw, 2.6rem); font-weight: 700; line-height: 1.15;
+  text-align: center; color: #fff; margin: 6px 0 10px; padding: 14px 18px;
+  background: linear-gradient(135deg, #5B3DF5, #8B5CF6); border-radius: 18px;
+  box-shadow: 0 10px 22px -14px rgba(91, 61, 245, .8);
+}
+.j-pregunta.j-objetivo.larga { font-size: clamp(1.25rem, 4.6vw, 1.7rem); }
 .j-arcade-alterno { margin-top: 6px; }
 .j-arcade-alterno summary { cursor: pointer; font-size: .85rem; font-weight: 700; color: var(--violet); text-align: center; padding: 6px; }
 .j-arcade-alterno .j-opciones { margin-top: 10px; }

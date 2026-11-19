@@ -41,7 +41,7 @@ window.LudiaJugar = (function () {
     tren: '👆 Toca para soltar la caja: tiene que caer en el vagón de la respuesta correcta',
     catapulta: '👆 Arrastra hacia atrás, apunta y suelta: dale al cartel de la respuesta correcta',
     salta: '👆 ◀ ▶ para correr y ▲ (o toca) para saltar: golpea desde abajo el bloque correcto',
-    mina: '👆 Toca un bloque junto a ti para picarlo y baja hasta la gema correcta',
+    mina: '⛏️ Pica hacia abajo (flechas o tocando el bloque) hasta la gema con la letra de la respuesta correcta · las rocas grises necesitan 3 golpes',
     obstaculos: '👆 Toca, ▲ o Espacio para saltar: cruza el arco correcto y salta los demás',
     nave: '👆 Arrastra para mover la nave y toca para disparar al asteroide correcto'
   };
@@ -87,7 +87,9 @@ window.LudiaJugar = (function () {
     var controles = CONTROLES[it.tipo];
     var leyenda = CON_LEYENDA.indexOf(it.tipo) > -1;
     var maximo = it.tipo === 'laberinto' ? 4 : it.opciones.length;
-    return '<p class="j-pregunta">' + esc(it.enunciado) + '</p>' +
+    // La pregunta va grande, como cartel del juego: es lo que el niño busca.
+    return '<p class="j-pregunta j-objetivo' + (String(it.enunciado || '').length > 45 ? ' larga' : '') + '">' + esc(it.enunciado) + '</p>' +
+      '<p class="j-arcade-ayuda">' + ARCADE[it.tipo] + '</p>' +
       (leyenda ? '<ol class="j-leyenda">' + it.opciones.slice(0, maximo).map(function (t, i) {
         return '<li><b class="opt-' + i + '">' + LETRAS[i] + '</b> ' + esc(t) + '</li>';
       }).join('') + '</ol>' : '') +
@@ -95,7 +97,6 @@ window.LudiaJugar = (function () {
       (controles ? '<div class="j-cruceta' + (controles.length === 4 ? '' : ' fila') + '" aria-hidden="true">' +
         controles.map(function (c) { return '<button type="button" data-dir="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>' : '') +
       '</div>' +
-      '<p class="j-arcade-ayuda">' + ARCADE[it.tipo] + '</p>' +
       // El «✓ +870» del juego se dibuja: esto lo anuncia a los lectores de pantalla.
       '<p class="sr-only" data-arcade-estado aria-live="polite"></p>' +
       '<details class="j-arcade-alterno"><summary>¿Prefieres tocar la respuesta?</summary><div class="j-opciones">' +
@@ -926,7 +927,10 @@ window.LudiaJugar = (function () {
       actual = actividad;
       seleccion = null;
       var pregunta = caja.querySelector('.j-pregunta');
-      if (pregunta) pregunta.textContent = actividad.item.enunciado;
+      if (pregunta) {
+        pregunta.textContent = actividad.item.enunciado;
+        pregunta.classList.toggle('larga', String(actividad.item.enunciado || '').length > 45);
+      }
       var alternas = caja.querySelector('.j-arcade-alterno .j-opciones');
       if (alternas) alternas.innerHTML = opcionesAlternas(actividad.item);
       juegoActivo.api.nueva(actividad.item.opciones, actividad.item_indice || 0);

@@ -1717,7 +1717,7 @@ window.LudiaArcade = (function () {
     b.proporcion = 0.95;
     b.medir();
     var C = 9, F = 7;                       // columnas, filas (la 0 es el césped)
-    var celdas = [], gemas = [], jugador = { c: 4, f: 0, y: 0 }, golpes = [], festejo = 0;
+    var celdas = [], gemas = [], jugador = { c: 4, f: 0, y: 0 }, golpes = [], festejo = 0, yaPico = false;
 
     (function armar() {
       var cols = barajar([0, 2, 4, 6, 8, 1, 3, 5, 7]).slice(0, b.opciones.length);
@@ -1755,6 +1755,7 @@ window.LudiaArcade = (function () {
         return;
       }
       if (celda) {
+        yaPico = true;
         celda.vida--;
         var g2 = geo();
         golpes.push({ x: g2.ox + (c + 0.5) * g2.t, y: g2.oy + (f + 0.5) * g2.t, t: 0 });
@@ -1823,6 +1824,14 @@ window.LudiaArcade = (function () {
           }
         }
       }
+      // Hasta el primer golpe: el bloque de abajo brilla y una manito lo señala.
+      // Sin esto, varios niños no sabían por dónde empezar.
+      if (!yaPico && !b.yaEligio() && jugador.f + 1 < F && celdas[jugador.f + 1][jugador.c]) {
+        var bx = g.ox + jugador.c * g.t, by = g.oy + (jugador.f + 1) * g.t, pulso = 0.5 + Math.sin(b.tiempo * 6) * 0.5;
+        ctx.strokeStyle = 'rgba(255,210,77,' + (0.55 + pulso * 0.45) + ')'; ctx.lineWidth = 4;
+        caja(ctx, bx + 2, by + 2, g.t - 4, g.t - 4, g.t * 0.18); ctx.stroke();
+        emoji(b, '👇', bx + g.t * 0.5, by + g.t * 0.5 + Math.sin(b.tiempo * 8) * 3, g.t * 0.55);
+      }
       golpes.forEach(function (h) { h.t += dt; });
       golpes = golpes.filter(function (h) { return h.t < 0.3; });
       golpes.forEach(function (h) { emoji(b, '💥', h.x, h.y, g.t * (0.5 + h.t)); });
@@ -1830,7 +1839,8 @@ window.LudiaArcade = (function () {
       emoji(b, piloto, jx, jy - (festejo ? Math.abs(Math.sin(b.tiempo * 14)) * g.t * 0.4 : 0), g.t * 0.9);
       emoji(b, '⛏️', jx + g.t * 0.38, jy - g.t * 0.25 + Math.sin(b.tiempo * 10) * 2, g.t * 0.5);
       b.dibujarChispas(dt);
-      if (b.tiempo < 5 && !b.yaEligio()) aviso(b, '👆 Toca un bloque junto a ti para picarlo', '#5B3DF5', b.W / 2, g.oy - 4 + g.t * 0.4, Math.min(1, 5 - b.tiempo));
+      // Hasta que empiece a bajar, se le recuerda qué hacer.
+      if (!b.yaEligio() && jugador.f === 0) aviso(b, b.tiempo % 6 < 3 ? '⛏️ Pica hacia abajo ▼' : '💎 Busca la gema correcta', '#5B3DF5', b.W / 2, Math.max(16, g.oy * 0.5), 1);
     });
   }
 

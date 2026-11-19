@@ -41,6 +41,15 @@ window.LudiaJugar = (function () {
   };
   function esArcade(tipo) { return Object.prototype.hasOwnProperty.call(ARCADE, tipo); }
 
+  /** Ruleta y cajas: en vivo las maneja el docente en el proyector. */
+  function vistaSorteo(it, icono) {
+    if (modoSesion !== 'enviar') {
+      return '<div class="j-mira"><b aria-hidden="true">' + icono + '</b><p>Mira la pantalla</p>' +
+        '<span>' + (it.tipo === 'ruleta' ? 'Tu profe va a girar la ruleta.' : 'Tu profe va a abrir las cajas.') + '</span></div>';
+    }
+    return '<div data-sorteo></div>';
+  }
+
   function vistaArcade(it) {
     var laberinto = it.tipo === 'laberinto';
     return '<p class="j-pregunta">' + esc(it.enunciado) + '</p>' +
@@ -340,6 +349,9 @@ window.LudiaJugar = (function () {
         }).join('') + '</div><p class="j-ayuda">Solo para leer: no hay que responder.</p>';
     },
 
+    ruleta: function (it) { return vistaSorteo(it, '🎡'); },
+    cajas: function (it) { return vistaSorteo(it, '🎁'); },
+
     pagina: function (it) {
       return '<h2 class="j-pagina-titulo">' + esc(it.titulo) + '</h2>' +
         '<div class="j-pagina">' + (it.parrafos || []).map(function (p) {
@@ -350,7 +362,8 @@ window.LudiaJugar = (function () {
   };
 
   /** Pantallas que se leen y no se responden. */
-  var SOLO_LECTURA = ['panel', 'pagina'];
+  var SOLO_LECTURA = ['panel', 'pagina', 'ruleta', 'cajas'];
+  var modoSesion = 'vivo';   // lo avisa unirse.js: en vivo, ruleta y cajas se miran en el proyector
 
   /* ---------- Estado inicial de la respuesta ---------- */
 
@@ -902,12 +915,15 @@ window.LudiaJugar = (function () {
     if (!mismaPregunta && window.LudiaAnim) window.LudiaAnim.marcar(caja, 'entra', 900);
 
     if (tipo === 'video_preguntas' && !enProyector) montarVideo(item);
+    if ((tipo === 'ruleta' || tipo === 'cajas') && window.LudiaSorteo) {
+      window.LudiaSorteo.montar(tipo, caja.querySelector('[data-sorteo]'), item, false);
+    }
     if (esArcade(tipo) && window.LudiaArcade) {
       window.LudiaArcade.montar(tipo, caja.querySelector('[data-arcade]'), item.opciones, function (indice) {
         if (!actual || actual.item !== item) return;
         seleccion = indice;
         enviar();
-      }, (document.querySelector('#juego-yo .avatar-cara') || {}).textContent);
+      }, (document.querySelector('#juego-yo .avatar-cara') || {}).textContent, { ronda: actividad.item_indice || 0 });
     }
     if (tipo === 'ordenar' || tipo === 'linea_tiempo') refrescarOrden();
     if (tipo === 'ordenar_palabras' || tipo === 'anagrama') refrescarArmada();
@@ -952,6 +968,7 @@ window.LudiaJugar = (function () {
     reiniciar: reiniciar,
     resumenEnviado: resumenEnviado,
     esSoloLectura: esSoloLectura,
+    ponerModo: function (m) { modoSesion = m === 'enviar' ? 'enviar' : 'vivo'; },
     esc: esc
   };
 })();

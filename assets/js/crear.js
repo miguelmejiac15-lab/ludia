@@ -576,6 +576,7 @@
     if (clave === 'pares') return { izquierda: '', derecha: '' };
     if (clave === 'entradas') return { palabra: '', pista: '' };
     if (clave === 'tarjetas') return { titulo: '', texto: '' };
+    if (clave === 'sorteo') return { texto: '', respuesta: '' };
     if (clave === 'categorias') return { nombre: '', elementos: ['', ''] };
     return '';
   }
@@ -583,7 +584,7 @@
   function primerCampo(ruta, indice) {
     var clave = ruta.split('.').pop();
     var sufijo = clave === 'pares' ? '.izquierda' : clave === 'entradas' ? '.palabra'
-      : clave === 'tarjetas' ? '.titulo' : clave === 'categorias' ? '.nombre' : '';
+      : clave === 'tarjetas' ? '.titulo' : clave === 'categorias' ? '.nombre' : clave === 'sorteo' ? '.texto' : '';
     return '[data-bind="' + ruta + '.' + indice + sufijo + '"]';
   }
 

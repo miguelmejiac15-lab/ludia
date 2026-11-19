@@ -355,6 +355,30 @@ window.LudiaFormatos = (function () {
       validar: function (it) { return validarPares(it.tarjetas, 'titulo', 'texto', 2, 'tarjetas'); }
     },
 
+    ruleta: {
+      nombre: 'Ruleta', icono: '🎡', grupo: 'apoyo', puntua: false, lectura: true,
+      descripcion: 'Gira y sale una palabra, una pregunta o un nombre al azar. Tú decides cuándo mostrar la respuesta.',
+      nuevoItem: function () {
+        return { instruccion: 'Gira la ruleta', sorteo: [{ texto: '', respuesta: '' }, { texto: '', respuesta: '' }, { texto: '', respuesta: '' }] };
+      },
+      validar: function (it) {
+        var llenos = (it.sorteo || []).filter(function (e) { return !vacio(e.texto); });
+        return llenos.length < 2 ? ['Escribe al menos 2 elementos para la ruleta'] : [];
+      }
+    },
+
+    cajas: {
+      nombre: 'Cajas sorpresa', icono: '🎁', grupo: 'apoyo', puntua: false, lectura: true,
+      descripcion: 'Cajas numeradas: abre una y descubre lo que esconde. Tú decides cuándo mostrar la respuesta.',
+      nuevoItem: function () {
+        return { instruccion: 'Elige una caja', sorteo: [{ texto: '', respuesta: '' }, { texto: '', respuesta: '' }, { texto: '', respuesta: '' }] };
+      },
+      validar: function (it) {
+        var llenos = (it.sorteo || []).filter(function (e) { return !vacio(e.texto); });
+        return llenos.length < 2 ? ['Escribe al menos 2 cosas para esconder en las cajas'] : [];
+      }
+    },
+
     pagina: {
       nombre: 'Página informativa', icono: '📄', grupo: 'apoyo', puntua: false, lectura: true,
       descripcion: 'Diapositiva con título, imagen y texto para explicar el tema. Sin tiempo: la pasas tú.',

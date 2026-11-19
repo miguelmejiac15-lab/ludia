@@ -173,6 +173,8 @@
   /* ---------- Pasos visibles ---------- */
 
   function mostrarPaso(cual) {
+    var columna = document.getElementById('juego-plantillas');
+    if (columna && cual !== 'juego') { columna.hidden = true; raiz.classList.remove('con-plantillas'); }
     if (el.pasoCodigo) el.pasoCodigo.hidden = cual !== 'codigo';
     el.acceso.hidden = cual !== 'acceso';
     el.espera.hidden = cual !== 'espera';
@@ -220,8 +222,118 @@
 
   /* ---------- Juego ---------- */
 
+  /* ---------- Juego enviado: elegir cómo jugar ---------- */
+
+  var firmaEleccion = '';
+
+  /** Pide al servidor jugar otra forma (-1 = volver al menú, 'terminar'). */
+  function elegirJuego(actividad) {
+    return fetch(R.api('participante-elegir.php'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo: codigoActual, token: token, actividad: actividad })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (datos) {
+        if (datos.terminado) { pintarFinal({ ranking: datos.ranking || [] }); return; }
+        if (!datos.ok && datos.error) {
+          el.juegoCuerpo.insertAdjacentHTML('beforeend', '<p class="mensaje error">' + escapar(datos.error) + '</p>');
+          return;
+        }
+        preguntaActual = '';
+        firmaEleccion = '';
+        consultar();
+      });
+  }
+
+  function botonCambiar(visible) {
+    var boton = document.getElementById('btn-cambiar-juego');
+    if (!boton && visible) {
+      el.juegoPaso.insertAdjacentHTML('afterend',
+        '<button type="button" class="link-btn j-cambiar" id="btn-cambiar-juego" data-ir-plantillas>🔄 Cambiar juego ↓</button>');
+      boton = document.getElementById('btn-cambiar-juego');
+    }
+    if (boton) boton.hidden = !visible;
+  }
+
+  /* Columna «Cambiar juego» (como «Cambiar plantilla» en Wordwall): 5 a la
+     vista y «Mostrar todo» para el resto. La actual siempre se ve. */
+  var lado = document.getElementById('juego-plantillas');
+  var verTodas = false, firmaLado = '';
+
+  function pintarLado(eleccion) {
+    if (!lado) return;
+    raiz.classList.toggle('con-plantillas', !!eleccion);
+    lado.hidden = !eleccion;
+    if (!eleccion) return;
+    var opciones = eleccion.opciones;
+    var firma = JSON.stringify(opciones) + eleccion.actual + verTodas;
+    if (firma === firmaLado) return;
+    firmaLado = firma;
+    var visibles = verTodas ? opciones : opciones.filter(function (o, n) { return n < 5 || o.indice === eleccion.actual; });
+    lado.innerHTML = '<h2 class="plantillas-titulo" id="plantillas-titulo">Cambiar juego</h2>' +
+      '<p class="plantillas-sub">Las mismas preguntas, otro juego.</p>' +
+      '<div class="plantillas-lista">' + visibles.map(function (o) {
+        var actual = o.indice === eleccion.actual;
+        var nota = actual ? 'Jugando' : (o.completo ? '✓ ' + o.puntos + ' pts' : (o.respondidas ? o.respondidas + ' de ' + o.items : ''));
+        return '<button type="button" class="plantilla-op' + (actual ? ' actual' : '') + (o.completo ? ' hecho' : '') + '"' +
+          ' data-elegir-juego="' + o.indice + '"' + (actual ? ' aria-current="true"' : '') + (o.completo && !actual ? ' disabled' : '') +
+          ' title="' + escapar(o.descripcion) + '">' +
+          '<span class="plantilla-icono" aria-hidden="true">' + o.icono + '</span>' +
+          '<span class="plantilla-nombre">' + escapar(o.nombre) + '</span>' +
+          (nota ? '<small>' + nota + '</small>' : '') + '</button>';
+      }).join('') + '</div>' +
+      (opciones.length > 5
+        ? '<button type="button" class="link-btn plantillas-mas" data-ver-plantillas>' +
+          (verTodas ? 'Mostrar menos' : 'Mostrar todo (' + opciones.length + ')') + '</button>'
+        : '');
+  }
+
+  function pintarEleccion(datos) {
+    mostrarPaso('juego');
+    botonCambiar(false);
+    // En el menú ya están todas las opciones: la columna sobra.
+    pintarLado(null);
+    if (datos.yo) {
+      el.juegoYo.innerHTML = P.avatar(datos.yo.personaje, 'sm') + ' ' + escapar(datos.yo.nombre);
+      el.juegoPuntaje.textContent = '⭐ ' + datos.yo.puntaje;
+    }
+    el.juegoCrono.classList.add('lectura');
+    el.juegoCrono.setAttribute('data-espera', '');
+    el.juegoCrono.textContent = '🎲 Elige';
+    el.juegoPaso.textContent = datos.sesion.nombre;
+
+    var opciones = datos.eleccion.opciones;
+    // El sondeo repasa cada 3 s: solo se repinta si algo cambió.
+    var firma = JSON.stringify(opciones);
+    if (firma === firmaEleccion) return;
+    firmaEleccion = firma;
+    var jugadas = opciones.filter(function (o) { return o.respondidas > 0; }).length;
+
+    el.juegoCuerpo.innerHTML = '<div class="eleccion">' +
+      '<h2 class="eleccion-titulo">' + (jugadas ? '¿Jugamos de otra forma?' : '¿Cómo quieres jugar?') + '</h2>' +
+      '<p class="eleccion-sub">' + (jugadas
+        ? 'Elige otro juego con las mismas preguntas, o termina cuando quieras.'
+        : 'Son las mismas preguntas en distintos juegos. Elige el que más te guste.') + '</p>' +
+      '<div class="eleccion-lista">' + opciones.map(function (o, n) {
+        var estado = o.completo ? '<span class="eleccion-hecho">✓ ' + o.puntos + ' pts</span>'
+          : (o.respondidas ? '<span class="eleccion-sigue">Sigue: ' + o.respondidas + ' de ' + o.items + '</span>'
+          : (n === 0 && !jugadas ? '<span class="eleccion-recomendado">⭐ Tu profe lo eligió</span>' : ''));
+        return '<button type="button" class="eleccion-op' + (o.completo ? ' hecho' : '') + '" data-elegir-juego="' + o.indice + '" title="' + escapar(o.descripcion) + '"' +
+          (o.completo ? ' disabled' : '') + '>' +
+          '<span class="eleccion-icono" aria-hidden="true">' + o.icono + '</span>' +
+          '<span class="eleccion-texto"><b>' + escapar(o.nombre) + '</b><small>' + escapar(o.descripcion) + '</small></span>' +
+          estado + '</button>';
+      }).join('') + '</div>' +
+      (jugadas ? '<button type="button" class="btn btn-ghost btn-block" data-terminar-juego>Terminar y ver mi puntaje</button>' : '') +
+      '</div>';
+    if (A) A.marcar(el.juegoCuerpo, 'entra', 700);
+  }
+
   function pintarJuego(datos) {
     mostrarPaso('juego');
+    botonCambiar(!!datos.eleccion);
+    pintarLado(datos.eleccion || null);
     var actividad = datos.actividad;
     if (!actividad) return;
 
@@ -258,8 +370,10 @@
       // La posición viene del servidor: contar respuestas no servía, porque las
       // pantallas de lectura no generan ninguna (y el gratis no las guarda).
       var donde = datos.mi_avance.posicion || (datos.mi_avance.respondidas + 1);
-      el.juegoPaso.textContent = escapar(actividad.titulo) + ' · ' +
-        donde + ' de ' + datos.mi_avance.total + ' del paquete';
+      var forma = datos.eleccion ? datos.eleccion.opciones[datos.eleccion.actual] : null;
+      el.juegoPaso.textContent = forma
+        ? forma.icono + ' ' + forma.nombre + ' · ' + donde + ' de ' + datos.mi_avance.total
+        : escapar(actividad.titulo) + ' · ' + donde + ' de ' + datos.mi_avance.total + ' del paquete';
     } else {
       el.juegoPaso.textContent = escapar(actividad.titulo) + ' · pregunta ' +
         (actividad.item_indice + 1) + ' de ' + actividad.total_items;
@@ -320,6 +434,16 @@
 
   raiz.addEventListener('click', function (evento) {
     if (evento.target.closest('[data-continuar]')) avanzar();
+    var opcion = evento.target.closest('[data-elegir-juego]');
+    // La que ya se está jugando no hace nada (se reiniciaría el reloj).
+    if (opcion && !opcion.disabled && !opcion.hasAttribute('aria-current')) {
+      opcion.disabled = true;
+      elegirJuego(Number(opcion.getAttribute('data-elegir-juego')));
+    }
+    if (evento.target.closest('[data-ver-plantillas]')) { verTodas = !verTodas; firmaLado = ''; consultar(); }
+    if (evento.target.closest('[data-ir-plantillas]') && lado) lado.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var fin = evento.target.closest('[data-terminar-juego]');
+    if (fin) { fin.disabled = true; elegirJuego('terminar'); }
   });
 
   // jugar.js avisa cuando el participante pulsa "Enviar".
@@ -410,10 +534,12 @@
 
   function pintarEstado(datos) {
     modo = datos.sesion.modo || 'vivo';
+    if (J.ponerModo) J.ponerModo(modo);
     var estado = datos.sesion.estado;
 
     if (estado === 'terminada') { pintarFinal(datos); return; }
     if (datos.yo && datos.yo.terminado) { pintarFinal(datos); return; }
+    if (datos.eleccion && datos.eleccion.eligiendo) { pintarEleccion(datos); return; }
     if (datos.actividad) { pintarJuego(datos); return; }
     pintarEspera(datos);
   }

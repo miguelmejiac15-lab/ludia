@@ -141,6 +141,12 @@ if ($seRegistra) {
     }
 }
 
+// Juego enviado: el menú de «¿cómo quieres jugar?» necesita saber por dónde
+// va, se registre o no la respuesta para el informe.
+if ($enviado && !empty($sesion['eleccion_libre'])) {
+    participante_anotar_libre((int) $participante['id'], $actividadIndice, $itemIndice, (int) $nota['puntos']);
+}
+
 $puntajeTotal = db()->prepare('SELECT puntaje FROM participantes WHERE id = ?');
 $puntajeTotal->execute([$participante['id']]);
 
@@ -159,7 +165,7 @@ $salida = [
 // En un paquete enviado, responder avanza a la siguiente pregunta (salvo el
 // mural, donde se pueden dejar varios aportes antes de seguir).
 if ($enviado && $tipo !== 'mural') {
-    $avance = participante_avanzar((int) $participante['id'], $contenido, $actividadIndice, $itemIndice);
+    $avance = participante_avanzar((int) $participante['id'], $contenido, $actividadIndice, $itemIndice, (bool) ($sesion['eleccion_libre'] ?? false));
     $salida['avance'] = $avance;
     if ($avance['terminado']) {
         $salida['ranking'] = juego_ranking((int) $sesion['id']);

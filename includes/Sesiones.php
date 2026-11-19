@@ -27,7 +27,7 @@ const SESION_TIPOS = [
     'relacionar', 'memoria', 'clasificar', 'ordenar',
     'mural', 'encuesta', 'pregunta_abierta', 'escala', 'panel',
     'ortografia', 'anagrama', 'numerica', 'linea_tiempo', 'pagina',
-    'video_preguntas', 'avion', 'globos', 'atrapa', 'laberinto',
+    'video_preguntas', 'avion', 'globos', 'atrapa', 'laberinto', 'ruleta', 'cajas',
 ];
 
 /**
@@ -294,6 +294,20 @@ function sesion_cerrar(int $sesionId): void
 function sesion_lanzar(array $paquete, int $usuarioId, string $modo = 'vivo', ?int $maxParticipantes = null): array
 {
     $actividades = json_decode((string) ($paquete['contenido'] ?? ''), true);
+
+    // Un JUEGO enviado lleva todas sus plantillas: el estudiante elige cómo
+    // jugarlo (como en Wordwall). En vivo se proyecta solo la del docente.
+    $libre = false;
+    if ($modo === 'enviar' && ($paquete['clase'] ?? 'paquete') === 'juego') {
+        require_once __DIR__ . '/Juegos.php';
+        $dueno = db()->prepare('SELECT * FROM usuarios WHERE id = ?');
+        $dueno->execute([$usuarioId]);
+        $todas = juego_actividades_libres($paquete, $dueno->fetch() ?: null);
+        if (count($todas) > 1) {
+            $actividades = $todas;
+            $libre = true;
+        }
+    }
     if (!is_array($actividades) || $actividades === []) {
         return ['ok' => false, 'mensaje' => 'Ese paquete todavía no tiene actividades.'];
     }
@@ -324,6 +338,9 @@ function sesion_lanzar(array $paquete, int $usuarioId, string $modo = 'vivo', ?i
         $maxParticipantes,
         (int) $paquete['id']
     );
+    if ($libre) {
+        db()->prepare('UPDATE sesiones SET eleccion_libre = 1 WHERE codigo = ?')->execute([$sesion['codigo']]);
+    }
 
     return [
         'ok'      => true,
@@ -437,11 +454,72 @@ function participante_ping(int $participanteId): void
    En vivo manda el anfitrión: la pregunta proyectada es la misma para todos.
    Para enviar, cada participante lleva su propio punto del recorrido. */
 
-function participante_arrancar(int $participanteId): void
+function participante_arrancar(int $participanteId, bool $eligiendo = false): void
 {
     db()->prepare(
-        'UPDATE participantes SET estado = "jugando", actividad_indice = 0, item_indice = 0, item_inicio_at = NOW() WHERE id = ?'
-    )->execute([$participanteId]);
+        'UPDATE participantes SET estado = "jugando", actividad_indice = 0, item_indice = 0, item_inicio_at = NOW(), eligiendo = ? WHERE id = ?'
+    )->execute([$eligiendo ? 1 : 0, $participanteId]);
+}
+
+/**
+ * Juego enviado: el estudiante pasa a jugar la plantilla `$actividad`, desde
+ * la primera pregunta que no haya respondido. Con -1 vuelve al menú.
+ *
+ * @return array{ok:bool, mensaje?:string}
+ */
+function participante_elegir(int $participanteId, array $contenido, int $actividad): array
+{
+    if ($actividad === -1) {
+        db()->prepare('UPDATE participantes SET eligiendo = 1, item_inicio_at = NULL WHERE id = ?')->execute([$participanteId]);
+        return ['ok' => true];
+    }
+    if (!isset($contenido[$actividad])) {
+        return ['ok' => false, 'mensaje' => 'Ese juego no existe.'];
+    }
+    $respondidos = participante_avance_libre($participanteId)[$actividad]['i'] ?? [];
+    foreach (array_keys($contenido[$actividad]['items'] ?? []) as $item) {
+        if (!in_array($item, $respondidos, true)) {
+            db()->prepare('UPDATE participantes SET eligiendo = 0, actividad_indice = ?, item_indice = ?, item_inicio_at = NOW() WHERE id = ?')
+                ->execute([$actividad, $item, $participanteId]);
+            return ['ok' => true];
+        }
+    }
+    return ['ok' => false, 'mensaje' => 'Ya jugaste este. Elige otro.'];
+}
+
+/**
+ * Lo que lleva respondido un estudiante en cada forma de un juego enviado.
+ * @return array<int, array{i: list<int>, p: int}>
+ */
+function participante_avance_libre(int $participanteId): array
+{
+    $consulta = db()->prepare('SELECT avance_libre FROM participantes WHERE id = ?');
+    $consulta->execute([$participanteId]);
+    $datos = json_decode((string) $consulta->fetchColumn(), true);
+    $limpio = [];
+    foreach (is_array($datos) ? $datos : [] as $a => $v) {
+        $limpio[(int) $a] = ['i' => array_map('intval', (array) ($v['i'] ?? [])), 'p' => (int) ($v['p'] ?? 0)];
+    }
+    return $limpio;
+}
+
+/** Anota una respuesta en el avance del juego enviado (una vez por pregunta). */
+function participante_anotar_libre(int $participanteId, int $actividad, int $item, int $puntos): void
+{
+    $avance = participante_avance_libre($participanteId);
+    $avance[$actividad] = $avance[$actividad] ?? ['i' => [], 'p' => 0];
+    if (!in_array($item, $avance[$actividad]['i'], true)) {
+        $avance[$actividad]['i'][] = $item;
+        $avance[$actividad]['p'] += max(0, $puntos);
+    }
+    db()->prepare('UPDATE participantes SET avance_libre = ? WHERE id = ?')
+        ->execute([json_encode($avance), $participanteId]);
+}
+
+/** Termina el juego enviado de un estudiante (desde el menú de elegir). */
+function participante_terminar(int $participanteId): void
+{
+    db()->prepare('UPDATE participantes SET terminado = 1, eligiendo = 0, item_inicio_at = NULL WHERE id = ?')->execute([$participanteId]);
 }
 
 /**
@@ -450,12 +528,17 @@ function participante_arrancar(int $participanteId): void
  *
  * @return array{terminado:bool, actividad:int, item:int}
  */
-function participante_avanzar(int $participanteId, array $contenido, int $actividad, int $item): array
+function participante_avanzar(int $participanteId, array $contenido, int $actividad, int $item, bool $libre = false): array
 {
     $itemsActuales = count($contenido[$actividad]['items'] ?? []);
 
     if ($item + 1 < $itemsActuales) {
         $item++;
+    } elseif ($libre) {
+        // Juego enviado: terminar una plantilla no es terminar. Vuelve al
+        // menú para jugar de otra forma o cerrar cuando quiera.
+        db()->prepare('UPDATE participantes SET eligiendo = 1, item_inicio_at = NULL WHERE id = ?')->execute([$participanteId]);
+        return ['terminado' => false, 'eligiendo' => true, 'actividad' => $actividad, 'item' => $item];
     } elseif ($actividad + 1 < count($contenido)) {
         $actividad++;
         $item = 0;

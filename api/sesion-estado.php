@@ -62,6 +62,10 @@ $respuesta = [
         'total_preguntas'   => sesion_total_preguntas($contenido),
         'max_participantes' => (int) $sesion['max_participantes'],
         'por_equipos'       => (bool) $sesion['por_equipos'],
+        // Todo es para mirar (ruleta, cajas, diapositivas): el docente puede
+        // empezar aunque nadie haya entrado con el celular.
+        'solo_lectura'      => $contenido !== [] && array_reduce($contenido, static fn (bool $todo, $a): bool =>
+            $todo && is_array($a) && juego_es_lectura((string) ($a['tipo'] ?? '')), true),
     ],
     'participantes' => $participantes,
     // Los equipos viajan siempre: la sala los pinta mientras se arman y el
@@ -110,9 +114,40 @@ function bloque_actividad(array $contenido, string $codigo, int $a, int $i, ?str
     return $bloque;
 }
 
+/* ---------- Juego enviado: el estudiante elige cómo jugar ---------- */
+$libre = $modo === 'enviar' && !empty($sesion['eleccion_libre']);
+if ($libre && $participante && !$participante['terminado']) {
+    require_once __DIR__ . '/../includes/Juegos.php';
+    $porActividad = [];
+    foreach (participante_avance_libre((int) $participante['id']) as $indice => $v) {
+        $porActividad[$indice] = ['n' => count($v['i']), 'puntos' => $v['p']];
+    }
+    $respuesta['eleccion'] = [
+        'eligiendo' => (bool) $participante['eligiendo'],
+        'actual'    => (int) $participante['actividad_indice'],
+        'opciones'  => array_map(static function (int $a) use ($contenido, $porActividad): array {
+            $tipo = (string) ($contenido[$a]['tipo'] ?? '');
+            $items = count($contenido[$a]['items'] ?? []);
+            $hechas = $porActividad[$a]['n'] ?? 0;
+            return [
+                'indice'      => $a,
+                'tipo'        => $tipo,
+                'nombre'      => JUEGO_PLANTILLAS[$tipo]['nombre'] ?? formato_nombre($tipo),
+                'icono'       => JUEGO_PLANTILLAS[$tipo]['icono'] ?? '🎲',
+                'descripcion' => JUEGO_PLANTILLAS[$tipo]['descripcion'] ?? '',
+                'items'       => $items,
+                'respondidas' => $hechas,
+                'puntos'      => $porActividad[$a]['puntos'] ?? 0,
+                'completo'    => $items > 0 && $hechas >= $items,
+            ];
+        }, array_keys($contenido)),
+    ];
+}
+
 /* ---------- Modo "para enviar": cada quien a su ritmo ---------- */
 if ($modo === 'enviar' && $sesion['estado'] !== 'terminada') {
-    if ($participante && !$participante['terminado']) {
+    // En el menú de un juego libre no hay pregunta que mostrar.
+    if ($participante && !$participante['terminado'] && !($libre && $participante['eligiendo'])) {
         $a = (int) $participante['actividad_indice'];
         $i = (int) $participante['item_indice'];
         $bloque = bloque_actividad($contenido, $sesion['codigo'], $a, $i, $participante['item_inicio_at'], false);
@@ -133,6 +168,11 @@ if ($modo === 'enviar' && $sesion['estado'] !== 'terminada') {
                 }
             }
 
+            if ($libre) {
+                // En un juego libre el avance es dentro de la forma elegida.
+                $posicion = $i;
+                $respuesta['sesion']['total_preguntas'] = count($contenido[$a]['items'] ?? []);
+            }
             $respuesta['mi_avance'] = [
                 'posicion'    => $posicion + 1,   // 1-based, para mostrarlo
                 'respondidas' => (int) db()->query('SELECT COUNT(*) FROM respuestas WHERE participante_id = ' . (int) $participante['id'])->fetchColumn(),

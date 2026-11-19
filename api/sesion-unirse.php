@@ -68,6 +68,8 @@ if (!empty($sesion['curso_id'])) {
 
 // En un paquete enviado no hay sala de espera: se empieza a jugar de inmediato.
 if ($sesion['modo'] === 'enviar') {
+    // En un juego libre también se empieza jugando, con la plantilla que eligió
+    // el docente (va primera); la columna «Cambiar juego» deja pasar a otra.
     participante_arrancar($participanteId);
 }
 

@@ -36,7 +36,7 @@ function juego_puntua(string $tipo): bool
  * así que un cronómetro solo metería prisa (decisión del 2026-10-08).
  * La misma lista vive en jugar.js (SOLO_LECTURA) y en formatos.js (`lectura`).
  */
-const JUEGO_TIPOS_LECTURA = ['panel', 'pagina'];
+const JUEGO_TIPOS_LECTURA = ['panel', 'pagina', 'ruleta', 'cajas'];
 
 function juego_es_lectura(string $tipo): bool
 {
@@ -310,6 +310,17 @@ function juego_item_publico(array $actividad, int $itemIndice, string $semilla):
         case 'panel':
             $publico['instruccion'] = $item['instruccion'] ?? '';
             $publico['tarjetas']    = array_values($item['tarjetas'] ?? []);
+            break;
+
+        case 'ruleta':
+        case 'cajas':
+            // No se califican: la respuesta viaja para que el docente (o el
+            // estudiante, en un paquete enviado) la descubra cuando quiera.
+            $publico['instruccion'] = $item['instruccion'] ?? '';
+            $publico['elementos']   = array_values(array_filter(array_map(static fn ($e): array => [
+                'texto'     => is_array($e) ? (string) ($e['texto'] ?? '') : '',
+                'respuesta' => is_array($e) ? (string) ($e['respuesta'] ?? '') : '',
+            ], $item['sorteo'] ?? []), static fn (array $e): bool => trim($e['texto']) !== ''));
             break;
 
         case 'pagina':

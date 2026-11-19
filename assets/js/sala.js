@@ -206,6 +206,8 @@
   var vistas = {
     // En el proyector el avión se ve como un quiz: el juego de acción
     // ocurre en cada celular.
+    ruleta: function () { return '<div data-sorteo></div>'; },
+    cajas: function () { return '<div data-sorteo></div>'; },
     laberinto: function (it, clave) {
       return '<p class="proy-avion-aviso">🌀 ¡Llega en tu celular a la puerta correcta sin que te pillen las abejas!</p>' + vistas.quiz(it, clave);
     },
@@ -489,6 +491,11 @@
       el.proyCuerpo.innerHTML = imagen + (vista
         ? vista(actividad.item, claveVisible, datos.aportes || [], datos.muro)
         : '<p class="proy-pregunta">Actividad no disponible</p>');
+    }
+    // Ruleta y cajas se montan una sola vez por pantalla (son lectura): el
+    // sondeo de cada 3 s no las reinicia a mitad de un giro.
+    if (esNueva && window.LudiaSorteo && (actividad.item.tipo === 'ruleta' || actividad.item.tipo === 'cajas')) {
+      window.LudiaSorteo.montar(actividad.item.tipo, el.proyCuerpo.querySelector('[data-sorteo]'), actividad.item, true);
     }
     // La diapositiva ya trae su propia entrada (jugar.css).
     if (esNueva && !lectura && !esVideo && A) A.marcar(el.proyCuerpo, 'entra', 900);
@@ -818,8 +825,12 @@
       pintarEquipos(datos);
       el.estado.textContent = datos.total
         ? (datos.conectados + ' conectado' + (datos.conectados === 1 ? '' : 's') + ' · puedes comenzar cuando quieras')
-        : 'Esperando a que entre tu público…';
-      el.comenzar.disabled = !token || datos.total === 0;
+        : (datos.sesion && datos.sesion.solo_lectura
+          ? 'Puedes comenzar cuando quieras: esto lo manejas tú en la pantalla.'
+          : 'Esperando a que entre tu público…');
+      // Una ruleta o unas cajas las maneja el docente: no hace falta público.
+      var soloMirar = !!(datos.sesion && datos.sesion.solo_lectura);
+      el.comenzar.disabled = !token || (datos.total === 0 && !soloMirar);
       el.comenzar.hidden = false;
       el.siguiente.hidden = true;
       el.terminar.hidden = !token;

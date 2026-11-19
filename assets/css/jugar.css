@@ -964,3 +964,109 @@ main.sala, main.unirse {
 .j-cruceta [data-dir="izquierda"] { grid-column: 1; grid-row: 2; }
 .j-cruceta [data-dir="abajo"] { grid-column: 2; grid-row: 2; }
 .j-cruceta [data-dir="derecha"] { grid-column: 3; grid-row: 2; }
+
+/* ---------- Ruleta y cajas sorpresa (assets/js/sorteo.js) ---------- */
+.j-mira { text-align: center; padding: 30px 10px; }
+.j-mira b { font-size: 3rem; display: block; }
+.j-mira p { font-family: var(--font-title); font-size: 1.4rem; font-weight: 700; margin-top: 6px; }
+.j-mira span { color: var(--text-soft); }
+.sorteo-ruleta { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.sorteo-ruleta.grande { flex-direction: row; justify-content: center; gap: 36px; flex-wrap: wrap; }
+.sorteo-rueda { position: relative; width: 100%; max-width: 340px; display: flex; justify-content: center; }
+.sorteo-ruleta.grande .sorteo-rueda { max-width: 540px; width: min(540px, 62vh); }
+.sorteo-rueda canvas { cursor: pointer; display: block; }
+.sorteo-flecha {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent;
+  border-top: 30px solid #2A2140; filter: drop-shadow(0 3px 3px rgba(0,0,0,.3));
+}
+.sorteo-lado { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: min(100%, 260px); max-width: 420px; text-align: center; }
+.sorteo-instruccion { font-weight: 700; color: var(--text-soft); }
+.sorteo-girar { font-size: 1.1rem; padding-inline: 28px; }
+.sorteo-resultado { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 40px; }
+.sorteo-salio {
+  font-family: var(--font-title); font-weight: 700; font-size: 1.6rem; line-height: 1.2;
+  background: var(--violet-soft); color: var(--violet); padding: 12px 20px; border-radius: 18px;
+}
+.grande .sorteo-salio { font-size: clamp(1.8rem, 3.4vw, 2.8rem); }
+.sorteo-respuesta { font-weight: 800; font-size: 1.2rem; color: var(--mint); }
+.grande .sorteo-respuesta { font-size: 1.8rem; }
+.sorteo-cajas { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.sorteo-cajas.grande { max-width: 980px; margin: 0 auto; padding-top: 10px; }
+.sorteo-ruleta.grande { width: 100%; }
+.sorteo-cajas.grande .sorteo-rejilla { justify-content: center; grid-template-columns: repeat(auto-fit, minmax(120px, 160px)); }
+.sorteo-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 12px; width: 100%; padding-top: 16px; }
+.sorteo-cajas.grande .sorteo-rejilla { gap: 18px; }
+.sorteo-caja {
+  position: relative; aspect-ratio: 1; border: 0; border-radius: 14px; cursor: pointer;
+  color: #fff; font: 800 1.4rem var(--font-title); box-shadow: 0 6px 0 rgba(42,33,64,.2);
+  transition: transform .2s ease, opacity .3s ease;
+}
+.grande .sorteo-caja { font-size: 2.2rem; }
+.sorteo-caja:hover { transform: translateY(-3px) rotate(-2deg); }
+.sorteo-caja b { position: relative; z-index: 1; }
+/* Cinta del regalo */
+.sorteo-caja::before, .sorteo-caja::after { content: ''; position: absolute; background: rgba(255,255,255,.55); }
+.sorteo-caja::before { left: 44%; width: 12%; top: 0; bottom: 0; }
+.sorteo-caja::after { top: 44%; height: 12%; left: 0; right: 0; }
+.sorteo-tapa {
+  position: absolute; left: -4%; right: -4%; top: -6%; height: 26%; border-radius: 10px;
+  background: inherit; filter: brightness(1.12); transition: transform .45s cubic-bezier(.3,1.6,.5,1);
+}
+.sorteo-caja.abierta { opacity: .45; cursor: default; }
+.sorteo-caja.abierta .sorteo-tapa { transform: translateY(-60%) rotate(-24deg); }
+.sorteo-caja.abierta b::after { content: ' ✓'; }
+.c-0 { background: #FF3B5C; } .c-1 { background: #3B6BFF; } .c-2 { background: #0EA371; } .c-3 { background: #F29A0D; }
+.c-4 { background: #8B5CF6; } .c-5 { background: #EC4899; } .c-6 { background: #0EA5E9; } .c-7 { background: #E8590C; }
+@media (prefers-reduced-motion: reduce) { .sorteo-tapa, .sorteo-caja { transition: none; } }
+
+/* ---------- Juego enviado: el estudiante elige cómo jugar ---------- */
+.eleccion { display: flex; flex-direction: column; gap: 12px; }
+.eleccion-titulo { font-size: 1.4rem; text-align: center; }
+.eleccion-sub { text-align: center; color: var(--text-soft); font-size: .92rem; margin-top: -6px; }
+.eleccion-lista { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.eleccion-op {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  width: 100%; min-height: 104px; text-align: center; cursor: pointer;
+  font: inherit; color: var(--text); background: var(--surface-2);
+  border: 2px solid var(--border); border-radius: 16px; padding: 10px 8px;
+  transition: transform .12s ease, border-color .12s ease;
+}
+.eleccion-op:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--violet); }
+.eleccion-op.hecho { opacity: .6; cursor: default; }
+.eleccion-icono { font-size: 2rem; line-height: 1; }
+.eleccion-texto { display: flex; flex-direction: column; min-width: 0; font-size: .92rem; line-height: 1.2; }
+.eleccion-texto small { display: none; }
+@media (min-width: 720px) { .eleccion-lista { grid-template-columns: repeat(3, 1fr); } }
+.eleccion-hecho, .eleccion-sigue, .eleccion-recomendado {
+  flex: none; font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+}
+.eleccion-hecho { background: var(--mint-soft); color: var(--mint); }
+.eleccion-sigue { background: var(--violet-soft); color: var(--violet); }
+.eleccion-recomendado { background: #FFF3D6; color: #A26300; }
+.j-cambiar { display: block; margin: -4px 0 8px; font-size: .85rem; }
+
+/* Columna «Cambiar juego» junto al juego enviado (unirse.js) */
+.unirse.con-plantillas .wrap { max-width: 980px; display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 18px; align-items: start; }
+.plantillas-lado { position: sticky; top: 16px; padding: 18px; }
+.plantillas-titulo { font-size: 1.15rem; }
+.plantillas-sub { font-size: .82rem; color: var(--text-soft); margin: 2px 0 10px; }
+.plantillas-lista { display: flex; flex-direction: column; gap: 6px; }
+.plantilla-op {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--text); background: var(--surface-2);
+  border: 2px solid transparent; border-radius: 12px; padding: 8px 10px;
+}
+.plantilla-op:hover:not(:disabled):not(.actual) { border-color: var(--violet); }
+.plantilla-op.actual { background: var(--violet); color: #fff; cursor: default; }
+.plantilla-op.hecho { opacity: .55; cursor: default; }
+.plantilla-icono { font-size: 1.5rem; flex: none; }
+.plantilla-nombre { flex: 1; min-width: 0; line-height: 1.2; }
+.plantilla-op small { flex: none; font-size: .72rem; font-weight: 800; opacity: .85; }
+.plantillas-mas { display: block; margin: 10px auto 0; }
+.j-cambiar { display: none; }
+@media (max-width: 820px) {
+  .unirse.con-plantillas .wrap { grid-template-columns: 1fr; max-width: 560px; }
+  .plantillas-lado { position: static; }
+  .j-cambiar { display: block; margin: -4px 0 8px; font-size: .85rem; }
+}

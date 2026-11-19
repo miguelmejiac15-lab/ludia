@@ -48,7 +48,7 @@ if (juego_puntua($tipo) && (int) $yaRespondio->fetchColumn() === 0) {
     api_error('Responde antes de continuar', 409);
 }
 
-$avance = participante_avanzar((int) $participante['id'], $contenido, $a, $i);
+$avance = participante_avanzar((int) $participante['id'], $contenido, $a, $i, (bool) ($sesion['eleccion_libre'] ?? false));
 
 $salida = ['avance' => $avance];
 if ($avance['terminado']) {

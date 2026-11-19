@@ -15,7 +15,7 @@ $page = [
 ];
 
 $extraStyles  = ['css/sesion.css', 'css/jugar.css'];
-$extraScripts = ['js/personaje.js', 'js/arcade.js', 'js/jugar.js', 'js/unirse.js'];
+$extraScripts = ['js/personaje.js', 'js/arcade.js', 'js/sorteo.js', 'js/jugar.js', 'js/unirse.js'];
 
 require LUDIA_ROOT . '/includes/partials/header.php';
 ?>
@@ -111,6 +111,10 @@ require LUDIA_ROOT . '/includes/partials/header.php';
       <p class="j-paso" id="juego-paso"></p>
       <div id="juego-cuerpo"></div>
     </section>
+
+    <?php /* Juego enviado: el estudiante puede cambiar de plantilla, como en
+             Wordwall. La llena unirse.js; en celular queda debajo del juego. */ ?>
+    <aside class="panel plantillas-lado" id="juego-plantillas" aria-labelledby="plantillas-titulo" hidden></aside>
 
     <!-- Paso 4: resultados -->
     <section class="panel unirse-card" id="paso-final" hidden>

@@ -177,6 +177,13 @@ window.LudiaEditor = (function () {
 
   /* ---------- Campos por formato ---------- */
 
+  /** Ruleta y cajas: una lista de textos, cada uno con su respuesta opcional. */
+  function camposSorteo(it, titulo) {
+    return campoTexto('f-instruccion', 'Instrucción', 'instruccion', it.instruccion, { max: 120 }) +
+      '<div class="field"><span class="field-label">' + titulo + ' · la respuesta es opcional y la muestras tú</span>' +
+      filasDobles(it, 'sorteo', [{ clave: 'texto', etiqueta: 'Palabra o pregunta', union: '→' }, { clave: 'respuesta', etiqueta: 'Respuesta (opcional)' }], 2, 30, 'Agregar elemento') + '</div>';
+  }
+
   var campos = {
     quiz: function (it, ctx) {
       return campoTexto('f-enunciado', 'Pregunta', 'enunciado', it.enunciado, { textarea: true, placeholder: 'Ej. ¿Qué país fue invadido en 1939?' }) +
@@ -354,6 +361,9 @@ window.LudiaEditor = (function () {
         '<div class="field"><span class="field-label">Tarjetas de repaso</span>' +
         filasDobles(it, 'tarjetas', [{ clave: 'titulo', etiqueta: 'Concepto', union: '→' }, { clave: 'texto', etiqueta: 'Explicación' }], 2, 8, 'Agregar tarjeta') + '</div>';
     },
+
+    ruleta: function (it) { return camposSorteo(it, 'Elementos de la ruleta'); },
+    cajas: function (it) { return camposSorteo(it, 'Lo que esconde cada caja'); },
 
     pagina: function (it) {
       return campoTexto('f-titulo', 'Título de la página', 'titulo', it.titulo, {
@@ -574,6 +584,22 @@ window.LudiaEditor = (function () {
         }).join('') + '</div>';
     },
 
+    ruleta: function (it) {
+      var llenos = (it.sorteo || []).filter(function (e) { return !F.vacio(e.texto); });
+      var n = Math.max(2, llenos.length), colores = ['#FF3B5C', '#3B6BFF', '#0EA371', '#F29A0D', '#8B5CF6', '#EC4899', '#0EA5E9', '#E8590C'];
+      var gajos = [];
+      for (var i = 0; i < n; i++) gajos.push(colores[i % 8] + ' ' + (i * 360 / n) + 'deg ' + ((i + 1) * 360 / n) + 'deg');
+      return '<div class="pv-question">' + textoO(it.instruccion, 'Gira la ruleta') + '</div>' +
+        '<div class="pv-ruleta" style="background:conic-gradient(' + gajos.join(',') + ')"></div>' +
+        '<div class="pv-hint">' + n + ' elementos · se gira en el proyector</div>';
+    },
+    cajas: function (it) {
+      var llenos = (it.sorteo || []).filter(function (e) { return !F.vacio(e.texto); });
+      var n = Math.max(2, llenos.length), cajas = '';
+      for (var i = 0; i < Math.min(n, 12); i++) cajas += '<span class="pv-caja c-' + (i % 8) + '">' + (i + 1) + '</span>';
+      return '<div class="pv-question">' + textoO(it.instruccion, 'Elige una caja') + '</div>' +
+        '<div class="pv-cajas">' + cajas + '</div>';
+    },
     pagina: function (it) {
       var parrafos = (it.parrafos || []).filter(function (p) { return !F.vacio(p); });
       return '<div class="pv-pagina-titulo">' + textoO(it.titulo, 'Título de la página…') + '</div>' +

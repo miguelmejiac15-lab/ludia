@@ -26,7 +26,7 @@ $page = [
 ];
 
 $extraStyles  = ['css/sesion.css', 'css/jugar.css'];
-$extraScripts = ['js/vendor/qrcode.min.js', 'js/personaje.js', 'js/musica.js', 'js/sala.js'];
+$extraScripts = ['js/vendor/qrcode.min.js', 'js/personaje.js', 'js/musica.js', 'js/sorteo.js', 'js/sala.js'];
 
 require LUDIA_ROOT . '/includes/partials/header.php';
 ?>

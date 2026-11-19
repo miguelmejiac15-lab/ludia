@@ -240,9 +240,10 @@ window.LudiaArcade = (function () {
   function avion(b, piloto) {
     var ctx = b.ctx;
     var nave = { y: b.H / 2, objetivo: b.H / 2, inclinacion: 0 };
-    var nubes = [], humo = [];
+    var nubes = [], humo = [], tormentas = [], rayas = [];
     var oleada = 0, recorrido = 0, elegidaEn = 0;
     var teclas = {};
+    var aturdido = 0, avisoRapido = 0, avisoTormenta = 0;
 
     b.alRedimensionar = function (fx, fy) {
       nave.y *= fy; nave.objetivo *= fy;
@@ -250,16 +251,34 @@ window.LudiaArcade = (function () {
     };
     var tamano = function () { return Math.max(26, Math.min(46, b.H * 0.11)); };
     var xNave = function () { return b.W * 0.17; };
-    var velocidad = function () { return b.W * (b.reducido ? 0.11 : 0.17) * Math.min(1.7, 1 + oleada * 0.07); };
+    /*
+     * El ritmo sube poco a poco —con cada tanda de nubes y con cada pregunta—
+     * pero con tope: a 1,6 veces la velocidad inicial sigue siendo jugable
+     * para un niño. Pedido expreso: que emocione, no que sea imposible.
+     */
+    var ritmo = function () { return Math.min(1.6, 1 + b.ronda * 0.06 + Math.max(0, oleada - 1) * 0.05); };
+    var velocidad = function () {
+      var v = b.W * (b.reducido ? 0.11 : 0.15) * ritmo();
+      return aturdido > 0 ? v * 0.5 : v;
+    };
 
     function lanzarOleada() {
       var n = b.opciones.length, arriba = 16, abajo = b.H * 0.16;
       var carril = (b.H - arriba - abajo) / n;
       var alto = Math.min(96, carril * 0.74);
       var ancho = Math.min(230, Math.max(120, b.W * 0.4));
+      // Desde la segunda tanda llegan tormentas por delante: hay que
+      // esquivarlas antes de elegir. Nunca tapan todos los carriles.
+      var nTormentas = oleada === 0 ? 0 : Math.min(n - 1, oleada >= 3 ? 2 : 1);
+      var carriles = barajar(b.opciones.map(function (_, k) { return k; })).slice(0, nTormentas);
+      var adelanto = nTormentas ? Math.max(150, b.W * 0.45) : 0;
+      carriles.forEach(function (k) {
+        tormentas.push({ x: b.W + 40, y: arriba + carril * (k + 0.5), r: Math.min(34, carril * 0.38), tocada: false, fase: Math.random() * 6 });
+      });
+      if (oleada >= 2) avisoRapido = 1.4;
       barajar(b.opciones).forEach(function (o, i) {
         nubes.push({
-          op: o, x: b.W + ancho / 2 + 20 + (i % 2) * 26, y: arriba + carril * (i + 0.5), w: ancho, h: alto,
+          op: o, x: b.W + adelanto + ancho / 2 + 20 + (i % 2) * 26, y: arriba + carril * (i + 0.5), w: ancho, h: alto,
           texto: b.ajustar(o.texto, ancho - 52, alto * 0.8, 3, Math.min(17, Math.max(11, alto * 0.24))),
           viva: true, bamboleo: Math.random() * 6
         });
@@ -268,6 +287,7 @@ window.LudiaArcade = (function () {
     }
 
     function apuntar(ev) {
+      if (aturdido > 0) return;
       var s = tamano();
       nave.objetivo = Math.max(s / 2, Math.min(b.H - s / 2, b.punto(ev).y));
       if (ev.cancelable) ev.preventDefault();
@@ -304,6 +324,22 @@ window.LudiaArcade = (function () {
       b.escribir(n.texto, cx + r + 8, y + n.h * 0.12, '#2A2140');
     }
 
+    function dibujarTormenta(t) {
+      var y = t.y + Math.sin(b.tiempo * 3 + t.fase) * 4;
+      // Lluvia
+      ctx.strokeStyle = 'rgba(80,110,160,.55)'; ctx.lineWidth = 2;
+      for (var k = -2; k <= 2; k++) {
+        var lx = t.x + k * t.r * 0.35, ly = y + t.r * 0.5 + ((b.tiempo * 120 + k * 17) % (t.r * 0.8));
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx - 3, ly + 8); ctx.stroke();
+      }
+      ctx.fillStyle = t.tocada ? '#9AA3B5' : '#5E6678';
+      b.nubeForma(t.x, y, t.r * 2.4, t.r * 1.3);
+      ctx.fill();
+      ctx.font = Math.round(t.r * 0.95) + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('⚡', t.x + Math.sin(b.tiempo * 20) * 1.5, y + 2);
+    }
+
     function dibujarNave(x, y, s) {
       ctx.save();
       ctx.translate(x, y);
@@ -332,6 +368,10 @@ window.LudiaArcade = (function () {
 
     b.correr(function (dt) {
       var s = tamano(), xa = xNave(), v = velocidad(), eligio = b.yaEligio();
+      aturdido = Math.max(0, aturdido - dt);
+      avisoRapido = Math.max(0, avisoRapido - dt);
+      avisoTormenta = Math.max(0, avisoTormenta - dt);
+      if (aturdido > 0) teclas = {};
       if (teclas.arriba) nave.objetivo = Math.max(s / 2, nave.objetivo - b.H * 1.1 * dt);
       if (teclas.abajo) nave.objetivo = Math.min(b.H - s / 2, nave.objetivo + b.H * 1.1 * dt);
       var antes = nave.y;
@@ -346,9 +386,26 @@ window.LudiaArcade = (function () {
         if (!enCamino && b.tiempo > 0.9) lanzarOleada();
       }
 
+      tormentas.forEach(function (t) {
+        t.x -= v * dt * (eligio ? 0.35 : 1.08);
+        if (eligio || t.tocada) return;
+        var dx = t.x - xa, dy = t.y - nave.y;
+        if (Math.sqrt(dx * dx + dy * dy) < t.r * 0.95 + s * 0.3) {
+          // ¡Tormenta! Se sacude y pierde un momento; no cuenta como respuesta.
+          t.tocada = true;
+          aturdido = 1;
+          avisoTormenta = 1.2;
+          nave.objetivo = nave.y;
+          b.explotar(xa, nave.y, '#FFD24D', 14);
+          sonar(140, 0.35, 'sawtooth', 0.07, 0.5);
+        }
+      });
+      tormentas = tormentas.filter(function (t) { return t.x > -t.r * 3; });
+
       nubes.forEach(function (n) {
         n.x -= v * dt * (eligio ? 0.35 : 1);
-        if (eligio || !n.viva) return;
+        // Aturdido no elige: una respuesta por accidente sería injusto.
+        if (eligio || !n.viva || aturdido > 0) return;
         var dx = Math.abs(n.x - xa), dy = Math.abs(n.y + n.h * 0.12 - nave.y);
         if (dx < n.w / 2 + s * 0.45 && dy < n.h * 0.38 + s * 0.18) {
           n.viva = false;
@@ -369,9 +426,30 @@ window.LudiaArcade = (function () {
       b.colinas(recorrido * 0.35, b.H * 0.13, '#8FD9B6', 150);
       b.colinas(recorrido * 0.7, b.H * 0.08, '#1FA98A', 90);
       humo.forEach(function (h) { ctx.fillStyle = 'rgba(255,255,255,' + (h.vida * 0.8) + ')'; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, 7); ctx.fill(); });
+      // Rayas de velocidad cuando ya va rápido.
+      if (ritmo() > 1.12 && !eligio && Math.random() < dt * 14) rayas.push({ x: b.W + 20, y: Math.random() * b.H * 0.8, l: 30 + Math.random() * 50 });
+      rayas.forEach(function (r) { r.x -= v * dt * 2.2; });
+      rayas = rayas.filter(function (r) { return r.x > -r.l; });
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2;
+      rayas.forEach(function (r) { ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + r.l, r.y); ctx.stroke(); });
+      tormentas.forEach(dibujarTormenta);
       nubes.forEach(nubeRespuesta);
       b.dibujarChispas(dt);
-      dibujarNave(eligio ? xa + (b.tiempo - elegidaEn) * b.W * 0.9 : xa, nave.y, s);
+      var sacudida = aturdido > 0 ? Math.sin(b.tiempo * 60) * 4 : 0;
+      if (!(aturdido > 0 && Math.floor(b.tiempo * 12) % 2 === 0)) {
+        dibujarNave((eligio ? xa + (b.tiempo - elegidaEn) * b.W * 0.9 : xa) + sacudida, nave.y, s);
+      }
+      // Avisos
+      function aviso(texto, color, y, alfa) {
+        ctx.globalAlpha = Math.min(1, alfa);
+        ctx.font = '800 ' + Math.max(15, Math.round(b.H * 0.06)) + 'px Fredoka, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(texto, b.W / 2, y);
+        ctx.fillStyle = color; ctx.fillText(texto, b.W / 2, y);
+        ctx.globalAlpha = 1;
+      }
+      if (avisoRapido > 0 && !eligio) aviso('⚡ ¡Más rápido!', '#E8492C', b.H * 0.12 - (1.4 - avisoRapido) * 10, avisoRapido);
+      if (avisoTormenta > 0) aviso('¡Tormenta! Esquívalas', '#3F4A60', b.H * 0.5, avisoTormenta);
     });
   }
 
@@ -732,11 +810,14 @@ window.LudiaArcade = (function () {
     var N = 15;                      // casillas por lado (impar)
     var CENTRO = 7;
     var muro = [];                   // muro[y][x] = true si es seto
-    var y, x;
-    for (y = 0; y < N; y++) { muro.push([]); for (x = 0; x < N; x++) muro[y].push(true); }
+    var esquinas = barajar([[1, 1], [N - 2, 1], [1, N - 2], [N - 2, N - 2]]);
+    var puertas = b.opciones.slice(0, 4).map(function (op, i) { return { op: op, x: esquinas[i][0], y: esquinas[i][1] }; });
 
     // Laberinto perfecto por retroceso, y luego unos atajos.
-    (function cavar() {
+    function cavar() {
+      var yy, xx;
+      muro = [];
+      for (yy = 0; yy < N; yy++) { muro.push([]); for (xx = 0; xx < N; xx++) muro[yy].push(true); }
       var pila = [[1, 1]], visto = {};
       muro[1][1] = false; visto['1,1'] = true;
       while (pila.length) {
@@ -756,18 +837,57 @@ window.LudiaArcade = (function () {
       }
       // Plaza libre en el centro para arrancar con calma.
       for (var cy2 = CENTRO - 1; cy2 <= CENTRO + 1; cy2++) for (var cx2 = CENTRO - 1; cx2 <= CENTRO + 1; cx2++) muro[cy2][cx2] = false;
-    })();
+    }
 
-    // Puertas: una por esquina, hasta 4 respuestas.
-    var esquinas = barajar([[1, 1], [N - 2, 1], [1, N - 2], [N - 2, N - 2]]);
-    var puertas = b.opciones.slice(0, 4).map(function (op, i) { return { op: op, x: esquinas[i][0], y: esquinas[i][1] }; });
+    /** ¿Se llega a esta puerta desde el centro sin pisar ninguna otra? */
+    function alcanzable(meta) {
+      var visto = {}, cola = [[CENTRO, CENTRO]];
+      visto[CENTRO + ',' + CENTRO] = true;
+      while (cola.length) {
+        var c = cola.shift();
+        if (c[0] === meta.x && c[1] === meta.y) return true;
+        for (var d = 0; d < 4; d++) {
+          var nx = c[0] + [1, -1, 0, 0][d], ny = c[1] + [0, 0, 1, -1][d], clave = nx + ',' + ny;
+          if (nx < 0 || ny < 0 || nx >= N || ny >= N || muro[ny][nx] || visto[clave]) continue;
+          if (puertas.some(function (p) { return p !== meta && p.x === nx && p.y === ny; })) continue;
+          visto[clave] = true; cola.push([nx, ny]);
+        }
+      }
+      return false;
+    }
+    function todasAlcanzables() { return puertas.every(alcanzable); }
+
+    /*
+     * Cada puerta es un FONDO DE SACO: con dos salidas sería un paso, y un
+     * niño la elegiría sin querer al cruzarla (o, peor, otra respuesta solo
+     * se alcanzaría atravesándola: pasó en 8 de cada 100 laberintos). Se
+     * tapa una salida si con eso todas siguen alcanzables; si el laberinto
+     * no se deja arreglar, se genera otro.
+     */
+    for (var intento = 0; intento < 40; intento++) {
+      cavar();
+      puertas.forEach(function (p) {
+        var salidas = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(function (d) {
+          var nx = p.x + d[0], ny = p.y + d[1];
+          return nx > 0 && ny > 0 && nx < N - 1 && ny < N - 1 && !muro[ny][nx];
+        });
+        barajar(salidas).slice(1).forEach(function (d) {
+          muro[p.y + d[1]][p.x + d[0]] = true;
+          if (!todasAlcanzables()) muro[p.y + d[1]][p.x + d[0]] = false;
+        });
+      });
+      if (todasAlcanzables()) break;
+    }
+
     function puertaEn(px, py) { return puertas.filter(function (p) { return p.x === px && p.y === py; })[0]; }
 
     var DIRS = { arriba: [0, -1], abajo: [0, 1], izquierda: [-1, 0], derecha: [1, 0] };
     var CONTRARIA = { arriba: 'abajo', abajo: 'arriba', izquierda: 'derecha', derecha: 'izquierda' };
     function libre(px, py, paraAbeja) {
       if (px < 0 || py < 0 || px >= N || py >= N || muro[py][px]) return false;
-      return !(paraAbeja && puertaEn(px, py));
+      // Las abejas no se acercan a las puertas: si pudieran quedarse en la
+      // entrada, un niño podría no llegar nunca a la respuesta.
+      return !(paraAbeja && puertas.some(function (p) { return Math.abs(p.x - px) <= 1 && Math.abs(p.y - py) <= 1; }));
     }
 
     var jugador = { x: CENTRO, y: CENTRO, px: CENTRO, py: CENTRO, dir: null, quiere: null, avance: 0, invulnerable: 0 };
@@ -800,6 +920,15 @@ window.LudiaArcade = (function () {
         var d = DIRS[jugador.dir];
         jugador.x += d[0]; jugador.y += d[1];
         jugador.avance = 1 - jugador.avance;
+        jugador.dir = dir;
+        return;
+      }
+      // Tolerancia en los cruces: si el giro se pide apenas pasado uno y por
+      // ahí había salida, se vuelve al cruce y se gira. Sin esto, un dedo un
+      // poco lento se salta todos los desvíos.
+      var q = DIRS[dir];
+      if (jugador.dir && dir !== jugador.dir && jugador.avance < 0.45 && libre(jugador.x + q[0], jugador.y + q[1])) {
+        jugador.avance = 0;
         jugador.dir = dir;
       }
     }
@@ -894,7 +1023,7 @@ window.LudiaArcade = (function () {
       var sinVolver = opciones.filter(function (k) { return k !== CONTRARIA[a.dir]; });
       if (sinVolver.length) opciones = sinVolver;
       // Casi siempre se acerca; a veces se distrae con una flor.
-      if (Math.random() < 0.72) {
+      if (Math.random() < 0.6) {
         opciones.sort(function (p, q) {
           var dp = mapaDist[(a.x + DIRS[p][0]) + ',' + (a.y + DIRS[p][1])], dq = mapaDist[(a.x + DIRS[q][0]) + ',' + (a.y + DIRS[q][1])];
           return (dp === undefined ? 999 : dp) - (dq === undefined ? 999 : dq);
@@ -1016,9 +1145,11 @@ window.LudiaArcade = (function () {
    * @param {function(number)} alElegir  recibe el índice ORIGINAL elegido
    * @param {string} [piloto]        emoji del personaje del estudiante
    */
-  function montar(tipo, marco, textos, alElegir, piloto) {
+  function montar(tipo, marco, textos, alElegir, piloto, extra) {
     if (!JUEGOS[tipo] || !marco) return null;
     var b = base(marco, textos, alElegir);
+    // Número de pregunta dentro de la actividad: el ritmo sube de una a otra.
+    b.ronda = Math.max(0, Number(extra && extra.ronda) || 0);
     JUEGOS[tipo](b, piloto || '🦊');
     return { apagar: b.apagar };
   }

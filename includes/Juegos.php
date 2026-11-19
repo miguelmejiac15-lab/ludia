@@ -39,6 +39,8 @@ const JUEGO_PLANTILLAS = [
     'globos'          => ['nombre' => 'Globos',            'icono' => '🎈', 'nativo' => 'preguntas', 'tiempo' => 25,  'descripcion' => 'Revienta el globo con la respuesta antes de que se escape.'],
     'atrapa'          => ['nombre' => 'Atrapa la correcta', 'icono' => '🐹', 'nativo' => 'preguntas', 'tiempo' => 25,  'descripcion' => 'Toca al animalito que asoma con la respuesta correcta.'],
     'laberinto'       => ['nombre' => 'Laberinto',         'icono' => '🌀', 'nativo' => 'preguntas', 'tiempo' => 45,  'descripcion' => 'Llega a la puerta correcta escapando de las abejas.'],
+    'ruleta'          => ['nombre' => 'Ruleta',            'icono' => '🎡', 'nativo' => 'parejas',   'tiempo' => 30,  'descripcion' => 'Gírala en el proyector: sale una palabra o pregunta al azar.'],
+    'cajas'           => ['nombre' => 'Cajas sorpresa',    'icono' => '🎁', 'nativo' => 'parejas',   'tiempo' => 30,  'descripcion' => 'Abre una caja numerada y descubre lo que esconde.'],
     'quiz'            => ['nombre' => 'Quiz',              'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 20,  'descripcion' => 'Una pregunta y varias opciones.'],
     'verdadero_falso' => ['nombre' => 'Verdadero o falso', 'icono' => '⚖️', 'nativo' => 'preguntas', 'tiempo' => 15,  'descripcion' => '¿Es cierto o no? Rápido.'],
     'palabra_secreta' => ['nombre' => 'Palabra secreta',   'icono' => '🔡', 'nativo' => 'parejas',   'tiempo' => 45,  'descripcion' => 'Adivina la palabra letra por letra con una pista.'],
@@ -328,6 +330,18 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
 
             return ['ok' => true, 'items' => $items];
 
+        case 'ruleta':
+        case 'cajas':
+            // Herramientas de la clase: sale un elemento al azar y su respuesta
+            // se descubre cuando el docente quiere. No se califican.
+            if (count($pares) < 2) {
+                return ['ok' => false, 'motivo' => 'Necesita al menos 2 elementos.'];
+            }
+            return ['ok' => true, 'items' => [[
+                'instruccion' => $plantilla === 'ruleta' ? 'Gira la ruleta' : 'Elige una caja',
+                'sorteo'      => array_map(static fn (array $p): array => ['texto' => $p['izquierda'], 'respuesta' => $p['derecha']], $pares),
+            ]]];
+
         case 'palabra_secreta':
         case 'anagrama':
             $palabras = juego_como_palabras($tipo, $contenido);
@@ -532,6 +546,39 @@ function juego_cambiar_plantilla(array $usuario, array $juego, string $plantilla
         ]);
 
     return ['ok' => true, 'mensaje' => 'Ahora se juega como ' . JUEGO_PLANTILLAS[$plantilla]['nombre'] . '.'];
+}
+
+/**
+ * Para ENVIAR un juego: una actividad por cada plantilla que el estudiante
+ * puede elegir, con la del docente primero. Entran las que el plan del dueño
+ * incluye y que sirven para este contenido. La ruleta y las cajas, que son
+ * herramientas del docente, solo entran si son la forma que él eligió.
+ *
+ * @return list<array>
+ */
+function juego_actividades_libres(array $juego, ?array $dueno): array
+{
+    $tipo = (string) $juego['juego_tipo'];
+    $contenido = juego_contenido($juego);
+    $actual = (string) $juego['plantilla'];
+    $orden = array_keys(JUEGO_PLANTILLAS);
+    usort($orden, static fn (string $a, string $b): int => ($b === $actual) <=> ($a === $actual));
+
+    $actividades = [];
+    foreach ($orden as $clave) {
+        // La ruleta y las cajas solo entran si el docente las eligió a propósito.
+        if (($clave !== $actual && juego_es_lectura($clave)) || !plan_permite_formato($dueno, $clave)) {
+            continue;
+        }
+        $adaptado = juego_adaptar($tipo, $contenido, $clave, 'juego-' . $juego['id']);
+        if ($adaptado['ok']) {
+            // Con el nombre de la forma en el título, el informe distingue
+            // lo que se jugó como Memoria de lo que se jugó como Quiz.
+            $actividades[] = juego_actividad((string) $juego['nombre'] . ' · ' . JUEGO_PLANTILLAS[$clave]['nombre'], $clave, $adaptado['items']);
+        }
+    }
+
+    return $actividades;
 }
 
 /** Copia un juego, con su contenido original y su plantilla. */

@@ -60,6 +60,7 @@ const ORDEN = [
     'migracion-sorteo.sql',
     'migracion-juego-libre.sql',
     'migracion-tren-catapulta.sql',
+    'migracion-juegos-accion-2.sql',
 ];
 
 $base = __DIR__;

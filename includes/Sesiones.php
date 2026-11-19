@@ -28,6 +28,7 @@ const SESION_TIPOS = [
     'mural', 'encuesta', 'pregunta_abierta', 'escala', 'panel',
     'ortografia', 'anagrama', 'numerica', 'linea_tiempo', 'pagina',
     'video_preguntas', 'avion', 'globos', 'atrapa', 'laberinto', 'ruleta', 'cajas', 'tren', 'catapulta',
+    'salta', 'mina', 'obstaculos', 'nave',
 ];
 
 /**

@@ -110,6 +110,34 @@ window.LudiaFormatos = (function () {
       validar: function (it) { return tipos.avion.validar(it); }
     },
 
+    salta: {
+      nombre: 'Salta y choca', icono: '🍄', grupo: 'preguntas', puntua: true,
+      descripcion: 'Corre y salta para golpear desde abajo el bloque con la respuesta correcta. ¡Cuidado con los cocos!',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
+    mina: {
+      nombre: 'Mina de bloques', icono: '⛏️', grupo: 'preguntas', puntua: true,
+      descripcion: 'Pica bloques hacia abajo hasta la gema con la respuesta correcta. Algunas rocas son duras.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
+    obstaculos: {
+      nombre: 'Carrera de obstáculos', icono: '🧗', grupo: 'preguntas', puntua: true,
+      descripcion: 'Corre solo: cruza el arco de la respuesta correcta y salta los demás, los charcos y las vallas.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
+    nave: {
+      nombre: 'Nave espacial', icono: '🚀', grupo: 'preguntas', puntua: true,
+      descripcion: 'Dispara al asteroide con la respuesta correcta y esquiva los meteoritos.',
+      nuevoItem: function () { return { enunciado: '', opciones: ['', '', '', ''], correcta: 0 }; },
+      validar: function (it) { return tipos.avion.validar(it); }
+    },
+
     video_preguntas: {
       nombre: 'Vídeo con preguntas', icono: '🎬', grupo: 'preguntas', puntua: true,
       descripcion: 'Un vídeo de YouTube que se detiene en los minutos que marques para preguntar. En vivo se ve en el proyector.',

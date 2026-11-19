@@ -1070,3 +1070,8 @@ main.sala, main.unirse {
   .plantillas-lado { position: static; }
   .j-cambiar { display: block; margin: -4px 0 8px; font-size: .85rem; }
 }
+
+/* Controles en fila (salta, carrera, nave) */
+.j-cruceta.fila { grid-template-columns: none; grid-template-rows: none; display: flex; justify-content: center; gap: 10px; }
+.j-cruceta.fila button { min-width: 64px; height: 50px; padding: 0 16px; }
+.j-cruceta.fila [data-dir] { grid-column: auto; grid-row: auto; }

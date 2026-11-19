@@ -43,6 +43,10 @@ const JUEGO_PLANTILLAS = [
     'cajas'           => ['nombre' => 'Cajas sorpresa',    'icono' => '🎁', 'nativo' => 'parejas',   'tiempo' => 30,  'descripcion' => 'Abre una caja numerada y descubre lo que esconde.'],
     'tren'            => ['nombre' => 'Tren de respuestas', 'icono' => '🚂', 'nativo' => 'preguntas', 'tiempo' => 35,  'descripcion' => 'Suelta la caja en el vagón correcto mientras el tren avanza.'],
     'catapulta'       => ['nombre' => 'Catapulta',         'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 35,  'descripcion' => 'Tensa la honda y lánzate contra el cartel correcto.'],
+    'salta'           => ['nombre' => 'Salta y choca', 'icono' => '🍄', 'nativo' => 'preguntas', 'tiempo' => 35, 'descripcion' => 'Corre y salta para golpear desde abajo el bloque con la respuesta correcta. ¡Cuidado con los cocos!'],
+    'mina'            => ['nombre' => 'Mina de bloques', 'icono' => '⛏️', 'nativo' => 'preguntas', 'tiempo' => 50, 'descripcion' => 'Pica bloques hacia abajo hasta la gema con la respuesta correcta. Algunas rocas son duras.'],
+    'obstaculos'      => ['nombre' => 'Carrera de obstáculos', 'icono' => '🧗', 'nativo' => 'preguntas', 'tiempo' => 40, 'descripcion' => 'Corre solo: cruza el arco de la respuesta correcta y salta los demás, los charcos y las vallas.'],
+    'nave'            => ['nombre' => 'Nave espacial', 'icono' => '🚀', 'nativo' => 'preguntas', 'tiempo' => 35, 'descripcion' => 'Dispara al asteroide con la respuesta correcta y esquiva los meteoritos.'],
     'quiz'            => ['nombre' => 'Quiz',              'icono' => '🎯', 'nativo' => 'preguntas', 'tiempo' => 20,  'descripcion' => 'Una pregunta y varias opciones.'],
     'verdadero_falso' => ['nombre' => 'Verdadero o falso', 'icono' => '⚖️', 'nativo' => 'preguntas', 'tiempo' => 15,  'descripcion' => '¿Es cierto o no? Rápido.'],
     'palabra_secreta' => ['nombre' => 'Palabra secreta',   'icono' => '🔡', 'nativo' => 'parejas',   'tiempo' => 45,  'descripcion' => 'Adivina la palabra letra por letra con una pista.'],
@@ -273,6 +277,10 @@ function juego_adaptar(string $tipo, array $contenido, string $plantilla, string
         case 'laberinto':
         case 'tren':
         case 'catapulta':
+        case 'salta':
+        case 'mina':
+        case 'obstaculos':
+        case 'nave':
             // Los juegos de acción llevan los mismos datos que un quiz: cambia
             // el juego, no la pregunta ni la forma de calificarla.
             if ($plantilla === 'laberinto' && $tipo === 'preguntas') {

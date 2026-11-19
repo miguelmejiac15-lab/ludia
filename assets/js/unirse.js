@@ -477,6 +477,19 @@
           return;
         }
 
+        // Partida continua (juego de acción enviado): el resultado se ve
+        // dentro del juego, que sigue en pantalla, y la pregunta siguiente
+        // llega enseguida. Así se juega un rato, sin cortes.
+        if (modo === 'enviar' && J.esContinuo && J.esContinuo(detalle.tipo) && datos.avance &&
+            !datos.avance.terminado && !datos.avance.eligiendo && J.resultadoEnJuego(datos.correcta, datos.puntos)) {
+          if (datos.puntaje !== undefined) {
+            el.juegoPuntaje.textContent = '⭐ ' + datos.puntaje;
+            if (datos.puntos > 0 && A) A.marcar(el.juegoPuntaje, 'sube-puntaje', 700);
+          }
+          setTimeout(consultar, 500);
+          return;
+        }
+
         // `data-pregunta` hace que jugar.js no la repinte en el siguiente
         // sondeo; `anima` dispara la celebración (o la sacudida) una sola vez.
         el.juegoCuerpo.innerHTML = '<div class="j-enviada anima" data-pregunta="' + escapar(preguntaActual) + '">' + J.resumenEnviado({

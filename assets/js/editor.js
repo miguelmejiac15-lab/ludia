@@ -198,6 +198,10 @@ window.LudiaEditor = (function () {
     laberinto: function (it, ctx) { return campos.quiz(it, ctx); },
     tren: function (it, ctx) { return campos.quiz(it, ctx); },
     catapulta: function (it, ctx) { return campos.quiz(it, ctx); },
+    salta: function (it, ctx) { return campos.quiz(it, ctx); },
+    mina: function (it, ctx) { return campos.quiz(it, ctx); },
+    obstaculos: function (it, ctx) { return campos.quiz(it, ctx); },
+    nave: function (it, ctx) { return campos.quiz(it, ctx); },
 
     verdadero_falso: function (it, ctx) {
       return campoTexto('f-afirmacion', 'Afirmación', 'afirmacion', it.afirmacion, { textarea: true, placeholder: 'Ej. La Segunda Guerra Mundial comenzó en 1939.' }) +
@@ -409,6 +413,38 @@ window.LudiaEditor = (function () {
         (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
           return '<span class="pv-vagon opt-' + (n % 6) + '">' + esc(t) + '</span>';
         }).join('') + '</div>';
+    },
+    salta: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-escena" style="background:linear-gradient(#7CC6FF, #D3EEFF 70%, #1FA98A 70%, #A0703F 76%)"><span class="pv-escena-icono">🍄</span><div class="pv-blancos">' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-blanco">' + LETRAS[n] + ' · ' + esc(t) + '</span>';
+        }).join('') + '</div></div>';
+    },
+    mina: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-escena" style="background:linear-gradient(#9FD8FF 18%, #1FA98A 18%, #1FA98A 22%, #B88F66 22%, #6B4A2F)"><span class="pv-escena-icono">⛏️</span><div class="pv-blancos">' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-blanco">' + LETRAS[n] + ' · ' + esc(t) + '</span>';
+        }).join('') + '</div></div>';
+    },
+    obstaculos: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-escena" style="background:linear-gradient(#7CC6FF, #D3EEFF 72%, #1FA98A 72%, #F1DFBB 76%)"><span class="pv-escena-icono">🧗</span><div class="pv-blancos">' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-blanco">' + LETRAS[n] + ' · ' + esc(t) + '</span>';
+        }).join('') + '</div></div>';
+    },
+    nave: function (it) {
+      var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
+      return '<div class="pv-question">' + textoO(it.enunciado, 'Aquí va tu pregunta…') + '</div>' +
+        '<div class="pv-escena" style="background:linear-gradient(#1A1238, #3B2A7A)"><span class="pv-escena-icono">🚀</span><div class="pv-blancos">' +
+        (opciones.length ? opciones : ['Respuesta A', 'Respuesta B']).map(function (t, n) {
+          return '<span class="pv-blanco">' + LETRAS[n] + ' · ' + esc(t) + '</span>';
+        }).join('') + '</div></div>';
     },
     catapulta: function (it) {
       var opciones = it.opciones.filter(function (t) { return !F.vacio(t); });
@@ -646,7 +682,7 @@ window.LudiaEditor = (function () {
 
   /** Formatos donde la imagen acompaña al enunciado. */
   var CON_IMAGEN = [
-    'quiz', 'avion', 'globos', 'atrapa', 'laberinto', 'tren', 'catapulta', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
+    'quiz', 'avion', 'globos', 'atrapa', 'laberinto', 'tren', 'catapulta', 'salta', 'mina', 'obstaculos', 'nave', 'verdadero_falso', 'respuesta_multiple', 'palabra_secreta',
     'completar', 'relacionar', 'clasificar', 'ordenar',
     'encuesta', 'pregunta_abierta', 'escala', 'mural',
     'anagrama', 'numerica', 'linea_tiempo', 'pagina'

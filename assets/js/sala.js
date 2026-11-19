@@ -214,6 +214,18 @@
     catapulta: function (it, clave) {
       return '<p class="proy-avion-aviso">🎯 ¡Lánzate en tu celular contra el cartel correcto!</p>' + vistas.quiz(it, clave);
     },
+    salta: function (it, clave) {
+      return '<p class="proy-avion-aviso">🍄 ¡Salta en tu celular y golpea el bloque correcto!</p>' + vistas.quiz(it, clave);
+    },
+    mina: function (it, clave) {
+      return '<p class="proy-avion-aviso">⛏️ ¡Pica en tu celular hasta la gema correcta!</p>' + vistas.quiz(it, clave);
+    },
+    obstaculos: function (it, clave) {
+      return '<p class="proy-avion-aviso">🧗 ¡Cruza en tu celular el arco correcto!</p>' + vistas.quiz(it, clave);
+    },
+    nave: function (it, clave) {
+      return '<p class="proy-avion-aviso">🚀 ¡Dispara en tu celular al asteroide correcto!</p>' + vistas.quiz(it, clave);
+    },
     laberinto: function (it, clave) {
       return '<p class="proy-avion-aviso">🌀 ¡Llega en tu celular a la puerta correcta sin que te pillen las abejas!</p>' + vistas.quiz(it, clave);
     },

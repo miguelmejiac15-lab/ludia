@@ -974,3 +974,7 @@ label.btn { cursor: pointer; }
   background: #fff; border: 2px solid #5B3DF5; border-radius: 8px; padding: 4px 6px;
   font-size: .62rem; font-weight: 800; color: #2A2140; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* Vista previa de los juegos de acción con escena (salta, mina, obstáculos, nave) */
+.pv-escena { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 14px 10px; border-radius: 14px; }
+.pv-escena-icono { font-size: 1.8rem; flex: none; }

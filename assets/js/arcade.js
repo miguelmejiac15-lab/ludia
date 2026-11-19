@@ -15,6 +15,10 @@
      laberinto — «Laberinto»: llegar a la puerta correcta sin que te pillen.
      tren    — «Tren de respuestas»: soltar la caja en el vagón correcto.
      catapulta — «Catapulta»: lanzarse con la honda contra el cartel correcto.
+     salta   — «Salta y choca»: golpear desde abajo el bloque correcto.
+     mina    — «Mina de bloques»: picar hasta la gema correcta.
+     obstaculos — «Carrera de obstáculos»: cruzar el arco correcto, saltar el resto.
+     nave    — «Nave espacial»: disparar al asteroide correcto.
 
    Arte propio: nada de imágenes ni sonidos externos.
    ===================================================================== */
@@ -94,6 +98,25 @@ window.LudiaArcade = (function () {
 
     /** Avisa la elección una sola vez, con una pausa para ver la explosión. */
     var elegida = false;
+    /*
+     * Partida continua (juego enviado): al elegir, el juego NO se cierra.
+     * jugar.js llama a `nueva()` con la pregunta siguiente y a `resultado()`
+     * con lo que dijo el servidor; el avión sigue volando y la velocidad se
+     * acumula a lo largo de toda la partida.
+     */
+    b.nueva = function (textos, ronda) {
+      b.opciones = textos.map(function (t, i) { return { texto: String(t || '').trim(), i: i }; })
+        .filter(function (o) { return o.texto !== ''; });
+      b.ronda = Math.max(b.ronda + 1, Number(ronda) || 0);
+      elegida = false;
+      marco.removeAttribute('data-elegida');
+      if (b.alNuevaPregunta) b.alNuevaPregunta();
+    };
+    b.mensaje = null;
+    b.resultado = function (correcta, puntos) {
+      b.mensaje = { ok: !!correcta, texto: correcta ? '✓ +' + (puntos || 0) : '✗ Era otra', t: 1.3 };
+      if (correcta) sonar(880, 0.22, 'sine', 0.12, 1.3); else sonar(200, 0.3, 'triangle', 0.08, 0.6);
+    };
     b.elegir = function (op) {
       if (elegida) return;
       elegida = true;
@@ -112,6 +135,17 @@ window.LudiaArcade = (function () {
         ultimo = ahora;
         b.tiempo += dt;
         paso(dt);
+        if (b.mensaje) {
+          b.mensaje.t -= dt;
+          var m = b.mensaje, ctx = b.ctx, sube = (1.3 - m.t) * 18;
+          ctx.globalAlpha = Math.max(0, Math.min(1, m.t * 2));
+          ctx.font = '800 ' + Math.max(22, Math.round(b.H * 0.1)) + 'px Fredoka, system-ui, sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.lineWidth = 7; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(m.texto, b.W / 2, b.H * 0.42 - sube);
+          ctx.fillStyle = m.ok ? '#0EA371' : '#E8492C'; ctx.fillText(m.texto, b.W / 2, b.H * 0.42 - sube);
+          ctx.globalAlpha = 1;
+          if (m.t <= 0) b.mensaje = null;
+        }
         requestAnimationFrame(cuadro);
       }
       requestAnimationFrame(cuadro);
@@ -245,11 +279,15 @@ window.LudiaArcade = (function () {
     var nubes = [], humo = [], tormentas = [], rayas = [];
     var oleada = 0, recorrido = 0, elegidaEn = 0;
     var teclas = {};
-    var aturdido = 0, avisoRapido = 0, avisoTormenta = 0;
+    var aturdido = 0, avisoRapido = 0, avisoTormenta = 0, ritmoAvisado = 1;
 
     b.alRedimensionar = function (fx, fy) {
       nave.y *= fy; nave.objetivo *= fy;
       nubes.forEach(function (n) { n.x *= fx; n.y *= fy; });
+    };
+    b.alNuevaPregunta = function () {
+      nubes.forEach(function (n) { b.explotar(n.x, n.y, '#FFFFFF', 6); });
+      nubes = [];
     };
     var tamano = function () { return Math.max(26, Math.min(46, b.H * 0.11)); };
     var xNave = function () { return b.W * 0.17; };
@@ -277,7 +315,8 @@ window.LudiaArcade = (function () {
       carriles.forEach(function (k) {
         tormentas.push({ x: b.W + 40, y: arriba + carril * (k + 0.5), r: Math.min(34, carril * 0.38), tocada: false, fase: Math.random() * 6 });
       });
-      if (oleada >= 2) avisoRapido = 1.4;
+      // El aviso sale solo cuando el ritmo subió de verdad (no en cada tanda).
+      if (oleada >= 2 && ritmo() - ritmoAvisado >= 0.1) { avisoRapido = 1.4; ritmoAvisado = ritmo(); }
       // Intercaladas: cada nube llega a su tiempo, en su carril y en otro
       // orden cada tanda. Todas juntas eran un muro; así hay que leer y
       // decidir una por una, que es lo que da la emoción.
@@ -386,7 +425,8 @@ window.LudiaArcade = (function () {
       var vy = dt ? (nave.y - antes) / dt : 0;
       nave.inclinacion += (Math.max(-0.45, Math.min(0.45, vy / 600)) - nave.inclinacion) * Math.min(1, dt * 8);
 
-      if (!eligio) {
+      if (b.continuo) eligio = false;   // la partida sigue: no se va volando
+      if (!b.yaEligio()) {
         recorrido += v * dt;
         // Una oleada nueva cuando la anterior ya pasó la mitad de la pantalla.
         var enCamino = nubes.filter(function (n) { return n.viva && n.x > b.W * 0.3; }).length;
@@ -412,7 +452,7 @@ window.LudiaArcade = (function () {
       nubes.forEach(function (n) {
         n.x -= v * dt * (eligio ? 0.35 : 1);
         // Aturdido no elige: una respuesta por accidente sería injusto.
-        if (eligio || !n.viva || aturdido > 0) return;
+        if (b.yaEligio() || !n.viva || aturdido > 0) return;
         var dx = Math.abs(n.x - xa), dy = Math.abs(n.y + n.h * 0.12 - nave.y);
         if (dx < n.w / 2 + s * 0.45 && dy < n.h * 0.38 + s * 0.18) {
           n.viva = false;
@@ -473,6 +513,7 @@ window.LudiaArcade = (function () {
     b.alRedimensionar = function (fx, fy) {
       lista.forEach(function (g) { g.x *= fx; g.y *= fy; g.w *= fx; g.h *= fx; });
     };
+    b.alNuevaPregunta = function () { lista = []; esperaTanda = 0.2; tanda++; };
     var subida = function () { return b.H * (b.reducido ? 0.1 : 0.16) * Math.min(1.8, 1 + tanda * 0.09); };
 
     function soltarTanda() {
@@ -595,6 +636,8 @@ window.LudiaArcade = (function () {
     b.medir();
 
     var hoyos = [], asomados = [], cola = [], ronda = 0, espera = 0.5, festejo = 0, golpes = [];
+
+    b.alNuevaPregunta = function () { asomados = []; cola = []; espera = 0.3; };
 
     function armarHoyos() {
       var columnas = b.W < 420 ? 2 : 3, filas = 3;
@@ -1110,6 +1153,9 @@ window.LudiaArcade = (function () {
               ab.x = ab.px = ab.casa[0]; ab.y = ab.py = ab.casa[1]; ab.dir = null; ab.avance = 0;
             });
             abejasQuietas = 1.2;
+            // Dificultad que se adapta: cada vez que lo pillan, las abejas
+            // van un poco más lentas en esta pregunta. Que nadie se atasque.
+            vAbeja = Math.max(1.4, vAbeja * 0.82);
             mapaDist = distancias();
             sonar(160, 0.3, 'sawtooth', 0.06, 0.6);
           }
@@ -1482,7 +1528,609 @@ window.LudiaArcade = (function () {
     });
   }
 
-  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa, laberinto: laberinto, tren: tren, catapulta: catapulta };
+  /* Avisos grandes con borde blanco, compartidos por los juegos nuevos. */
+  function aviso(b, texto, color, x, y, alfa) {
+    var ctx = b.ctx;
+    ctx.globalAlpha = Math.max(0, Math.min(1, alfa));
+    // Se achica hasta caber en el ancho (en celular el texto se salía).
+    var fuente = Math.max(14, Math.round(b.H * 0.055));
+    do {
+      ctx.font = '800 ' + fuente + 'px Fredoka, system-ui, sans-serif';
+      if (ctx.measureText(texto).width <= b.W - 24) break;
+      fuente--;
+    } while (fuente > 10);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.strokeText(texto, x, y);
+    ctx.fillStyle = color; ctx.fillText(texto, x, y);
+    ctx.globalAlpha = 1;
+  }
+  function emoji(b, texto, x, y, tam) {
+    // Color opaco: el navegador pinta el emoji con la transparencia del
+    // último fillStyle, y tras una sombra el personaje salía fantasma.
+    b.ctx.fillStyle = '#000';
+    b.ctx.font = Math.round(tam) + 'px system-ui, "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+    b.ctx.textAlign = 'center'; b.ctx.textBaseline = 'middle';
+    b.ctx.fillText(texto, x, y);
+  }
+  function caja(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+  }
+  /** Botones táctiles (◀ ▲ ▶…) que jugar.js pone bajo el lienzo. */
+  function botones(b, alPulsar, alSoltar) {
+    [].forEach.call(b.marco.querySelectorAll('[data-dir]'), function (boton) {
+      b.escuchar(boton, 'pointerdown', function (ev) { alPulsar(boton.getAttribute('data-dir')); ev.preventDefault(); });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (t) {
+        b.escuchar(boton, t, function () { if (alSoltar) alSoltar(boton.getAttribute('data-dir')); });
+      });
+    });
+  }
+  function teclaLibre() {
+    return !(document.activeElement && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(document.activeElement.tagName));
+  }
+
+  /* =================================================================
+     🍄 Salta y choca (plataformas)
+     El personaje corre por un nivel más ancho que la pantalla (la cámara
+     lo sigue) y salta para golpear desde abajo el bloque de la respuesta
+     correcta. Ruedan cocos: si lo alcanzan, se cae un momento.
+     ================================================================= */
+  function salta(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 0.8;
+    b.medir();
+    var suelo = function () { return b.H * 0.86; };
+    var tam = function () { return Math.max(28, Math.min(42, b.H * 0.11)); };
+    var g = function () { return b.H * 2.8; };
+    var bloques = [], largo = 0, camara = 0, cocos = [], proximoCoco = 2.5, aturdido = 0, avisoCoco = 0, festejo = 0;
+    var mover = { izquierda: false, derecha: false };
+    var jugador = { x: 0, y: 0, vy: 0, enSuelo: true, mira: 1 };
+
+    function armar() {
+      var paso = Math.max(b.W * 0.56, 180), w = Math.min(150, paso * 0.72), h = Math.min(56, b.H * 0.16);
+      bloques = barajar(b.opciones).map(function (o, i) {
+        return { op: o, x: b.W * 0.42 + i * paso, y: suelo() - b.H * 0.4 - h, w: w, h: h, salto: 0,
+          texto: b.ajustar(o.texto, w - 40, h - 10, 2, 14) };
+      });
+      largo = b.W * 0.42 + bloques.length * paso + b.W * 0.25;
+      jugador.x = b.W * 0.16; jugador.y = suelo(); jugador.vy = 0; jugador.enSuelo = true;
+    }
+    armar();
+    b.alRedimensionar = function () { armar(); };
+
+    function saltar() {
+      if (aturdido > 0 || !jugador.enSuelo || b.yaEligio()) return;
+      jugador.vy = -Math.sqrt(2 * g() * b.H * 0.46);
+      jugador.enSuelo = false;
+      sonar(380, 0.12, 'square', 0.04, 1.8);
+    }
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) { saltar(); if (ev.cancelable) ev.preventDefault(); });
+    botones(b, function (d) { if (d === 'arriba') saltar(); else mover[d] = true; }, function (d) { if (d !== 'arriba') mover[d] = false; });
+    function teclado(ev) {
+      if (!teclaLibre()) return;
+      var abajo = ev.type === 'keydown';
+      if (ev.key === 'ArrowLeft' || ev.key === 'a') mover.izquierda = abajo;
+      else if (ev.key === 'ArrowRight' || ev.key === 'd') mover.derecha = abajo;
+      else if (abajo && (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === ' ')) saltar();
+      else return;
+      ev.preventDefault();
+    }
+    b.escuchar(document, 'keydown', teclado);
+    b.escuchar(document, 'keyup', teclado);
+
+    b.correr(function (dt) {
+      var t = tam(), eligio = b.yaEligio();
+      aturdido = Math.max(0, aturdido - dt); avisoCoco = Math.max(0, avisoCoco - dt); festejo = Math.max(0, festejo - dt);
+      var vx = 0;
+      if (!eligio && aturdido <= 0) {
+        if (mover.izquierda) vx -= b.W * 0.5;
+        if (mover.derecha) vx += b.W * 0.5;
+      }
+      if (vx) jugador.mira = vx > 0 ? 1 : -1;
+      jugador.x = Math.max(t / 2, Math.min(largo - t / 2, jugador.x + vx * dt));
+      var antes = jugador.y;
+      jugador.vy += g() * dt;
+      jugador.y += jugador.vy * dt;
+      jugador.enSuelo = false;
+      bloques.forEach(function (bl) {
+        var encima = jugador.x > bl.x - t * 0.3 && jugador.x < bl.x + bl.w + t * 0.3;
+        // Golpe desde abajo: la cabeza toca la base del bloque.
+        if (encima && jugador.vy < 0 && antes - t >= bl.y + bl.h - 2 && jugador.y - t < bl.y + bl.h) {
+          jugador.y = bl.y + bl.h + t; jugador.vy = 60;
+          bl.salto = 1;
+          if (!eligio) {
+            b.explotar(bl.x + bl.w / 2 - camara, bl.y, COLORES[bl.op.i % COLORES.length], 30);
+            sonar(660, 0.2, 'square', 0.08, 1.5);
+            festejo = 1;
+            b.elegir(bl.op);
+          }
+        }
+        // Aterrizar encima del bloque: sirve de plataforma.
+        if (encima && jugador.vy > 0 && antes <= bl.y + 1 && jugador.y >= bl.y) { jugador.y = bl.y; jugador.vy = 0; jugador.enSuelo = true; }
+        bl.salto = Math.max(0, bl.salto - dt * 4);
+      });
+      if (jugador.y >= suelo()) { jugador.y = suelo(); jugador.vy = 0; jugador.enSuelo = true; }
+      camara += (Math.max(0, Math.min(largo - b.W, jugador.x - b.W * 0.4)) - camara) * Math.min(1, dt * 6);
+
+      // Cocos que ruedan desde la derecha.
+      proximoCoco -= dt;
+      if (!eligio && proximoCoco <= 0) {
+        cocos.push({ x: camara + b.W + 20, r: Math.max(11, t * 0.38), giro: 0 });
+        proximoCoco = (b.reducido ? 5 : 3.4) - Math.min(1.2, b.ronda * 0.15);
+      }
+      cocos.forEach(function (c) {
+        c.x -= b.W * (b.reducido ? 0.18 : 0.26) * dt; c.giro -= dt * 8;
+        var dx = Math.abs(c.x - jugador.x), alto = suelo() - jugador.y;
+        if (!eligio && aturdido <= 0 && dx < c.r + t * 0.3 && alto < c.r * 1.6) {
+          aturdido = 0.9; avisoCoco = 1; jugador.vy = -Math.sqrt(2 * g() * b.H * 0.1); jugador.x = Math.max(t, jugador.x - b.W * 0.12);
+          sonar(150, 0.25, 'sawtooth', 0.06, 0.6);
+        }
+      });
+      cocos = cocos.filter(function (c) { return c.x > camara - 40; });
+
+      // Dibujo
+      b.cielo('#7CC6FF', '#D3EEFF');
+      b.nubesFondo(dt, 0);
+      b.colinas(camara * 0.3, b.H * 0.22, '#8FD9B6', 170);
+      ctx.fillStyle = '#A0703F'; ctx.fillRect(0, suelo(), b.W, b.H - suelo());
+      ctx.fillStyle = '#1FA98A'; ctx.fillRect(0, suelo(), b.W, 10);
+      ctx.fillStyle = 'rgba(255,255,255,.15)';
+      for (var k = -((camara * 1) % 40); k < b.W; k += 40) ctx.fillRect(k, suelo() + 18, 18, 6);
+      bloques.forEach(function (bl) {
+        var x = bl.x - camara, y = bl.y - Math.sin(bl.salto * Math.PI) * 10, color = COLORES[bl.op.i % COLORES.length];
+        if (x > b.W + 20 || x + bl.w < -20) return;
+        ctx.fillStyle = color; caja(ctx, x, y, bl.w, bl.h, 12); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.18)'; caja(ctx, x, y + bl.h - 7, bl.w, 7, 6); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.94)'; caja(ctx, x + 5, y + 5, bl.w - 10, bl.h - 14, 9); ctx.fill();
+        b.letra(bl.op, x + 18, y + bl.h / 2 - 3, 10);
+        b.escribir(bl.texto, x + 33, y + bl.h / 2 - 3, '#2A2140');
+      });
+      cocos.forEach(function (c) {
+        ctx.save(); ctx.translate(c.x - camara, suelo() - c.r); ctx.rotate(c.giro);
+        ctx.fillStyle = '#7A5233'; ctx.beginPath(); ctx.arc(0, 0, c.r, 0, 7); ctx.fill();
+        ctx.fillStyle = '#5A3A22'; ctx.beginPath(); ctx.arc(c.r * 0.3, -c.r * 0.2, c.r * 0.18, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(-c.r * 0.25, -c.r * 0.3, c.r * 0.14, 0, 7); ctx.fill();
+        ctx.restore();
+      });
+      var jx = jugador.x - camara;
+      ctx.fillStyle = 'rgba(42,33,64,.18)'; ctx.beginPath(); ctx.ellipse(jx, suelo() + 2, t * 0.4, 5, 0, 0, 7); ctx.fill();
+      if (!(aturdido > 0 && Math.floor(b.tiempo * 12) % 2)) {
+        ctx.save(); ctx.translate(jx, jugador.y - t / 2); ctx.scale(jugador.mira, 1);
+        if (aturdido > 0) ctx.rotate(Math.sin(b.tiempo * 30) * 0.3);
+        emoji(b, piloto, 0, 0, t);
+        ctx.restore();
+      }
+      b.dibujarChispas(dt);
+      if (avisoCoco > 0) aviso(b, '¡Cuidado con los cocos! Sáltalos', '#3F4A60', b.W / 2, b.H * 0.12, avisoCoco);
+      else if (b.tiempo < 4 && !eligio) aviso(b, '◀ ▶ para correr · toca o ▲ para saltar', '#5B3DF5', b.W / 2, b.H * 0.12, Math.min(1, 4 - b.tiempo));
+    });
+  }
+
+  /* =================================================================
+     ⛏️ Mina de bloques
+     Bajo el césped hay bloques; abajo del todo, gemas con las respuestas.
+     Se pica hacia donde se toca (o con las flechas) hasta llegar a la gema
+     correcta. Algunas rocas son más duras. La leyenda dice qué es cada gema.
+     ================================================================= */
+  function mina(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 0.95;
+    b.medir();
+    var C = 9, F = 7;                       // columnas, filas (la 0 es el césped)
+    var celdas = [], gemas = [], jugador = { c: 4, f: 0, y: 0 }, golpes = [], festejo = 0;
+
+    (function armar() {
+      var cols = barajar([0, 2, 4, 6, 8, 1, 3, 5, 7]).slice(0, b.opciones.length);
+      for (var f = 0; f < F; f++) {
+        celdas.push([]);
+        for (var c = 0; c < C; c++) {
+          var duro = f > 1 && Math.random() < 0.22;
+          celdas[f].push(f === 0 ? null : { vida: duro ? 3 : 1, max: duro ? 3 : 1, duro: duro });
+        }
+      }
+      barajar(b.opciones).forEach(function (o, i) {
+        gemas.push({ op: o, c: cols[i], f: F - 1 });
+        celdas[F - 1][cols[i]] = { gema: true, op: o };
+      });
+      jugador.c = Math.floor(C / 2);
+    })();
+
+    function geo() {
+      var t = Math.min(b.W / C, b.H / (F + 0.6));
+      return { t: t, ox: (b.W - t * C) / 2, oy: b.H - t * F - 4 };
+    }
+    function solido(c, f) { return f >= 0 && f < F && c >= 0 && c < C && celdas[f][c] !== null; }
+
+    function actuar(dc, df) {
+      if (b.yaEligio()) return;
+      var c = jugador.c + dc, f = jugador.f + df;
+      if (c < 0 || c >= C || f < 0 || f >= F) return;
+      var celda = celdas[f][c];
+      if (celda && celda.gema) {
+        var g = geo();
+        b.explotar(g.ox + (c + 0.5) * g.t, g.oy + (f + 0.5) * g.t, COLORES[celda.op.i % COLORES.length], 36);
+        sonar(784, 0.25, 'sine', 0.14, 1.4);
+        festejo = 1;
+        b.elegir(celda.op);
+        return;
+      }
+      if (celda) {
+        celda.vida--;
+        var g2 = geo();
+        golpes.push({ x: g2.ox + (c + 0.5) * g2.t, y: g2.oy + (f + 0.5) * g2.t, t: 0 });
+        sonar(celda.vida > 0 ? 200 : 260, 0.08, 'square', 0.05, 0.7);
+        if (celda.vida <= 0) {
+          celdas[f][c] = null;
+          b.explotar(g2.ox + (c + 0.5) * g2.t, g2.oy + (f + 0.5) * g2.t, celda.duro ? '#8D93A6' : '#C8A27A', 10);
+        }
+        return;
+      }
+      // Moverse a un hueco (subir solo si hay apoyo para no flotar).
+      if (df < 0 && !solido(jugador.c, jugador.f + 1) && jugador.f + 1 < F) return;
+      jugador.c = c; jugador.f = f;
+    }
+
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) {
+      var p = b.punto(ev), g = geo();
+      var dx = p.x - (g.ox + (jugador.c + 0.5) * g.t), dy = p.y - (g.oy + (jugador.f + 0.5) * g.t);
+      if (Math.abs(dx) < g.t * 0.4 && Math.abs(dy) < g.t * 0.4) return;
+      if (Math.abs(dx) > Math.abs(dy)) actuar(dx > 0 ? 1 : -1, 0); else actuar(0, dy > 0 ? 1 : -1);
+      if (ev.cancelable) ev.preventDefault();
+    });
+    botones(b, function (d) { actuar({ izquierda: -1, derecha: 1 }[d] || 0, { arriba: -1, abajo: 1 }[d] || 0); });
+    b.escuchar(document, 'keydown', function (ev) {
+      if (!teclaLibre()) return;
+      var m = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+      if (!m) return;
+      ev.preventDefault(); actuar(m[0], m[1]);
+    });
+    b.marco.ludiaMina = { celdas: celdas, gemas: gemas, jugador: jugador };
+
+    b.correr(function (dt) {
+      var g = geo();
+      festejo = Math.max(0, festejo - dt);
+      // Gravedad por casillas: si debajo hay hueco, cae.
+      if (!b.yaEligio() && jugador.f + 1 < F && !solido(jugador.c, jugador.f + 1)) {
+        jugador.y += dt * 8;
+        if (jugador.y >= 1) { jugador.y = 0; jugador.f++; }
+      } else jugador.y = 0;
+
+      ctx.fillStyle = '#9FD8FF'; ctx.fillRect(0, 0, b.W, g.oy + g.t);
+      ctx.fillStyle = '#6B4A2F'; ctx.fillRect(0, g.oy + g.t, b.W, b.H);
+      for (var f = 0; f < F; f++) {
+        for (var c = 0; c < C; c++) {
+          var x = g.ox + c * g.t, y = g.oy + f * g.t, celda = celdas[f][c];
+          if (f === 0) { ctx.fillStyle = '#1FA98A'; ctx.fillRect(x, y + g.t * 0.82, g.t, g.t * 0.18); continue; }
+          if (!celda) { ctx.fillStyle = '#4A3322'; ctx.fillRect(x, y, g.t, g.t); continue; }
+          if (celda.gema) {
+            ctx.fillStyle = '#4A3322'; ctx.fillRect(x, y, g.t, g.t);
+            var brillo = 1 + Math.sin(b.tiempo * 4 + c) * 0.06;
+            ctx.save(); ctx.translate(x + g.t / 2, y + g.t / 2); ctx.scale(brillo, brillo);
+            ctx.fillStyle = COLORES[celda.op.i % COLORES.length];
+            ctx.beginPath(); ctx.moveTo(0, -g.t * 0.4); ctx.lineTo(g.t * 0.36, -g.t * 0.08); ctx.lineTo(0, g.t * 0.4); ctx.lineTo(-g.t * 0.36, -g.t * 0.08); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.beginPath(); ctx.moveTo(0, -g.t * 0.4); ctx.lineTo(g.t * 0.12, -g.t * 0.08); ctx.lineTo(-g.t * 0.2, -g.t * 0.08); ctx.closePath(); ctx.fill();
+            ctx.restore();
+            ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(g.t * 0.36) + 'px Fredoka, system-ui, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(LETRAS[celda.op.i], x + g.t / 2, y + g.t / 2 + 1);
+            continue;
+          }
+          var base = celda.duro ? '#8D93A6' : (f === 1 ? '#C8A27A' : '#B88F66');
+          ctx.fillStyle = base; caja(ctx, x + 1, y + 1, g.t - 2, g.t - 2, g.t * 0.18); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + g.t * 0.18, y + g.t * 0.16, g.t * 0.5, g.t * 0.12);
+          if (celda.vida < celda.max) {
+            ctx.strokeStyle = 'rgba(42,33,64,.55)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + g.t * 0.3, y + g.t * 0.2); ctx.lineTo(x + g.t * 0.5, y + g.t * 0.5); ctx.lineTo(x + g.t * 0.35, y + g.t * 0.8); ctx.stroke();
+          }
+        }
+      }
+      golpes.forEach(function (h) { h.t += dt; });
+      golpes = golpes.filter(function (h) { return h.t < 0.3; });
+      golpes.forEach(function (h) { emoji(b, '💥', h.x, h.y, g.t * (0.5 + h.t)); });
+      var jx = g.ox + (jugador.c + 0.5) * g.t, jy = g.oy + (jugador.f + 0.5 + jugador.y) * g.t;
+      emoji(b, piloto, jx, jy - (festejo ? Math.abs(Math.sin(b.tiempo * 14)) * g.t * 0.4 : 0), g.t * 0.9);
+      emoji(b, '⛏️', jx + g.t * 0.38, jy - g.t * 0.25 + Math.sin(b.tiempo * 10) * 2, g.t * 0.5);
+      b.dibujarChispas(dt);
+      if (b.tiempo < 5 && !b.yaEligio()) aviso(b, '👆 Toca un bloque junto a ti para picarlo', '#5B3DF5', b.W / 2, g.oy - 4 + g.t * 0.4, Math.min(1, 5 - b.tiempo));
+    });
+  }
+
+  /* =================================================================
+     🧗 Carrera de obstáculos
+     El personaje corre solo. Las respuestas son ARCOS en el camino:
+     atravesar uno es elegirlo; saltarlo es esquivarlo. Entre arco y arco
+     hay charcos y vallas que también hay que saltar. Si se moja o tropieza,
+     pierde un momento. Se salta tocando la pantalla, con ▲ o Espacio.
+     ================================================================= */
+  function obstaculos(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 0.75;
+    b.medir();
+    var suelo = function () { return b.H * 0.8; };
+    var tam = function () { return Math.max(28, Math.min(40, b.H * 0.12)); };
+    var g = function () { return b.H * 3; };
+    var jugador = { y: 0, vy: 0, enSuelo: true }, pista = [], recorrido = 0, cola = [], aturdido = 0, avisoTxt = '', avisoT = 0, vueltas = 0;
+    var xJugador = function () { return b.W * 0.2; };
+    var velocidad = function () { return b.W * (b.reducido ? 0.2 : 0.27) * Math.min(1.5, 1 + vueltas * 0.08 + b.ronda * 0.05) * (aturdido > 0 ? 0.4 : 1); };
+
+    function siguienteArco() {
+      if (!cola.length) { cola = barajar(b.opciones); vueltas++; }
+      return cola.shift();
+    }
+    /** Añade al final de la pista un obstáculo y luego un arco. */
+    function extender() {
+      var fin = pista.length ? pista[pista.length - 1].x + pista[pista.length - 1].w : b.W * 0.9;
+      var separa = Math.max(b.W * 0.42, 170);
+      var tipo = Math.random() < 0.5 ? 'charco' : 'valla';
+      pista.push({ tipo: tipo, x: fin + separa * 0.5, w: tipo === 'charco' ? Math.max(46, b.W * 0.13) : 18, h: tam() * 0.7 });
+      var op = siguienteArco();
+      var ancho = Math.min(150, b.W * 0.4), alto = b.H * 0.23;
+      pista.push({ tipo: 'arco', op: op, x: fin + separa * 1.2, w: 24, h: alto, cartel: ancho,
+        texto: b.ajustar(op.texto, ancho - 40, 38, 2, 14) });
+    }
+    while (pista.length < 6) extender();
+
+    function saltar() {
+      if (!jugador.enSuelo || b.yaEligio()) return;
+      jugador.vy = -Math.sqrt(2 * g() * b.H * 0.34);
+      jugador.enSuelo = false;
+      sonar(420, 0.1, 'square', 0.04, 1.8);
+    }
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) { saltar(); if (ev.cancelable) ev.preventDefault(); });
+    botones(b, function (d) { if (d === 'arriba') saltar(); });
+    b.escuchar(document, 'keydown', function (ev) {
+      if (!teclaLibre()) return;
+      if (ev.key === ' ' || ev.key === 'ArrowUp' || ev.key === 'w') { ev.preventDefault(); saltar(); }
+    });
+
+    function avisar(txt) { avisoTxt = txt; avisoT = 1.1; }
+
+    b.correr(function (dt) {
+      var t = tam(), eligio = b.yaEligio(), v = velocidad(), xj = xJugador();
+      aturdido = Math.max(0, aturdido - dt); avisoT = Math.max(0, avisoT - dt);
+      if (!eligio) recorrido += v * dt;
+      jugador.vy += g() * dt; jugador.y += jugador.vy * dt;
+      if (jugador.y >= 0) { jugador.y = 0; jugador.vy = 0; jugador.enSuelo = true; }
+
+      pista.forEach(function (o) {
+        if (!eligio) o.x -= v * dt;
+        if (o.hecho || eligio) return;
+        // Arcos y vallas cuentan al cruzar su centro; los charcos, mientras
+        // se está encima. Con toda la zona, saltar un arco rozaba su borde.
+        var centro = o.x + o.w / 2;
+        var tocando = o.tipo === 'charco' ? (xj > o.x + 4 && xj < o.x + o.w - 4) : Math.abs(xj - centro) < 8;
+        if (!tocando) return;
+        var altura = -jugador.y;                 // cuánto se elevó
+        if (o.tipo === 'arco' && altura < o.h * 0.75) {
+          // Lo atraviesa: elige esta respuesta.
+          o.hecho = true;
+          b.explotar(o.x, suelo() - o.h / 2, COLORES[o.op.i % COLORES.length], 34);
+          sonar(660, 0.22, 'sine', 0.14, 1.5);
+          b.elegir(o.op);
+        } else if (o.tipo === 'charco' && altura < 4) {
+          o.hecho = true; aturdido = 0.9; avisar('¡Splash! Salta los charcos');
+          sonar(180, 0.3, 'sine', 0.06, 0.5);
+        } else if (o.tipo === 'valla' && altura < o.h * 0.9) {
+          o.hecho = true; aturdido = 0.9; avisar('¡Uy! Salta las vallas');
+          jugador.vy = -Math.sqrt(2 * g() * b.H * 0.06); jugador.enSuelo = false;
+          sonar(150, 0.25, 'sawtooth', 0.05, 0.6);
+        } else if (o.tipo === 'arco' && !o.saltado) {
+          o.saltado = true;   // lo esquivó por encima
+        }
+      });
+      pista = pista.filter(function (o) { return o.x + Math.max(o.w, o.cartel || 0) > -40; });
+      while (pista.length < 6) extender();
+
+      b.cielo('#7CC6FF', '#D3EEFF');
+      b.nubesFondo(dt, eligio ? 0 : v * 0.2);
+      b.colinas(recorrido * 0.3, b.H * 0.25, '#8FD9B6', 160);
+      ctx.fillStyle = '#F1DFBB'; ctx.fillRect(0, suelo(), b.W, b.H - suelo());
+      ctx.fillStyle = '#1FA98A'; ctx.fillRect(0, suelo(), b.W, 8);
+      ctx.fillStyle = 'rgba(160,112,63,.25)';
+      for (var k = -(recorrido % 36); k < b.W; k += 36) ctx.fillRect(k, suelo() + 20, 16, 5);
+      pista.forEach(function (o) {
+        if (o.x > b.W + 160) return;
+        if (o.tipo === 'charco') {
+          ctx.fillStyle = '#5BB8FF'; ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, suelo() + 6, o.w / 2, 9, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(o.x + o.w * 0.3, suelo() + 3, o.w * 0.2, 3);
+        } else if (o.tipo === 'valla') {
+          ctx.fillStyle = '#E8590C'; ctx.fillRect(o.x, suelo() - o.h, 5, o.h); ctx.fillRect(o.x + o.w - 5, suelo() - o.h, 5, o.h);
+          ctx.fillStyle = '#FFFFFF'; ctx.fillRect(o.x - 4, suelo() - o.h, o.w + 8, 7);
+          ctx.fillStyle = '#E8590C'; ctx.fillRect(o.x + 2, suelo() - o.h, 6, 7); ctx.fillRect(o.x + o.w - 8, suelo() - o.h, 6, 7);
+        } else {
+          var color = COLORES[o.op.i % COLORES.length], cx = o.x + o.w / 2;
+          ctx.strokeStyle = color; ctx.lineWidth = 8; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(cx - 22, suelo()); ctx.lineTo(cx - 22, suelo() - o.h + 20);
+          ctx.arc(cx, suelo() - o.h + 20, 22, Math.PI, 0); ctx.lineTo(cx + 22, suelo()); ctx.stroke();
+          var cy = suelo() - o.h - 34, x0 = cx - o.cartel / 2;
+          ctx.fillStyle = o.saltado ? 'rgba(255,255,255,.55)' : '#FFFFFF';
+          caja(ctx, x0, cy - 22, o.cartel, 44, 10); ctx.fill();
+          ctx.strokeStyle = color; ctx.lineWidth = 3; caja(ctx, x0 + 1.5, cy - 20.5, o.cartel - 3, 41, 9); ctx.stroke();
+          b.letra(o.op, x0 + 16, cy, 10);
+          b.escribir(o.texto, x0 + 31, cy, '#2A2140');
+        }
+      });
+      var jy = suelo() + jugador.y - t / 2;
+      ctx.fillStyle = 'rgba(42,33,64,.18)'; ctx.beginPath(); ctx.ellipse(xj, suelo() + 2, t * 0.4, 5, 0, 0, 7); ctx.fill();
+      ctx.save(); ctx.translate(xj, jy);
+      ctx.rotate(aturdido > 0 ? Math.sin(b.tiempo * 30) * 0.35 : (jugador.enSuelo ? Math.sin(b.tiempo * 18) * 0.08 : -0.15));
+      emoji(b, piloto, 0, 0, t);
+      ctx.restore();
+      b.dibujarChispas(dt);
+      if (avisoT > 0) aviso(b, avisoTxt, '#3F4A60', b.W / 2, b.H * 0.1, avisoT);
+      else if (b.tiempo < 4 && !eligio) aviso(b, 'Cruza el arco correcto · salta los demás', '#5B3DF5', b.W / 2, b.H * 0.1, Math.min(1, 4 - b.tiempo));
+    });
+  }
+
+  /* =================================================================
+     🚀 Nave espacial
+     Asteroides con las respuestas bajan intercalados. La nave se mueve
+     (arrastrando, con ◀ ▶ o las flechas) y dispara (tocando, 🔥 o
+     Espacio): el primer asteroide con respuesta que alcanza el láser es
+     la elegida. Los meteoritos pequeños no cuentan: hay que esquivarlos o
+     destruirlos; si chocan, la nave queda aturdida un momento.
+     ================================================================= */
+  function nave(b, piloto) {
+    var ctx = b.ctx;
+    b.proporcion = 1.05;
+    b.medir();
+    var estrellas = [], rocas = [], meteoros = [], laseres = [], tanda = 0, aturdido = 0, avisoT = 0, recarga = 0;
+    var nave = { x: b.W / 2, objetivo: b.W / 2 }, mover = { izquierda: false, derecha: false };
+    for (var k = 0; k < 50; k++) estrellas.push({ x: Math.random() * b.W, y: Math.random() * b.H, v: 0.3 + Math.random(), r: Math.random() * 1.6 + 0.4 });
+    var yNave = function () { return b.H * 0.88; };
+    var caida = function () { return b.H * (b.reducido ? 0.06 : 0.085) * Math.min(1.6, 1 + tanda * 0.1 + b.ronda * 0.05); };
+
+    b.alNuevaPregunta = function () {
+      rocas.forEach(function (r) { b.explotar(r.x, r.y, '#9AA3B5', 6); });
+      rocas = [];
+    };
+
+    function soltarTanda() {
+      var n = b.opciones.length, r = Math.min(b.W * 0.17, 58);
+      var carriles = barajar(b.opciones.map(function (_, i) { return i; }));
+      barajar(b.opciones).forEach(function (o, i) {
+        var x = r + 8 + (b.W - 2 * r - 16) * (n === 1 ? 0.5 : carriles[i] / (n - 1));
+        rocas.push({ op: o, x: x, y: -r - i * r * 2.6, r: r, giro: Math.random() * 6, texto: b.ajustar(o.texto, r * 1.4, r * 0.8, 2, 13) });
+      });
+      tanda++;
+    }
+
+    function disparar() {
+      if (aturdido > 0 || recarga > 0 || b.yaEligio()) return;
+      laseres.push({ x: nave.x, y: yNave() - 24 });
+      recarga = 0.35;
+      sonar(880, 0.08, 'square', 0.04, 0.5);
+    }
+    var arrastre = null;
+    b.escuchar(b.lienzo, 'pointerdown', function (ev) {
+      if (b.lienzo.setPointerCapture) { try { b.lienzo.setPointerCapture(ev.pointerId); } catch (e) {} }
+      arrastre = { x: b.punto(ev).x, movio: false };
+      if (ev.cancelable) ev.preventDefault();
+    });
+    b.escuchar(b.lienzo, 'pointermove', function (ev) {
+      if (!arrastre) return;
+      var p = b.punto(ev);
+      if (Math.abs(p.x - arrastre.x) > 8) arrastre.movio = true;
+      if (arrastre.movio && aturdido <= 0) nave.objetivo = Math.max(24, Math.min(b.W - 24, p.x));
+    });
+    b.escuchar(b.lienzo, 'pointerup', function () {
+      // Un toque sin arrastrar dispara; arrastrar solo mueve.
+      if (arrastre && !arrastre.movio) disparar();
+      arrastre = null;
+    });
+    botones(b, function (d) { if (d === 'arriba') disparar(); else mover[d] = true; }, function (d) { if (d !== 'arriba') mover[d] = false; });
+    function teclado(ev) {
+      if (!teclaLibre()) return;
+      var abajo = ev.type === 'keydown';
+      if (ev.key === 'ArrowLeft' || ev.key === 'a') mover.izquierda = abajo;
+      else if (ev.key === 'ArrowRight' || ev.key === 'd') mover.derecha = abajo;
+      else if (abajo && (ev.key === ' ' || ev.key === 'ArrowUp')) disparar();
+      else return;
+      ev.preventDefault();
+    }
+    b.escuchar(document, 'keydown', teclado);
+    b.escuchar(document, 'keyup', teclado);
+    b.marco.ludiaNave = { nave: nave, rocas: function () { return rocas; } };
+
+    function dibujarNave(x, y) {
+      ctx.save(); ctx.translate(x, y);
+      if (aturdido > 0) ctx.rotate(Math.sin(b.tiempo * 30) * 0.25);
+      ctx.fillStyle = '#FFB020'; ctx.beginPath(); ctx.moveTo(-9, 22); ctx.lineTo(0, 34 + Math.random() * 10); ctx.lineTo(9, 22); ctx.fill();
+      ctx.fillStyle = '#5B3DF5';
+      ctx.beginPath(); ctx.moveTo(-26, 22); ctx.lineTo(-12, 2); ctx.lineTo(-12, 22); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(26, 22); ctx.lineTo(12, 2); ctx.lineTo(12, 22); ctx.fill();
+      ctx.fillStyle = '#FF6A4D'; caja(ctx, -13, -24, 26, 48, 13); ctx.fill();
+      ctx.fillStyle = '#DFF3FF'; ctx.beginPath(); ctx.arc(0, -6, 10, 0, 7); ctx.fill();
+      emoji(b, piloto, 0, -5, 14);
+      ctx.restore();
+    }
+
+    b.correr(function (dt) {
+      var eligio = b.yaEligio(), yn = yNave();
+      aturdido = Math.max(0, aturdido - dt); avisoT = Math.max(0, avisoT - dt); recarga = Math.max(0, recarga - dt);
+      if (!eligio && aturdido <= 0) {
+        if (mover.izquierda) nave.objetivo = Math.max(24, nave.objetivo - b.W * 0.9 * dt);
+        if (mover.derecha) nave.objetivo = Math.min(b.W - 24, nave.objetivo + b.W * 0.9 * dt);
+      }
+      nave.x += (nave.objetivo - nave.x) * Math.min(1, dt * 10);
+      if (!eligio && !rocas.some(function (r) { return r.y < b.H * 0.45; })) soltarTanda();
+      if (!eligio && Math.random() < dt * (0.45 + tanda * 0.05)) meteoros.push({ x: 12 + Math.random() * (b.W - 24), y: -12, r: 7 + Math.random() * 5 });
+
+      var v = caida();
+      rocas.forEach(function (r) { r.y += v * dt; r.giro += dt * 0.6; });
+      meteoros.forEach(function (m) { m.y += v * 2.2 * dt; });
+      laseres.forEach(function (l) { l.y -= b.H * 1.6 * dt; });
+      laseres.forEach(function (l) {
+        if (l.fuera || eligio) return;
+        rocas.forEach(function (r) {
+          if (l.fuera || eligio) return;
+          if (Math.abs(l.x - r.x) < r.r * 0.9 && Math.abs(l.y - r.y) < r.r) {
+            l.fuera = true;
+            b.explotar(r.x, r.y, COLORES[r.op.i % COLORES.length], 36);
+            sonar(523, 0.25, 'sine', 0.14, 1.5);
+            r.fuera = true;
+            b.elegir(r.op);
+          }
+        });
+        meteoros.forEach(function (m) {
+          if (!l.fuera && Math.abs(l.x - m.x) < m.r + 4 && Math.abs(l.y - m.y) < m.r + 6) {
+            l.fuera = true; m.fuera = true;
+            b.explotar(m.x, m.y, '#9AA3B5', 8);
+            sonar(300, 0.08, 'triangle', 0.04, 0.5);
+          }
+        });
+      });
+      meteoros.forEach(function (m) {
+        if (m.fuera || eligio || aturdido > 0) return;
+        if (Math.abs(m.x - nave.x) < m.r + 16 && Math.abs(m.y - yn) < m.r + 22) {
+          m.fuera = true; aturdido = 1; avisoT = 1.1;
+          b.explotar(nave.x, yn, '#FFD24D', 12);
+          sonar(140, 0.35, 'sawtooth', 0.07, 0.5);
+        }
+      });
+      rocas = rocas.filter(function (r) { return !r.fuera && r.y < b.H + r.r; });
+      meteoros = meteoros.filter(function (m) { return !m.fuera && m.y < b.H + 20; });
+      laseres = laseres.filter(function (l) { return !l.fuera && l.y > -20; });
+
+      var fondo = ctx.createLinearGradient(0, 0, 0, b.H);
+      fondo.addColorStop(0, '#1A1238'); fondo.addColorStop(1, '#3B2A7A');
+      ctx.fillStyle = fondo; ctx.fillRect(0, 0, b.W, b.H);
+      ctx.fillStyle = '#FF8FB1'; ctx.beginPath(); ctx.arc(b.W * 0.82, b.H * 0.2, b.W * 0.09, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(b.W * 0.82, b.H * 0.2, b.W * 0.15, b.W * 0.035, -0.3, 0, 7); ctx.stroke();
+      estrellas.forEach(function (s) {
+        s.y += s.v * v * 0.5 * dt; if (s.y > b.H) { s.y = 0; s.x = Math.random() * b.W; }
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + Math.sin(b.tiempo * 3 + s.x) * 0.3) + ')';
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+      });
+      rocas.forEach(function (r) {
+        ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(Math.sin(r.giro) * 0.15);
+        ctx.fillStyle = '#7D7393';
+        ctx.beginPath();
+        for (var a = 0; a < 10; a++) {
+          var ang = a / 10 * Math.PI * 2, rr = r.r * (0.9 + ((a * 7) % 3) * 0.05);
+          ctx[a ? 'lineTo' : 'moveTo'](Math.cos(ang) * rr, Math.sin(ang) * rr);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = COLORES[r.op.i % COLORES.length]; ctx.lineWidth = 4; ctx.stroke();
+        ctx.restore();
+        b.letra(r.op, r.x, r.y - r.r * 0.55, Math.min(11, r.r * 0.22));
+        b.escribir(r.texto, r.x, r.y + r.r * 0.12, '#FFFFFF', 'center');
+      });
+      meteoros.forEach(function (m) {
+        ctx.fillStyle = 'rgba(255,176,32,.35)'; ctx.beginPath(); ctx.moveTo(m.x - m.r * 0.6, m.y - m.r); ctx.lineTo(m.x, m.y - m.r * 3.5); ctx.lineTo(m.x + m.r * 0.6, m.y - m.r); ctx.fill();
+        ctx.fillStyle = '#A88F7A'; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#4FD8B8';
+      laseres.forEach(function (l) { caja(ctx, l.x - 2.5, l.y - 14, 5, 18, 3); ctx.fill(); });
+      if (!(aturdido > 0 && Math.floor(b.tiempo * 12) % 2)) dibujarNave(nave.x, yn);
+      b.dibujarChispas(dt);
+      if (avisoT > 0) aviso(b, '¡Meteorito! Esquívalos', '#FFFFFF', b.W / 2, b.H * 0.5, avisoT);
+      else if (b.tiempo < 4 && !eligio) aviso(b, 'Arrastra para moverte · toca para disparar', '#5B3DF5', b.W / 2, b.H * 0.5, Math.min(1, 4 - b.tiempo));
+    });
+  }
+
+  var JUEGOS = { avion: avion, globos: globos, atrapa: atrapa, laberinto: laberinto, tren: tren, catapulta: catapulta,
+    salta: salta, mina: mina, obstaculos: obstaculos, nave: nave };
 
   /**
    * @param {string} tipo            'avion' | 'globos' | 'atrapa' | 'laberinto'
@@ -1496,8 +2144,14 @@ window.LudiaArcade = (function () {
     var b = base(marco, textos, alElegir);
     // Número de pregunta dentro de la actividad: el ritmo sube de una a otra.
     b.ronda = Math.max(0, Number(extra && extra.ronda) || 0);
+    b.continuo = !!(extra && extra.continuo);
     JUEGOS[tipo](b, piloto || '🦊');
-    return { apagar: b.apagar };
+    return {
+      apagar: b.apagar,
+      nueva: function (textos, ronda) { b.nueva(textos, ronda); },
+      resultado: function (correcta, puntos) { b.resultado(correcta, puntos); },
+      marco: marco
+    };
   }
 
   return { montar: montar, juegos: Object.keys(JUEGOS) };

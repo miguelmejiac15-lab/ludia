@@ -39,9 +39,29 @@ window.LudiaJugar = (function () {
     atrapa: '👆 Toca al animalito que lleva la respuesta correcta antes de que se esconda',
     laberinto: '👆 Toca hacia dónde ir o desliza el dedo · llega a la puerta correcta y escapa de las abejas',
     tren: '👆 Toca para soltar la caja: tiene que caer en el vagón de la respuesta correcta',
-    catapulta: '👆 Arrastra hacia atrás, apunta y suelta: dale al cartel de la respuesta correcta'
+    catapulta: '👆 Arrastra hacia atrás, apunta y suelta: dale al cartel de la respuesta correcta',
+    salta: '👆 ◀ ▶ para correr y ▲ (o toca) para saltar: golpea desde abajo el bloque correcto',
+    mina: '👆 Toca un bloque junto a ti para picarlo y baja hasta la gema correcta',
+    obstaculos: '👆 Toca, ▲ o Espacio para saltar: cruza el arco correcto y salta los demás',
+    nave: '👆 Arrastra para mover la nave y toca para disparar al asteroide correcto'
   };
   function esArcade(tipo) { return Object.prototype.hasOwnProperty.call(ARCADE, tipo); }
+
+  /*
+   * Partida continua: en un juego ENVIADO, estos no se cierran entre
+   * preguntas. Se elige, el servidor califica, aparece «✓ +870» dentro del
+   * juego y llega la pregunta siguiente sin salir: se juega un rato y la
+   * velocidad se acumula. En vivo cada pregunta la marca el docente.
+   */
+  var CONTINUOS = ['avion', 'globos', 'atrapa', 'nave'];
+  var juegoActivo = null;   // { tipo, indice, api }
+  function esContinuo(tipo) { return modoSesion === 'enviar' && CONTINUOS.indexOf(tipo) > -1; }
+  function opcionesAlternas(it) {
+    return it.opciones.map(function (t, i) {
+      return '<button type="button" class="j-opcion opt-' + i + '" data-elegir="' + i + '">' +
+        '<b>' + LETRAS[i] + '</b> ' + esc(t) + '</button>';
+    }).join('');
+  }
 
   /** Ruleta y cajas: en vivo las maneja el docente en el proyector. */
   function vistaSorteo(it, icono) {
@@ -52,24 +72,34 @@ window.LudiaJugar = (function () {
     return '<div data-sorteo></div>';
   }
 
+  /** Botones táctiles bajo el lienzo, según el juego. */
+  var CONTROLES = {
+    laberinto: [['arriba', '▲'], ['izquierda', '◀'], ['abajo', '▼'], ['derecha', '▶']],
+    mina: [['arriba', '▲'], ['izquierda', '◀'], ['abajo', '▼'], ['derecha', '▶']],
+    salta: [['izquierda', '◀'], ['arriba', '⤒ Saltar'], ['derecha', '▶']],
+    obstaculos: [['arriba', '⤒ Saltar']],
+    nave: [['izquierda', '◀'], ['arriba', '🔥'], ['derecha', '▶']]
+  };
+  /** Juegos donde las respuestas solo llevan su letra: la leyenda dice cuál es cuál. */
+  var CON_LEYENDA = ['laberinto', 'mina'];
+
   function vistaArcade(it) {
-    var laberinto = it.tipo === 'laberinto';
+    var controles = CONTROLES[it.tipo];
+    var leyenda = CON_LEYENDA.indexOf(it.tipo) > -1;
+    var maximo = it.tipo === 'laberinto' ? 4 : it.opciones.length;
     return '<p class="j-pregunta">' + esc(it.enunciado) + '</p>' +
-      // En el laberinto las puertas solo llevan su letra: la leyenda dice qué es cada una.
-      (laberinto ? '<ol class="j-leyenda">' + it.opciones.slice(0, 4).map(function (t, i) {
+      (leyenda ? '<ol class="j-leyenda">' + it.opciones.slice(0, maximo).map(function (t, i) {
         return '<li><b class="opt-' + i + '">' + LETRAS[i] + '</b> ' + esc(t) + '</li>';
       }).join('') + '</ol>' : '') +
       '<div class="j-arcade" data-arcade><canvas aria-hidden="true"></canvas>' +
-      (laberinto ? '<div class="j-cruceta" aria-hidden="true">' +
-        '<button type="button" data-dir="arriba">▲</button><button type="button" data-dir="izquierda">◀</button>' +
-        '<button type="button" data-dir="abajo">▼</button><button type="button" data-dir="derecha">▶</button></div>' : '') +
+      (controles ? '<div class="j-cruceta' + (controles.length === 4 ? '' : ' fila') + '" aria-hidden="true">' +
+        controles.map(function (c) { return '<button type="button" data-dir="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>' : '') +
       '</div>' +
       '<p class="j-arcade-ayuda">' + ARCADE[it.tipo] + '</p>' +
+      // El «✓ +870» del juego se dibuja: esto lo anuncia a los lectores de pantalla.
+      '<p class="sr-only" data-arcade-estado aria-live="polite"></p>' +
       '<details class="j-arcade-alterno"><summary>¿Prefieres tocar la respuesta?</summary><div class="j-opciones">' +
-      it.opciones.map(function (t, i) {
-        return '<button type="button" class="j-opcion opt-' + i + '" data-elegir="' + i + '">' +
-          '<b>' + LETRAS[i] + '</b> ' + esc(t) + '</button>';
-      }).join('') + '</div></details>';
+      opcionesAlternas(it) + '</div></details>';
   }
 
   var vistas = {
@@ -90,6 +120,10 @@ window.LudiaJugar = (function () {
     laberinto: function (it) { return vistaArcade(it); },
     tren: function (it) { return vistaArcade(it); },
     catapulta: function (it) { return vistaArcade(it); },
+    salta: function (it) { return vistaArcade(it); },
+    mina: function (it) { return vistaArcade(it); },
+    obstaculos: function (it) { return vistaArcade(it); },
+    nave: function (it) { return vistaArcade(it); },
 
     video_preguntas: function (it) {
       // `it.video` llega ya como identificador: lo extrae el servidor, porque
@@ -498,6 +532,10 @@ window.LudiaJugar = (function () {
       case 'laberinto':
       case 'tren':
       case 'catapulta':
+      case 'salta':
+      case 'mina':
+      case 'obstaculos':
+      case 'nave':
       case 'video_preguntas':
       case 'encuesta':
         return seleccion;
@@ -552,6 +590,10 @@ window.LudiaJugar = (function () {
       case 'laberinto':
       case 'tren':
       case 'catapulta':
+      case 'salta':
+      case 'mina':
+      case 'obstaculos':
+      case 'nave':
       case 'video_preguntas':
       case 'encuesta':
       case 'escala':
@@ -875,6 +917,23 @@ window.LudiaJugar = (function () {
     // redibujar: reiniciarían la partida cada 3 s.
     if (mismaPregunta && !mia && (caja.querySelector('[data-enviar]') || caja.querySelector('[data-arcade]'))) return;
 
+    // Partida continua: si el juego sigue en pantalla, no se redibuja nada.
+    // Con la respuesta ya enviada se espera; con una pregunta nueva, el juego
+    // la recibe sin cerrarse.
+    var vivoAun = juegoActivo && document.body.contains(juegoActivo.api.marco) && caja.contains(juegoActivo.api.marco);
+    if (vivoAun && juegoActivo.tipo === actividad.item.tipo && juegoActivo.indice === actividad.indice && esContinuo(actividad.item.tipo)) {
+      if (mia || mismaPregunta) return;
+      actual = actividad;
+      seleccion = null;
+      var pregunta = caja.querySelector('.j-pregunta');
+      if (pregunta) pregunta.textContent = actividad.item.enunciado;
+      var alternas = caja.querySelector('.j-arcade-alterno .j-opciones');
+      if (alternas) alternas.innerHTML = opcionesAlternas(actividad.item);
+      juegoActivo.api.nueva(actividad.item.opciones, actividad.item_indice || 0);
+      return;
+    }
+    if (!vivoAun) juegoActivo = null;
+
     actual = actividad;
     var item = actividad.item;
     var tipo = item.tipo;
@@ -927,11 +986,15 @@ window.LudiaJugar = (function () {
       window.LudiaSorteo.montar(tipo, caja.querySelector('[data-sorteo]'), item, false);
     }
     if (esArcade(tipo) && window.LudiaArcade) {
-      window.LudiaArcade.montar(tipo, caja.querySelector('[data-arcade]'), item.opciones, function (indice) {
-        if (!actual || actual.item !== item) return;
+      var api = window.LudiaArcade.montar(tipo, caja.querySelector('[data-arcade]'), item.opciones, function (indice) {
+        // Con partida continua la pregunta cambia sin volver a montar: se
+        // responde la que esté en pantalla.
+        if (!actual || actual.item.tipo !== tipo) return;
         seleccion = indice;
         enviar();
-      }, (document.querySelector('#juego-yo .avatar-cara') || {}).textContent, { ronda: actividad.item_indice || 0 });
+      }, (document.querySelector('#juego-yo .avatar-cara') || {}).textContent,
+        { ronda: actividad.item_indice || 0, continuo: esContinuo(tipo) });
+      juegoActivo = api && esContinuo(tipo) ? { tipo: tipo, indice: actividad.indice, api: api } : null;
     }
     if (tipo === 'ordenar' || tipo === 'linea_tiempo') refrescarOrden();
     if (tipo === 'ordenar_palabras' || tipo === 'anagrama') refrescarArmada();
@@ -976,6 +1039,15 @@ window.LudiaJugar = (function () {
     reiniciar: reiniciar,
     resumenEnviado: resumenEnviado,
     esSoloLectura: esSoloLectura,
+    esContinuo: esContinuo,
+    /** Muestra el resultado dentro del juego en curso. Devuelve false si no hay. */
+    resultadoEnJuego: function (correcta, puntos) {
+      if (!juegoActivo || !document.body.contains(juegoActivo.api.marco)) return false;
+      juegoActivo.api.resultado(correcta, puntos);
+      var estado = contenedor && contenedor.querySelector('[data-arcade-estado]');
+      if (estado) estado.textContent = correcta ? '¡Correcto! +' + (puntos || 0) + ' puntos' : 'Esta vez no acertaste';
+      return true;
+    },
     ponerModo: function (m) { modoSesion = m === 'enviar' ? 'enviar' : 'vivo'; },
     esc: esc
   };

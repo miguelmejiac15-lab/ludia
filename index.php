@@ -9,7 +9,7 @@
 require __DIR__ . '/includes/bootstrap.php';
 
 $page = [
-    'title'       => 'Ludia — Actividades y juegos para gamificar tus clases',
+    'title'       => 'Ludia.click — Juegos y actividades para gamificar tus clases',
     // 134 caracteres. Google corta alrededor de 155, así que lo que va después
     // no lo lee nadie: por eso lo que importa —que el participante no se
     // registra y que el precio está en pesos— va delante, no al final.
@@ -215,6 +215,30 @@ foreach (planes_todos() as $clave => $p) {
     ];
 }
 
+/*
+ * Preguntas frecuentes: las dudas reales de un docente que llega desde Google.
+ * Van en la página y, con las mismas palabras, en FAQPage para los buscadores.
+ */
+$preguntas = [
+    ['¿Qué es Ludia?', 'Ludia (ludia.click) es una plataforma educativa para gamificar las clases. Creas paquetes de actividades —quiz, sopa de letras, crucigrama, mural, vídeo con preguntas— o juegos a partir de tus palabras —avión, laberinto, nave espacial, catapulta— y tu grupo los juega desde el celular.'],
+    ['¿Mis estudiantes necesitan crear una cuenta?', 'No. Entran con un código de seis dígitos, un QR o un enlace, eligen su personaje y juegan. De ellos solo se guarda el nombre con el que entran. Solo quien crea las actividades necesita cuenta.'],
+    ['¿Es gratis?', 'Sí, hay un plan gratis para siempre con el que puedes dar clase de verdad. Los planes de pago, en pesos colombianos y sin cobro automático, suman los juegos de acción, todas las actividades, las imágenes y el informe de cada sesión.'],
+    ['¿Sirve como alternativa a Kahoot o Wordwall?', 'Sí: como en Kahoot, puedes jugar en vivo con el proyector, con puntos y marcador; como en Wordwall, escribes tus palabras una vez y las juegas en muchos juegos distintos. Y todo en español, con precios en pesos.'],
+    ['¿Se puede jugar sin estar en clase?', 'Sí. Además de jugar en vivo, puedes enviar el enlace para que cada estudiante juegue desde casa a su ritmo, y ver cómo va cada uno.'],
+    ['¿Funciona con Moodle u otra plataforma?', 'Sí. En el plan Pro descargas tus paquetes y juegos en formato SCORM, que se sube a Moodle y a otras plataformas, o como una página HTML que funciona sin internet.'],
+    ['¿Para qué edades sirve?', 'Para primaria, secundaria y universidad, y también para capacitaciones en empresas, talleres y eventos. Tú decides el contenido y el nivel.'],
+];
+
+$fichaPreguntas = [
+    '@context'   => 'https://schema.org',
+    '@type'      => 'FAQPage',
+    'mainEntity' => array_map(static fn (array $p): array => [
+        '@type'          => 'Question',
+        'name'           => $p[0],
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $p[1]],
+    ], $preguntas),
+];
+
 $fichaBuscadores = [
     '@context'            => 'https://schema.org',
     '@type'               => 'SoftwareApplication',
@@ -229,12 +253,16 @@ $fichaBuscadores = [
         $valores
     ),
     'offers'              => $ofertas,
+    'publisher'           => ['@id' => url_absoluta('/') . '#organizacion'],
 ];
 
 require __DIR__ . '/includes/partials/header.php';
 ?>
 <script type="application/ld+json">
 <?= json_encode($fichaBuscadores, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+</script>
+<script type="application/ld+json">
+<?= json_encode($fichaPreguntas, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
 </script>
 
 <main id="contenido">
@@ -400,6 +428,7 @@ require __DIR__ . '/includes/partials/header.php';
           <figcaption>📱 Del colegio a la universidad: cada quien desde su celular, sin crear cuenta.</figcaption>
         </figure>
       </div>
+      <p class="en-clase-nota">Fotos ilustrativas creadas con IA. Las capturas de los juegos de más arriba son reales.</p>
     </div>
   </section>
 
@@ -513,6 +542,22 @@ require __DIR__ . '/includes/partials/header.php';
                18/09/2026 Escuela es un plan más y sale en la rejilla de arriba:
                mantener las dos cosas contaba la misma licencia dos veces, con
                dos precios que podían desincronizarse. */ ?>
+    </div>
+  </section>
+
+  <!-- Preguntas frecuentes -->
+  <section class="faq" id="preguntas">
+    <div class="wrap wrap-estrecho">
+      <div class="section-head">
+        <span class="eyebrow">Preguntas frecuentes</span>
+        <h2>Lo que suelen preguntar los docentes.</h2>
+      </div>
+      <?php foreach ($preguntas as [$pregunta, $respuesta]): ?>
+        <details class="faq-item">
+          <summary><?= e($pregunta) ?></summary>
+          <p><?= e($respuesta) ?></p>
+        </details>
+      <?php endforeach; ?>
     </div>
   </section>
 

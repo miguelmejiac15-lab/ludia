@@ -20,7 +20,7 @@
 require __DIR__ . '/includes/bootstrap.php';
 
 $page = [
-    'title'       => 'Política de Privacidad — Ludia',
+    'title'       => 'Política de Privacidad — Ludia.click',
     'description' => 'Qué datos guarda Ludia y cuáles no. Quien participa en una actividad no crea cuenta: de él solo se guarda el nombre con el que entra.',
     'canonica'    => '/privacidad.php',
 ];

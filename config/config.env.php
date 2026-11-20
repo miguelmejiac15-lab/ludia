@@ -120,9 +120,9 @@ return [
     ],
 
     'legal' => [
-        'responsable' => $env('LEGAL_RESPONSABLE', ''),
+        'responsable' => $env('LEGAL_RESPONSABLE', 'Miguel Mejía C.'),
         'documento'   => $env('LEGAL_DOCUMENTO', ''),
-        'ciudad'      => $env('LEGAL_CIUDAD', ''),
-        'correo'      => $env('LEGAL_CORREO', ''),
+        'ciudad'      => $env('LEGAL_CIUDAD', 'Barranquilla, Colombia'),
+        'correo'      => $env('LEGAL_CORREO', 'ludia.click@gmail.com'),
     ],
 ];

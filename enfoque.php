@@ -14,7 +14,7 @@ require __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/Planes.php';
 
 $page = [
-    'title'       => 'Cómo está pensada Ludia — Enfoque',
+    'title'       => 'Cómo está pensada Ludia: su enfoque pedagógico — Ludia.click',
     'description' => 'Por qué el participante no crea cuenta, por qué no hay ranking entre estudiantes y por qué cada informe señala la pregunta más difícil.',
     'canonica'    => '/enfoque.php',
 ];

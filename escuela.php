@@ -107,7 +107,7 @@ $_SESSION['escuela_form_desde'] = time();
 $escuela = plan_datos('escuela');
 
 $page = [
-    'title'       => 'Licencia Escuela — Ludia para colegios',
+    'title'       => 'Licencia Escuela para colegios y universidades — Ludia.click',
     'description' => 'Ludia para toda la institución: un coordinador, hasta 30 profesores con todas las actividades y el progreso de cada estudiante. Se factura al colegio.',
     'canonica'    => '/escuela.php',
 ];

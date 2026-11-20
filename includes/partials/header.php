@@ -54,10 +54,23 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
 <?php endif; ?>
 
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Ludia">
+  <meta property="og:site_name" content="Ludia.click">
   <meta property="og:locale" content="es_LA">
   <meta property="og:title" content="<?= e($page['title']) ?>">
   <meta property="og:description" content="<?= e($page['description']) ?>">
+<?php if (!$noIndex): ?>
+  <?php /* La imagen al compartir en WhatsApp, Facebook, LinkedIn o X. Sin
+           ella el enlace salía como un cuadro gris. */ ?>
+  <meta property="og:url" content="<?= e(url_absoluta($page['canonica'] ?? '/')) ?>">
+  <meta property="og:image" content="<?= e(url_absoluta('/assets/img/compartir.jpg')) ?>">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Ludia.click: juegos y actividades para gamificar tus clases">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<?= e($page['title']) ?>">
+  <meta name="twitter:description" content="<?= e($page['description']) ?>">
+  <meta name="twitter:image" content="<?= e(url_absoluta('/assets/img/compartir.jpg')) ?>">
+<?php endif; ?>
 
   <?php /* Verificación de Google Search Console (propiedad «Prefijo de la URL»,
            https://ludia.click/). No es secreta. Si se quita, Google deja de
@@ -65,6 +78,56 @@ $anchor = static fn (string $id): string => ($page['home'] ? '' : base_url('/'))
   <meta name="google-site-verification" content="JOpHTwSDiRf4jglbz6-lWKqAnAqSEoc7s76_PpjxWBQ">
 
   <link rel="icon" href="<?= e(asset('img/favicon.svg')) ?>" type="image/svg+xml">
+  <link rel="icon" href="<?= e(asset('img/favicon-96.png')) ?>" type="image/png" sizes="96x96">
+  <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>">
+<?php if (!$noIndex):
+    /* Quién es Ludia, para los buscadores. «Ludia» es también un estudio
+       canadiense de videojuegos mucho más conocido: el nombre alternativo, la
+       descripción y el fundador (con sus redes) le dicen a Google que
+       ludia.click es otra entidad, una plataforma educativa. Ver sobre.php. */
+    $fichaOrganizacion = [
+        '@context' => 'https://schema.org',
+        '@graph'   => [
+            [
+                '@type'         => 'Organization',
+                '@id'           => url_absoluta('/') . '#organizacion',
+                'name'          => 'Ludia',
+                'alternateName' => ['Ludia.click', 'ludia.click', 'Ludia juegos educativos'],
+                'url'           => url_absoluta('/'),
+                'logo'          => url_absoluta('/assets/img/logo-512.png'),
+                'image'         => url_absoluta('/assets/img/compartir.jpg'),
+                'description'   => 'Plataforma educativa para gamificar las clases: paquetes de actividades y juegos que se juegan en vivo, por enlace o en el aula virtual.',
+                'email'         => 'ludia.click@gmail.com',
+                'areaServed'    => 'Latinoamérica',
+                'address'       => ['@type' => 'PostalAddress', 'addressLocality' => 'Barranquilla', 'addressRegion' => 'Atlántico', 'addressCountry' => 'CO'],
+                'knowsLanguage' => 'es',
+                'founder'       => [
+                    '@type'  => 'Person',
+                    '@id'    => 'https://www.miguelmejiac.com/#persona',
+                    'name'     => 'Miguel Mejía C.',
+                    'jobTitle' => 'Docente universitario, especialista en IA aplicada y productividad digital',
+                    'url'    => 'https://www.miguelmejiac.com/',
+                    'sameAs' => [
+                        'https://www.instagram.com/profemiguelmejia/',
+                        'https://www.tiktok.com/@profemiguelmejia',
+                        'https://www.youtube.com/@profemiguelmejia',
+                        'https://www.linkedin.com/in/miguelmejiac/',
+                    ],
+                ],
+            ],
+            [
+                '@type'         => 'WebSite',
+                '@id'           => url_absoluta('/') . '#sitio',
+                'name'          => 'Ludia.click',
+                'alternateName' => 'Ludia',
+                'url'           => url_absoluta('/'),
+                'inLanguage'    => 'es',
+                'publisher'     => ['@id' => url_absoluta('/') . '#organizacion'],
+            ],
+        ],
+    ]; ?>
+  <script type="application/ld+json"><?= json_encode($fichaOrganizacion, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+<?php endif; ?>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

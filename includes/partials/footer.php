@@ -13,15 +13,17 @@
 <footer class="site-footer">
   <div class="wrap">
     <nav class="footer-enlaces" aria-label="Enlaces del pie">
+      <a href="<?= e(base_url('sobre.php')) ?>">Sobre Ludia</a>
       <a href="<?= e(base_url('enfoque.php')) ?>">Cómo está pensada</a>
+      <a href="<?= e(base_url('terminos.php')) ?>">Términos</a>
       <a href="<?= e(base_url('privacidad.php')) ?>">Privacidad</a>
+      <a href="mailto:ludia.click@gmail.com">Contacto</a>
       <?php if (!empty($hayMedicion)): ?>
         <a href="<?= e(base_url('privacidad.php')) ?>#cookies" data-cookies-preferencias>Cookies</a>
       <?php endif; ?>
     </nav>
     <div class="footer-meta">
-      <span>© <?= date('Y') ?> Ludia</span>
-      <span class="status-badge">🛠️ Versión en desarrollo</span>
+      <span>© <?= date('Y') ?> Ludia.click · Hecho en Colombia por <a href="<?= e(base_url('sobre.php')) ?>">Miguel Mejía C.</a></span>
     </div>
   </div>
 </footer>

@@ -1,28 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Ludia: páginas públicas para los buscadores (Google Search Console).
-  Solo lo que vende y explica. Nada de /app/: ahí están las salas de juego,
-  con nombres de estudiantes, y robots.txt ya las deja fuera.
-  Al añadir una página pública, agrégala aquí.
+  Solo lo que vende y explica. Nada de /app/ ni de /jugar/: ahí están las
+  salas de juego, con nombres de estudiantes, y robots.txt ya las deja fuera.
+  Al añadir una página pública, agrégala aquí. Al cambiar una, actualiza su
+  <lastmod> (Google lo usa para saber qué volver a leer).
+  Las imágenes de la portada van como image:image para Google Imágenes.
 -->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://ludia.click/</loc>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <image:image><loc>https://ludia.click/assets/img/home/salon.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/clase-avion.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/clase-vf.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/clase-celulares.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/proyector-marcador.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/celular-avion.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/celular-laberinto.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/celular-catapulta.webp</loc></image:image>
+    <image:image><loc>https://ludia.click/assets/img/home/celular-nave.webp</loc></image:image>
   </url>
   <url>
     <loc>https://ludia.click/escuela.php</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://ludia.click/enfoque.php</loc>
+    <lastmod>2026-10-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://ludia.click/privacidad.php</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

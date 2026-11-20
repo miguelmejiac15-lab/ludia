@@ -52,7 +52,19 @@ if (!puede_exportar($usuario)) {
     );
 }
 
-$contenido = exportar_contenido(paquete_actividades($paquete));
+// Un JUEGO también se descarga: en su forma si el archivo la sabe jugar, o si
+// no (avión, laberinto… necesitan el motor de Ludia) como Quiz, Relacionar,
+// etc., con el mismo contenido.
+if (($paquete['clase'] ?? 'paquete') === 'juego') {
+    require_once __DIR__ . '/../includes/Juegos.php';
+    $descarga = juego_actividad_descargable($paquete, EXPORTAR_TIPOS);
+    $contenido = $descarga['actividad'] ? exportar_contenido([$descarga['actividad']]) : [];
+    if (!$contenido) {
+        exportar_cortar('Este juego no se puede descargar: necesita palabras escritas (las imágenes sin nombre no se pueden descargar todavía).');
+    }
+} else {
+    $contenido = exportar_contenido(paquete_actividades($paquete));
+}
 
 if (!$contenido) {
     exportar_cortar('Este paquete no tiene actividades que se puedan exportar todavía.');

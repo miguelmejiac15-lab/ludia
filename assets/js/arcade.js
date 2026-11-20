@@ -1467,7 +1467,8 @@ window.LudiaArcade = (function () {
     function armar() {
       var n = b.opciones.length;
       var w = Math.min(170, Math.max(110, b.W * 0.36));
-      var arriba = b.H * 0.06, abajo = suelo() - b.H * 0.04;
+      // Arriba deja libre la esquina del botón ⛶ (38 px + margen).
+      var arriba = Math.max(b.H * 0.06, 54), abajo = suelo() - b.H * 0.04;
       var paso = (abajo - arriba) / n;
       var h = Math.max(30, Math.min(52, paso - 10));
       var x = b.W - w - Math.max(10, b.W * 0.04);
@@ -1478,13 +1479,16 @@ window.LudiaArcade = (function () {
       });
     }
     armar();
-    b.alRedimensionar = function () { armar(); bola = null; };
+    // Al cambiar de tamaño (girar el celular, pantalla completa) la piedra
+    // vuelve a la honda. Antes quedaba en null y el siguiente tiro fallaba.
+    b.alRedimensionar = function () { armar(); tirando = null; bola = lista(); };
 
     function lista() { var a = ancla(); return { x: a.x, y: a.y, vx: 0, vy: 0, vuela: false }; }
     bola = lista();
 
     b.escuchar(b.lienzo, 'pointerdown', function (ev) {
-      if (b.yaEligio() || (bola && bola.vuela)) return;
+      if (!bola) bola = lista();
+      if (b.yaEligio() || bola.vuela) return;
       if (b.lienzo.setPointerCapture) { try { b.lienzo.setPointerCapture(ev.pointerId); } catch (e) {} }
       // Se apunta arrastrando desde cualquier punto del juego: lo que cuenta
       // es hacia dónde y cuánto se mueve el dedo, no tener que agarrar la honda.

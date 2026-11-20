@@ -638,6 +638,36 @@ function juego_actividades_libres(array $juego, ?array $dueno, bool $vivo = fals
     return $actividades;
 }
 
+/**
+ * La actividad que se DESCARGA de un juego (SCORM o HTML). El archivo
+ * descargado no lleva el motor de los juegos de acción, así que un juego que se
+ * juega como avión, laberinto, etc. se descarga en la primera forma que sí se
+ * puede (Quiz, Relacionar, Verdadero o falso…), con el mismo contenido.
+ *
+ * @param list<string> $exportables tipos que el archivo descargado sabe jugar
+ * @return array{actividad: ?array, forma: string}
+ */
+function juego_actividad_descargable(array $juego, array $exportables): array
+{
+    $tipo = (string) $juego['juego_tipo'];
+    $contenido = juego_contenido($juego);
+    $orden = array_merge([(string) $juego['plantilla']], ['quiz', 'relacionar', 'verdadero_falso', 'palabra_secreta', 'anagrama']);
+    foreach (array_unique($orden) as $clave) {
+        if (!in_array($clave, $exportables, true) || !isset(JUEGO_PLANTILLAS[$clave])) {
+            continue;
+        }
+        $adaptado = juego_adaptar($tipo, $contenido, $clave, 'juego-' . $juego['id']);
+        if ($adaptado['ok']) {
+            return [
+                'actividad' => juego_actividad((string) $juego['nombre'], $clave, $adaptado['items']),
+                'forma'     => JUEGO_PLANTILLAS[$clave]['nombre'],
+            ];
+        }
+    }
+
+    return ['actividad' => null, 'forma' => ''];
+}
+
 /** Copia un juego, con su contenido original y su plantilla. */
 function juego_duplicar(array $usuario, array $juego): array
 {

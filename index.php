@@ -9,15 +9,38 @@
 require __DIR__ . '/includes/bootstrap.php';
 
 $page = [
-    'title'       => 'Ludia — Convierte tu tema en un juego para tu grupo',
+    'title'       => 'Ludia — Actividades y juegos para gamificar tus clases',
     // 134 caracteres. Google corta alrededor de 155, así que lo que va después
     // no lo lee nadie: por eso lo que importa —que el participante no se
     // registra y que el precio está en pesos— va delante, no al final.
-    'description' => 'Crea quiz, sopa de letras, crucigramas y más, y compártelos con un código. Tus participantes juegan sin registrarse. Precios en pesos.',
+    'description' => 'Crea paquetes de actividades y juegos para gamificar tus clases: avión, laberinto, nave, quiz y más. Tu grupo juega sin registrarse. En pesos.',
     'home'        => true,
 ];
 
 $urlCrear = base_url('app/crear.php');
+
+require_once __DIR__ . '/includes/Planes.php';
+require_once __DIR__ . '/includes/Juegos.php';
+
+// Cuántos formatos y juegos hay: salen del catálogo, no de un número escrito
+// a mano que quede viejo al sumar uno nuevo.
+$totalFormatos = count(plan_formatos('pro'));
+$totalJuegos   = count(JUEGO_PLANTILLAS);
+// Foto del salón (opcional): si se sube, es el fondo del hero.
+$fotoSalon = is_file(__DIR__ . '/assets/img/home/salon.webp');
+
+// Los juegos de acción que se muestran con captura real.
+$juegosAccion = [
+    ['img' => 'celular-avion',     'w' => 648, 'h' => 933,  'nombre' => '✈️ Vuela a la respuesta', 'texto' => 'Esquiva las nubes falsas y atraviesa la correcta. Cada vez más rápido.'],
+    ['img' => 'celular-laberinto', 'w' => 648, 'h' => 1162, 'nombre' => '🌀 Laberinto',            'texto' => 'Llega a la puerta de la respuesta escapando de las abejas.'],
+    ['img' => 'celular-catapulta', 'w' => 648, 'h' => 978,  'nombre' => '🎯 Catapulta',            'texto' => 'Tensa la honda y dale al cartel correcto de la torre.'],
+    ['img' => 'celular-nave',      'w' => 648, 'h' => 1155, 'nombre' => '🚀 Nave espacial',        'texto' => 'Dispara al asteroide de la respuesta y esquiva los meteoritos.'],
+];
+// El tamaño real de cada captura, para que el navegador reserve su sitio.
+foreach ($juegosAccion as &$j) {
+    [$j['w'], $j['h']] = @getimagesize(__DIR__ . '/assets/img/home/' . $j['img'] . '.webp') ?: [$j['w'], $j['h']];
+}
+unset($j);
 
 $audiencias = [
     ['icono' => '🧑‍🏫', 'tono' => 'violet', 'titulo' => 'Docentes',                'texto' => 'De básica, media y universidad. Convierte el tema de la clase en un repaso jugable.'],
@@ -28,22 +51,23 @@ $audiencias = [
 
 $pasos = [
     [
-        'titulo' => 'Elige el tipo y el tema',
-        'texto'  => 'En vivo para proyectar, o para enviar y que cada quien juegue a su ritmo. Luego escribes el tema: «Las sumas», «Inducción de seguridad»…',
+        'titulo' => 'Crea un paquete o un juego',
+        'texto'  => 'Un paquete reúne las actividades que quieras sobre un tema. Un juego es más rápido: escribes tus palabras una vez y Ludia arma el resto.',
     ],
     [
-        'titulo' => 'Agrega tus actividades',
-        'texto'  => 'Todas las que quieras dentro del mismo tema: un quiz, un verdadero o falso, una sopa de letras, un mural. Puedes cargarlas desde una plantilla de Excel.',
+        'titulo' => 'Escribe tu contenido',
+        'texto'  => 'Preguntas, parejas de palabras o imágenes. En los paquetes también puedes cargarlas desde una plantilla de Excel.',
     ],
     [
-        'titulo' => 'Comparte y juega',
-        'texto'  => 'Recibes un código de 6 dígitos, un enlace y un QR. Tu público entra sin crear cuenta y, al final, salen las posiciones y el informe.',
+        'titulo' => 'Proyecta o envía, y a jugar',
+        'texto'  => 'En vivo con un código en el proyector, o por enlace para jugar desde casa. Tu público entra sin crear cuenta y, al final, salen las posiciones y el informe.',
     ],
 ];
 
 $valores = [
-    ['icono' => '🎲', 'titulo' => '22 formatos distintos',    'texto' => 'Quiz, verdadero o falso, completar, relacionar, clasificar, ordenar, sopa de letras, crucigrama, anagrama, mural colaborativo y más.'],
-    ['icono' => '📽️', 'titulo' => 'Dos formas de jugar',      'texto' => 'Proyectado en clase con un código en pantalla, o enviado por enlace para resolverlo desde casa.'],
+    ['icono' => '🎲', 'titulo' => $totalFormatos . ' formatos de actividad', 'texto' => 'Quiz, verdadero o falso, completar, relacionar, clasificar, ordenar, sopa de letras, crucigrama, mural colaborativo, vídeo con preguntas y más.'],
+    ['icono' => '🎮', 'titulo' => $totalJuegos . ' juegos para gamificar', 'texto' => 'Las mismas palabras se juegan como avión, laberinto, nave espacial, catapulta, memoria o quiz. Cambias de juego con un clic, sin reescribir nada.'],
+    ['icono' => '📽️', 'titulo' => 'Tres formas de usarlo',    'texto' => 'Proyectado en clase con un código en pantalla, enviado por enlace para resolverlo desde casa, o descargado para tu web o tu plataforma (Moodle y otras).'],
     // Esto no es solo una comodidad, es el argumento de privacidad más fuerte
     // que tiene el producto, y estaba contado como si fuera un detalle de
     // usabilidad. A un colegio que pregunta "¿qué datos de mis estudiantes se
@@ -51,6 +75,7 @@ $valores = [
     ['icono' => '🙋', 'titulo' => 'Tus participantes no dejan datos', 'texto' => 'Entran con el código o el QR, eligen su personaje y juegan: sin cuenta, sin correo y sin contraseña. Lo único que se guarda de ellos es el nombre con el que entran. Solo quien crea necesita cuenta.'],
     ['icono' => '📊', 'titulo' => 'Cargas desde Excel',        'texto' => 'Descargas la plantilla, la llenas con tus preguntas y la subes: se crean todas las actividades de una vez.'],
     ['icono' => '🖼️', 'titulo' => 'Con tus imágenes',          'texto' => 'Ilustra las preguntas con fotos o diagramas. Se ven en el celular de cada participante y en la proyección.'],
+    ['icono' => '🏆', 'titulo' => 'Puntos, marcador y podio',  'texto' => 'Cada respuesta suma según el acierto y la rapidez. El marcador se ve en el proyector mientras juegan, y también por equipos.'],
     ['icono' => '💵', 'titulo' => 'Precios en pesos',          'texto' => 'Planes pensados para el bolsillo de un docente latinoamericano, no convertidos desde dólares.'],
 ];
 
@@ -62,8 +87,6 @@ $valores = [
  * licencia anual para una institución: da lo mismo que Pro, pero se factura al
  * colegio y NO pasa por la pasarela (ver Colegios.php).
  */
-require_once __DIR__ . '/includes/Planes.php';
-
 $todasLasActividades = count(plan_formatos('pro'));
 
 $planes = [];
@@ -72,10 +95,20 @@ foreach (planes_todos() as $clave => $p) {
     $gratis = $clave === 'gratis';
     $escuela = $clave === 'escuela';
 
+    // Juegos: las plantillas son formatos, así que el plan que las incluye sale
+    // del mismo catálogo. Los de acción (avión, laberinto…) se cuentan aparte
+    // porque son lo que más se nota en clase.
+    $susJuegos = array_values(array_intersect(array_keys(JUEGO_PLANTILLAS), plan_formatos($clave)));
+    $deAccion = array_intersect($susJuegos, ['avion', 'globos', 'atrapa', 'laberinto', 'tren', 'catapulta', 'salta', 'mina', 'obstaculos', 'nave']);
+
     $items = [
         ['si', $suyas >= $todasLasActividades
             ? 'Las ' . $todasLasActividades . ' actividades, completas'
             : $suyas . ' de las ' . $todasLasActividades . ' actividades'],
+        ['si', count($susJuegos) >= $totalJuegos
+            ? 'Los ' . $totalJuegos . ' juegos para gamificar'
+            : count($susJuegos) . ' de los ' . $totalJuegos . ' juegos para gamificar'],
+        [$deAccion ? 'si' : 'no', 'Juegos de acción: avión, laberinto, nave, catapulta…'],
         // "Guardados", no "activos": los paquetes son permanentes desde que el
         // contenido se separó de las partidas.
         ['si', $p['max_paquetes'] === 0
@@ -209,55 +242,163 @@ require __DIR__ . '/includes/partials/header.php';
   <section class="hero">
     <div class="wrap">
       <div>
-        <span class="eyebrow">🧩 Actividades para jugar en grupo</span>
-        <h1>Tu tema,<br>convertido en un <em>juego</em> para tu grupo.</h1>
-        <p class="hero-sub">Arma un paquete con las actividades que quieras —quiz, sopa de letras, crucigrama, mural colaborativo— y compártelo con un código o un enlace. Tu público entra sin crear cuenta.</p>
+        <span class="eyebrow">🧩 Paquetes de actividades · 🎮 Juegos</span>
+        <h1>Gamifica tu clase:<br>tu tema, convertido en <em>juego</em>.</h1>
+        <p class="hero-sub">Arma <b>paquetes</b> con <?= (int) $totalFormatos ?> tipos de actividad, o crea un <b>juego</b> escribiendo tus palabras una sola vez: se juega como avión, laberinto, nave espacial y <?= (int) $totalJuegos - 3 ?> formas más. Con puntos, marcador y podio. Tu grupo entra con un código, sin crear cuenta.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="<?= e($urlCrear) ?>">Empezar gratis</a>
           <a class="btn btn-ghost" href="#como-funciona">Ver cómo funciona</a>
         </div>
         <div class="hero-meta">
           <div class="avatars" aria-hidden="true"><span>🧑‍🏫</span><span>🎙️</span><span>🧑‍💼</span></div>
-          <span>Para docentes, capacitadores y creadores de contenido</span>
+          <span>Primaria, secundaria, universidad y capacitaciones</span>
         </div>
       </div>
 
-      <div class="device" aria-hidden="true">
-        <div class="device-bar"><i></i><i></i><i></i></div>
-        <div class="device-screen">
-          <div class="scene scene-1">
-            <span class="scene-label">1 · Tu paquete</span>
-            <div class="fake-card">
-              <b>Las sumas</b>
-              <div class="fake-answers">
-                <div class="fake-answer">🎯 Quiz · 4 preguntas</div>
-                <div class="fake-answer">✏️ Completar la frase</div>
-                <div class="fake-answer">🔤 Sopa de letras</div>
-              </div>
-            </div>
-            <div class="fake-chip-row"><span class="fake-chip">En vivo</span><span class="fake-chip">Estudiantes</span></div>
-          </div>
-          <div class="scene scene-2">
-            <div class="fake-pin">
-              <span class="scene-label">2 · Comparte</span>
-              <b>482 913</b>
-              <span>Código, enlace o QR para entrar</span>
-              <span class="fake-live-count">● 27 jugando ahora</span>
-            </div>
-          </div>
-          <div class="scene scene-3">
-            <span class="scene-label">3 · Resultados</span>
-            <div class="fake-card">
-              <b>Posiciones</b>
-              <div class="fake-answers">
-                <div class="fake-answer correct">1 · Zorro veloz — 1 925 pts</div>
-                <div class="fake-answer">2 · Búho curioso — 1 480 pts</div>
-                <div class="fake-answer">3 · Panda audaz — 1 210 pts</div>
-              </div>
-            </div>
-            <div class="fake-chip-row"><span class="fake-chip">Informe final</span></div>
-          </div>
+      <?php /* Capturas REALES de Ludia (assets/img/home): el proyector con el
+               marcador y el celular de un estudiante jugando. Si se sube una foto
+               del salón (salon.webp), va de fondo. */ ?>
+      <figure class="hero-visual">
+        <?php if ($fotoSalon): ?>
+          <img class="hero-fondo hero-foto" src="<?= e(asset('img/home/salon.webp')) ?>" alt="Niños jugando con Ludia en el salón: el laberinto en la pantalla grande y en sus celulares" width="1600" height="893" fetchpriority="high">
+        <?php else: ?>
+          <img class="hero-fondo" src="<?= e(asset('img/home/proyector-marcador.webp')) ?>" alt="El proyector de la clase con la pregunta, las cuatro opciones y el marcador «Van ganando»" width="1608" height="1197" fetchpriority="high">
+        <?php endif; ?>
+        <img class="hero-celular" src="<?= e(asset('img/home/celular-avion.webp')) ?>" alt="El celular de un estudiante jugando «Vuela a la respuesta»: el avión atraviesa la nube con la capital correcta" width="648" height="933">
+        <span class="hero-burbuja b1" aria-hidden="true">✓ +870</span>
+        <span class="hero-burbuja b2" aria-hidden="true">🏆 1.º Mateo · 2 840</span>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Dos formas de crear -->
+  <section class="dos-caminos" id="crear">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Qué puedes crear</span>
+        <h2>Un paquete completo o un juego en dos minutos.</h2>
+        <p>Los dos se juegan en vivo con el proyector o se envían por enlace. Tú eliges según la clase.</p>
+      </div>
+      <div class="caminos-grid">
+        <article class="camino">
+          <div class="camino-icono" aria-hidden="true">📚</div>
+          <h3>Paquete de actividades</h3>
+          <p>Todo un tema en una sola sesión: mezcla los formatos que quieras, con imágenes y vídeo.</p>
+          <ul class="camino-lista">
+            <li><?= (int) $totalFormatos ?> formatos: quiz, completar, ordenar, clasificar, sopa de letras, crucigrama, mural, vídeo con preguntas…</li>
+            <li>Diapositivas para explicar entre actividad y actividad</li>
+            <li>Carga masiva desde una plantilla de Excel</li>
+            <li>Informe con aciertos por pregunta</li>
+          </ul>
+          <a class="btn btn-ghost" href="<?= e(base_url('app/crear.php?nuevo=paquete')) ?>">Crear un paquete</a>
+        </article>
+        <article class="camino camino-juego">
+          <div class="camino-icono" aria-hidden="true">🎮</div>
+          <h3>Juego para gamificar</h3>
+          <p>Escribe parejas de palabras (o pon imágenes) y Ludia arma el juego. Como en una consola, pero con tu tema.</p>
+          <ul class="camino-lista">
+            <li><?= (int) $totalJuegos ?> juegos con el mismo contenido: avión, laberinto, nave, catapulta, globos, memoria…</li>
+            <li>Cambias de juego con un clic, sin reescribir nada</li>
+            <li>En vivo eliges en cada paso con qué juego seguir</li>
+            <li>Enviado, cada estudiante escoge cómo jugar</li>
+          </ul>
+          <a class="btn btn-primary" href="<?= e(base_url('app/juego.php')) ?>">Crear un juego</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tres formas de usarlo -->
+  <section class="tres-formas" id="formas">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Cómo lo usas</span>
+        <h2>En vivo, por enlace o en tu propia plataforma.</h2>
+        <p>Lo que creas una vez sirve para la clase presencial, para la tarea en casa y para tu aula virtual.</p>
+      </div>
+      <div class="formas-grid">
+        <article class="forma forma-vivo">
+          <div class="forma-icono" aria-hidden="true">📽️</div>
+          <h3>Juega en vivo</h3>
+          <p>Proyecta el código o el QR y tu grupo entra desde el celular. Ves las respuestas llegar y el marcador en la pantalla grande.</p>
+          <ul>
+            <li>Tú marcas el ritmo, pregunta a pregunta</li>
+            <li>En un juego, eliges en cada paso con cuál seguir: nave, parejas, laberinto…</li>
+            <li>Por equipos, si quieres</li>
+          </ul>
+        </article>
+        <article class="forma forma-enlace">
+          <div class="forma-icono" aria-hidden="true">🔗</div>
+          <h3>Envía el enlace</h3>
+          <p>Para la tarea o el repaso en casa: compártelo por WhatsApp, correo o tu aula virtual, y cada quien juega a su ritmo.</p>
+          <ul>
+            <li>Ves el avance de cada estudiante</li>
+            <li>En un juego, cada uno escoge cómo jugarlo</li>
+            <li>Sin cuenta ni contraseña para tus estudiantes</li>
+          </ul>
+        </article>
+        <article class="forma forma-descarga">
+          <div class="forma-icono" aria-hidden="true">⬇️</div>
+          <h3>Descárgalo para tu plataforma</h3>
+          <p>Publica tus paquetes <b>y tus juegos</b> en tu web, tu blog o tu aula virtual, aunque allí no haya Ludia.</p>
+          <ul>
+            <li>SCORM para Moodle y otras plataformas: la nota llega al libro de calificaciones</li>
+            <li>Una página HTML que funciona sin internet</li>
+            <li>Los juegos se descargan como quiz, relacionar o verdadero o falso; los de acción (avión, laberinto…) se juegan en Ludia · plan Pro</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Los juegos, con capturas reales -->
+  <section class="juegos-vitrina" id="juegos">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Así se juega</span>
+        <h2>Juegos de verdad, en el celular de cada estudiante.</h2>
+        <p>La pregunta sale grande arriba y la respuesta se elige jugando. El servidor califica y suma los puntos al instante.</p>
+      </div>
+      <div class="vitrina-grid">
+        <?php foreach ($juegosAccion as $j): ?>
+          <figure class="vitrina-item">
+            <img src="<?= e(asset('img/home/' . $j['img'] . '.webp')) ?>" alt="Captura de <?= e(trim(preg_replace('/^\S+\s/u', '', $j['nombre']))) ?> en el celular" width="<?= (int) $j['w'] ?>" height="<?= (int) $j['h'] ?>" loading="lazy">
+            <figcaption><b><?= e($j['nombre']) ?></b><?= e($j['texto']) ?></figcaption>
+          </figure>
+        <?php endforeach; ?>
+      </div>
+      <div class="vitrina-proyector">
+        <img src="<?= e(asset('img/home/proyector-marcador.webp')) ?>" alt="El proyector durante la partida: la pregunta, las opciones y el marcador con los cinco primeros" width="1608" height="1197" loading="lazy">
+        <div>
+          <h3>🏆 El marcador, en el proyector</h3>
+          <p>Mientras juegan desde el celular, la clase ve la pregunta y quién va ganando. Al final, el podio. Y si juegan por equipos, el marcador es por equipo.</p>
+          <a class="btn btn-primary" href="<?= e($urlCrear) ?>">Probar gratis</a>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- En el aula -->
+  <section class="en-clase" id="en-clase">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">En el aula</span>
+        <h2>Así se vive una clase con Ludia.</h2>
+        <p>De primaria a la universidad: la pantalla grande para todos, el celular para cada quien, y tú decides qué juego sigue.</p>
+      </div>
+      <div class="en-clase-grid">
+        <figure class="en-clase-foto ancha">
+          <img src="<?= e(asset('img/home/clase-avion.webp')) ?>" alt="Estudiantes de primaria frente a la pantalla jugando «Vuela a la respuesta» mientras la profesora sigue la partida" width="1400" height="781" loading="lazy">
+          <figcaption>✈️ En vivo, la clase entera juega la misma pregunta.</figcaption>
+        </figure>
+        <figure class="en-clase-foto">
+          <img src="<?= e(asset('img/home/clase-vf.webp')) ?>" alt="Estudiantes de secundaria respondiendo un verdadero o falso desde sus celulares" width="800" height="1433" loading="lazy">
+          <figcaption>🎓 Secundaria y educación superior.</figcaption>
+        </figure>
+        <figure class="en-clase-foto">
+          <img src="<?= e(asset('img/home/clase-celulares.webp')) ?>" alt="Jóvenes jugando en sus celulares mientras el profesor proyecta el juego" width="800" height="1433" loading="lazy">
+          <figcaption>📱 Del colegio a la universidad: cada quien desde su celular, sin crear cuenta.</figcaption>
+        </figure>
       </div>
     </div>
   </section>
@@ -328,7 +469,7 @@ require __DIR__ . '/includes/partials/header.php';
       <div class="section-head">
         <span class="eyebrow">Planes</span>
         <h2>Empieza gratis. Crece cuando lo necesites.</h2>
-        <p>El plan gratis sirve para dar clase de verdad, no para una demostración. Los de pago suman el catálogo completo, las imágenes y el informe de cada sesión.</p>
+        <p>El plan gratis sirve para dar clase de verdad, no para una demostración. Los de pago suman los juegos de acción, el catálogo completo, las imágenes y el informe de cada sesión.</p>
       </div>
       <div class="pricing-grid">
         <?php foreach ($planes as $plan): ?>
@@ -380,7 +521,7 @@ require __DIR__ . '/includes/partials/header.php';
     <div class="wrap">
       <div class="cta-final">
         <h2>Tu próxima clase puede ser un juego.</h2>
-        <p>Arma el paquete, proyecta el código y deja que tu grupo juegue. Al terminar tendrás las posiciones y el informe.</p>
+        <p>Crea un paquete o un juego, proyecta el código y deja que tu grupo juegue. Al terminar tendrás el podio y el informe.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="<?= e($urlCrear) ?>">Empezar gratis</a>
           <a class="btn btn-ghost" href="#como-funciona">Ver cómo funciona</a>

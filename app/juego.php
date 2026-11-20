@@ -192,6 +192,23 @@ $pasos = ['Elegir plantilla', 'Escribir', 'Jugar'];
           </form>
           <a class="btn btn-ghost" href="<?= e(base_url('app/juego.php')) ?>?id=<?= (int) $juego['id'] ?>&amp;editar=1" data-editar>✏️ Editar contenido</a>
         </div>
+        <?php /* Descargar para la web o el aula virtual (plan Pro). Los juegos
+                 de acción se descargan en una forma que el archivo sabe jugar. */
+          require_once LUDIA_ROOT . '/includes/Exportar.php';
+          $descarga = juego_actividad_descargable($juego, EXPORTAR_TIPOS); ?>
+        <div class="juego-descargar">
+          <?php if (!puede_exportar($usuario)): ?>
+            <p class="hint">⬇️ <b>Descárgalo para tu web o tu plataforma</b> (SCORM para Moodle o HTML sin internet) con el plan Pro.
+              <a href="<?= e(base_url('app/suscripcion.php')) ?>">Ver planes</a></p>
+          <?php elseif ($descarga['actividad']): ?>
+            <p class="hint">⬇️ <b>Descárgalo para tu web o tu plataforma</b><?= $descarga['forma'] !== JUEGO_PLANTILLAS[$actual]['nombre']
+              ? ' · se descarga como <b>' . e($descarga['forma']) . '</b>: el archivo no lleva los juegos de acción' : '' ?></p>
+            <div class="juego-acciones">
+              <a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/exportar.php')) ?>?p=<?= (int) $juego['id'] ?>&amp;formato=scorm" title="Paquete SCORM para subir a Moodle u otra plataforma">📦 SCORM (Moodle)</a>
+              <a class="btn btn-ghost btn-sm" href="<?= e(base_url('app/exportar.php')) ?>?p=<?= (int) $juego['id'] ?>&amp;formato=html" title="Una página HTML que funciona sin internet">💾 HTML para tu web</a>
+            </div>
+          <?php endif; ?>
+        </div>
       </section>
 
       <aside class="panel juego-cambiar" aria-labelledby="cambiar-titulo">

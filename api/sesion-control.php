@@ -22,6 +22,8 @@ if (!sesion_es_anfitrion($sesion, api_texto($datos, 'anfitrion_token', 32, false
 
 $accion = api_opcion($datos, 'accion', [
     'comenzar', 'siguiente', 'terminar', 'saltar', 'sacar', 'abrir_pregunta',
+    // Juego en vivo: el docente elige qué forma proyectar en cada paso.
+    'cambiar_juego',
     // Equipos: se arman en la sala, antes de empezar.
     'equipos_azar', 'equipos_vacios', 'equipo_mover', 'equipos_deshacer',
 ], '');
@@ -44,8 +46,13 @@ switch ($accion) {
             api_error('La sesión ya había comenzado', 409);
         }
         $contenido = json_decode((string) $sesion['contenido'], true) ?: [];
-        $abierta = in_array($contenido[0]['tipo'] ?? '', SESION_ABRE_PROYECTOR, true) ? 0 : 1;
-        db()->prepare('UPDATE sesiones SET estado = "en_curso", actividad_indice = 0, item_indice = 0, item_inicio_at = NOW(), pregunta_abierta = ? WHERE id = ?')->execute([$abierta, $id]);
+        // Un juego en vivo puede empezar por la forma que elija el docente.
+        $inicio = !empty($sesion['eleccion_libre']) ? (int) ($datos['actividad'] ?? 0) : 0;
+        if (!isset($contenido[$inicio])) {
+            $inicio = 0;
+        }
+        $abierta = in_array($contenido[$inicio]['tipo'] ?? '', SESION_ABRE_PROYECTOR, true) ? 0 : 1;
+        db()->prepare('UPDATE sesiones SET estado = "en_curso", actividad_indice = ?, item_indice = 0, item_inicio_at = NOW(), pregunta_abierta = ? WHERE id = ?')->execute([$inicio, $abierta, $id]);
         db()->prepare('UPDATE participantes SET estado = "jugando" WHERE sesion_id = ? AND estado = "esperando"')->execute([$id]);
         break;
 
@@ -61,7 +68,10 @@ switch ($accion) {
 
         if ($i + 1 < count($contenido[$a]['items'] ?? [])) {
             $i++;
-        } elseif ($a + 1 < count($contenido)) {
+        } elseif ($a + 1 < count($contenido) && empty($sesion['eleccion_libre'])) {
+            // (En un juego en vivo las formas no van en fila: al acabar las
+            // preguntas de la que se proyecta, la partida termina. Para seguir
+            // con otra forma, el docente la elige antes.)
             $a++;
             $i = 0;
         } else {
@@ -76,6 +86,32 @@ switch ($accion) {
         $abierta = in_array($contenido[$a]['tipo'] ?? '', SESION_ABRE_PROYECTOR, true) ? 0 : 1;
         db()->prepare('UPDATE sesiones SET actividad_indice = ?, item_indice = ?, item_inicio_at = NOW(), pregunta_abierta = ? WHERE id = ?')
             ->execute([$a, $i, $abierta, $id]);
+        break;
+    }
+
+    // Juego en vivo: pasar a otra forma (naves, parejas, laberinto…). Sigue
+    // por la misma altura del contenido: si iba en la pregunta 5 de 20, la
+    // nueva forma arranca hacia su 25 %. Las preguntas son las mismas.
+    case 'cambiar_juego': {
+        if (empty($sesion['eleccion_libre']) || $sesion['modo'] !== 'vivo') {
+            api_error('Esta sesión no es un juego con varias formas', 409);
+        }
+        if ($sesion['estado'] !== 'en_curso') {
+            api_error('La sesión no está en curso', 409);
+        }
+        $contenido = json_decode((string) $sesion['contenido'], true) ?: [];
+        $nueva = (int) ($datos['actividad'] ?? -1);
+        if (!isset($contenido[$nueva])) {
+            api_error('Esa forma de juego no está en la sesión', 422);
+        }
+        $a = (int) $sesion['actividad_indice'];
+        $antes = max(1, count($contenido[$a]['items'] ?? []));
+        $progreso = min(1, ((int) $sesion['item_indice'] + 1) / $antes);
+        $total = count($contenido[$nueva]['items'] ?? []);
+        $i = $progreso >= 1 ? 0 : min($total - 1, (int) floor($progreso * $total));
+        $abierta = in_array($contenido[$nueva]['tipo'] ?? '', SESION_ABRE_PROYECTOR, true) ? 0 : 1;
+        db()->prepare('UPDATE sesiones SET actividad_indice = ?, item_indice = ?, item_inicio_at = NOW(), pregunta_abierta = ? WHERE id = ?')
+            ->execute([$nueva, max(0, $i), $abierta, $id]);
         break;
     }
 

@@ -296,14 +296,19 @@ function sesion_lanzar(array $paquete, int $usuarioId, string $modo = 'vivo', ?i
 {
     $actividades = json_decode((string) ($paquete['contenido'] ?? ''), true);
 
-    // Un JUEGO enviado lleva todas sus plantillas: el estudiante elige cómo
-    // jugarlo (como en Wordwall). En vivo se proyecta solo la del docente.
+    // Un JUEGO lleva todas sus plantillas. Enviado, el estudiante elige cómo
+    // jugarlo (como en Wordwall); en vivo, el DOCENTE elige en cada paso cuál
+    // proyectar (empieza con naves, sigue con parejas…). Misma marca:
+    // `eleccion_libre`; quién elige lo dice el modo.
     $libre = false;
-    if ($modo === 'enviar' && ($paquete['clase'] ?? 'paquete') === 'juego') {
+    if (($paquete['clase'] ?? 'paquete') === 'juego') {
         require_once __DIR__ . '/Juegos.php';
         $dueno = db()->prepare('SELECT * FROM usuarios WHERE id = ?');
         $dueno->execute([$usuarioId]);
-        $todas = juego_actividades_libres($paquete, $dueno->fetch() ?: null);
+        $todas = juego_actividades_libres($paquete, $dueno->fetch() ?: null, $modo === 'vivo');
+        if ($modo === 'vivo') {
+            $todas = array_values(array_filter($todas, static fn (array $a): bool => !in_array($a['tipo'] ?? '', SESION_SOLO_ENVIAR, true)));
+        }
         if (count($todas) > 1) {
             $actividades = $todas;
             $libre = true;

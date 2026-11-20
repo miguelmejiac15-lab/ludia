@@ -124,6 +124,9 @@ require LUDIA_ROOT . '/includes/partials/header.php';
           </div>
         <?php endif; ?>
 
+        <!-- Juego en vivo: el docente elige con qué forma empezar (sala.js) -->
+        <div class="juegos-vivo" id="juegos-inicio" hidden></div>
+
         <p class="hint" id="estado-sala">Esperando a que entre tu público…</p>
       </section>
     </div>
@@ -137,6 +140,8 @@ require LUDIA_ROOT . '/includes/partials/header.php';
           <span class="proy-conteo" id="proy-conteo">0 respuestas</span>
           <button class="link-btn" type="button" id="btn-pantalla-completa" hidden title="Pantalla completa">⛶ Pantalla completa</button>
         </div>
+        <!-- Juego en vivo: pasar a otra forma en cualquier momento -->
+        <div class="juegos-vivo juegos-cambiar" id="juegos-cambiar" hidden></div>
         <div id="proy-cuerpo"></div>
         <div class="proy-barra" aria-hidden="true"><span id="proy-barra" style="width:0%"></span></div>
 

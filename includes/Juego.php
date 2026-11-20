@@ -614,10 +614,16 @@ function juego_informe(array $sesion): array
     $sesionId = (int) $sesion['id'];
     $informe = [];
 
+    // En un juego con varias formas (eleccion_libre) solo se informa lo que se
+    // jugó: las formas que nadie abrió no son veinte tablas vacías.
+    $soloJugadas = !empty($sesion['eleccion_libre']);
+
     foreach ($contenido as $a => $actividad) {
         $preguntas = [];
+        $hubo = 0;
         foreach ($actividad['items'] as $i => $item) {
             $respuestas = juego_respuestas_item($sesionId, $a, $i);
+            $hubo += count($respuestas);
             $puntuable = juego_puntua($actividad['tipo']);
             $correctas = count(array_filter($respuestas, static fn (array $r): bool => $r['correcta'] === true));
 
@@ -633,6 +639,9 @@ function juego_informe(array $sesion): array
             ];
         }
 
+        if ($soloJugadas && $hubo === 0) {
+            continue;
+        }
         $informe[] = [
             'titulo'    => actividad_titulo($actividad),
             'tipo'      => $actividad['tipo'],

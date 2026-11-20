@@ -991,6 +991,21 @@ main.sala, main.unirse {
 .j-cruceta [data-dir="izquierda"] { grid-column: 1; grid-row: 2; }
 .j-cruceta [data-dir="abajo"] { grid-column: 2; grid-row: 2; }
 .j-cruceta [data-dir="derecha"] { grid-column: 3; grid-row: 2; }
+/*
+ * Con mouse y teclado (computador) la cruceta de 4 botones sobra: se juega
+ * con las flechas o tocando el juego, y ocupaba el alto que le faltaba al
+ * laberinto y a la mina. La leyenda va en una fila.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .j-cruceta:not(.fila) { display: none; }
+  .j-leyenda { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+/* Pantallas bajas: el cartel de arriba se compacta para dejarle alto al juego. */
+@media (max-height: 760px) {
+  .j-pregunta.j-objetivo { font-size: clamp(1.4rem, 5vw, 2rem); padding: 8px 14px; margin: 2px 0 6px; }
+  .j-arcade-ayuda { font-size: .85rem; margin-bottom: 6px; }
+  .j-objetivo img { height: clamp(48px, 9vh, 72px); }
+}
 
 /* ---------- Ruleta y cajas sorpresa (assets/js/sorteo.js) ---------- */
 .j-mira { text-align: center; padding: 30px 10px; }

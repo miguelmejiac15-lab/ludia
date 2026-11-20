@@ -612,7 +612,7 @@ function juego_cambiar_plantilla(array $usuario, array $juego, string $plantilla
  *
  * @return list<array>
  */
-function juego_actividades_libres(array $juego, ?array $dueno): array
+function juego_actividades_libres(array $juego, ?array $dueno, bool $vivo = false): array
 {
     $tipo = (string) $juego['juego_tipo'];
     $contenido = juego_contenido($juego);
@@ -622,8 +622,9 @@ function juego_actividades_libres(array $juego, ?array $dueno): array
 
     $actividades = [];
     foreach ($orden as $clave) {
-        // La ruleta y las cajas solo entran si el docente las eligió a propósito.
-        if (($clave !== $actual && juego_es_lectura($clave)) || !plan_permite_formato($dueno, $clave)) {
+        // La ruleta y las cajas solo entran si el docente las eligió a propósito
+        // (enviado no tienen sentido); en vivo son herramientas del proyector.
+        if ((!$vivo && $clave !== $actual && juego_es_lectura($clave)) || !plan_permite_formato($dueno, $clave)) {
             continue;
         }
         $adaptado = juego_adaptar($tipo, $contenido, $clave, 'juego-' . $juego['id']);

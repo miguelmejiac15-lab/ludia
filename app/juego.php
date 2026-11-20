@@ -150,8 +150,12 @@ $pasos = ['Elegir plantilla', 'Escribir', 'Jugar'];
       <p>Solo el contenido: Ludia arma el juego. Después lo cambias a otra plantilla con un clic.</p>
     </div>
 
-    <div class="panel juego-editor" id="juego-editor" aria-live="polite">
-      <p class="hint">Cargando el editor…</p>
+    <div class="editor-grid">
+      <div class="panel juego-editor" id="juego-editor">
+        <p class="hint">Cargando el editor…</p>
+      </div>
+      <!-- Guía en vivo: cómo armarlo, cómo se ve y en qué juegos sale (assets/js/juego.js) -->
+      <aside class="juego-guia" id="juego-guia" aria-label="Ayuda para armar el juego"></aside>
     </div>
     <noscript><div class="panel">Para escribir el juego necesitas tener JavaScript activado.</div></noscript>
 

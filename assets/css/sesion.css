@@ -382,3 +382,21 @@
   background: var(--violet-soft); border-radius: 999px; padding: 6px 16px;
   width: fit-content; margin: 0 auto 10px;
 }
+
+/* ---------- Juego en vivo: elegir la forma (sala.js) ---------- */
+.juegos-vivo { margin: 14px 0; display: flex; flex-direction: column; gap: 8px; }
+.juegos-cambiar { flex-direction: row; flex-wrap: wrap; align-items: center; margin: 6px 0 10px; gap: 8px; }
+.juegos-titulo { font-weight: 800; margin: 0; }
+.juegos-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.juego-chip {
+  font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface-2, #fff); color: var(--text);
+}
+.juego-chip:hover:not(:disabled) { border-color: var(--violet); background: var(--violet-soft); }
+.juego-chip.actual { background: var(--violet); border-color: var(--violet); color: #fff; cursor: default; }
+.juego-chip:disabled { opacity: .6; }
+.juegos-cambiar .juego-chip { font-size: .78rem; padding: 4px 10px; }
+.juegos-menu summary { cursor: pointer; font-weight: 700; font-size: .88rem; color: var(--violet); list-style: none; display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--violet-soft); }
+.juegos-menu summary::-webkit-details-marker { display: none; }
+.juegos-menu[open] .juegos-chips { margin-top: 8px; }

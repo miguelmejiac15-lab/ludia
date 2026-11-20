@@ -49,8 +49,68 @@
     equiposCuantos: document.getElementById('equipos-cuantos'),
     equiposAzar: document.getElementById('btn-equipos-azar'),
     equiposMano: document.getElementById('btn-equipos-mano'),
-    equiposDeshacer: document.getElementById('btn-equipos-deshacer')
+    equiposDeshacer: document.getElementById('btn-equipos-deshacer'),
+    juegosInicio: document.getElementById('juegos-inicio'),
+    juegosCambiar: document.getElementById('juegos-cambiar')
   };
+
+  /* ---------- Juego en vivo: el docente elige la forma en cada paso ----------
+   * Un JUEGO proyectado lleva todas sus formas (naves, parejas, laberinto…).
+   * En la sala se elige con cuál empezar; durante la partida, la barra
+   * «Cambiar juego» pasa a otra cuando se quiera, con las mismas preguntas.
+   */
+  var juegoInicio = 0, firmaJuegos = '';
+  function chipsJuegos(juegos, actual, atributo) {
+    return juegos.map(function (j) {
+      var es = j.indice === actual;
+      return '<button type="button" class="juego-chip' + (es ? ' actual' : '') + '" ' + atributo + '="' + j.indice + '"' +
+        (es ? ' aria-pressed="true"' : ' aria-pressed="false"') + '><span aria-hidden="true">' + j.icono + '</span> ' + esc(j.nombre) + '</button>';
+    }).join('');
+  }
+  function pintarJuegos(datos) {
+    var juegos = datos.juegos;
+    if (!el.juegosInicio || !el.juegosCambiar) return;
+    if (!juegos || !juegos.length || !token) {
+      el.juegosInicio.hidden = true; el.juegosCambiar.hidden = true; return;
+    }
+    var estado = datos.sesion.estado;
+    var actual = estado === 'lobby' ? juegoInicio : datos.sesion.actividad_indice;
+    var firma = estado + '|' + actual + '|' + juegos.length;
+    el.juegosInicio.hidden = estado !== 'lobby';
+    el.juegosCambiar.hidden = estado !== 'en_curso';
+    if (firma === firmaJuegos) return;
+    firmaJuegos = firma;
+    if (estado === 'lobby') {
+      el.juegosInicio.innerHTML = '<p class="juegos-titulo">🎮 ¿Con qué juego empiezas?</p>' +
+        '<p class="hint">Durante la partida cambias a otro cuando quieras: las preguntas son las mismas.</p>' +
+        '<div class="juegos-chips">' + chipsJuegos(juegos, juegoInicio, 'data-juego-inicio') + '</div>';
+    } else if (estado === 'en_curso') {
+      // Compacto: en el proyector lo importante es la pregunta. Se abre al tocarlo.
+      var enCurso = juegos.filter(function (j) { return j.indice === actual; })[0] || {};
+      el.juegosCambiar.innerHTML = '<details class="juegos-menu"><summary>🎮 Juego: <b>' + esc(enCurso.nombre || '') + '</b> · cambiar ▾</summary>' +
+        '<div class="juegos-chips">' + chipsJuegos(juegos, actual, 'data-cambiar-juego') + '</div></details>';
+    }
+  }
+  if (el.juegosInicio) {
+    el.juegosInicio.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-juego-inicio]');
+      if (!b) return;
+      juegoInicio = Number(b.getAttribute('data-juego-inicio'));
+      firmaJuegos = '';
+      consultar();
+    });
+  }
+  if (el.juegosCambiar) {
+    el.juegosCambiar.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-cambiar-juego]');
+      if (!b || b.classList.contains('actual')) return;
+      [].forEach.call(el.juegosCambiar.querySelectorAll('button'), function (x) { x.disabled = true; });
+      controlar('cambiar_juego', { actividad: Number(b.getAttribute('data-cambiar-juego')) }).then(function () {
+        firmaJuegos = '';
+        consultar();
+      });
+    });
+  }
 
   // El servidor entrega el token cuando la sala es de quien la está viendo. El
   // de localStorage queda como respaldo para las salas creadas antes de eso.
@@ -836,6 +896,7 @@
       return;
     }
 
+    pintarJuegos(datos);
     if (estado === 'lobby') {
       if (M && MODO !== 'enviar') M.sala();
       el.contador.textContent = datos.total + ' de ' + MAX;
@@ -952,7 +1013,7 @@
 
   el.comenzar.addEventListener('click', function () {
     el.comenzar.disabled = true;
-    controlar('comenzar').then(function (datos) {
+    controlar('comenzar', { actividad: juegoInicio }).then(function (datos) {
       if (!datos.ok) {
         el.estado.textContent = datos.error;
         el.comenzar.disabled = false;

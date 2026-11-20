@@ -157,6 +157,7 @@
         ? '<div class="columnas-cabeza"><span></span><b>' + etiquetas.izq + '</b><b>' + etiquetas.der + '</b>' +
           '<button type="button" class="link-btn" data-intercambiar title="Pasa lo de la izquierda a la derecha y al revés">⇄ Intercambiar columnas</button></div>' +
           '<p class="hint">' + etiquetas.ayuda + '</p>' +
+          '<a class="guia-ir" href="#juego-guia">💡 Ver ejemplos, cómo se ve y en qué juegos sale ↓</a>' +
           '<ol class="lista-parejas" role="list">' + estado.items.map(filaPareja).join('') + '</ol>'
         : '<ol class="lista-preguntas" role="list">' + estado.items.map(tarjetaPregunta).join('') + '</ol>') +
       '<div class="editor-pie">' +
@@ -277,6 +278,148 @@
         location.href = d.url;
       })
       .catch(function () { boton.disabled = false; aviso('Sin conexión: no se pudo guardar. Inténtalo otra vez.', 'error'); });
+  }
+
+  /* ---------- Guía en vivo ----------
+   * Al lado del editor: cómo se arma (con ejemplos), cómo se ve la fila que
+   * se está escribiendo y en qué juegos sale lo escrito, con el porqué de los
+   * que no. Esto último lo dice el servidor (api/juego-revisar.php), con las
+   * mismas reglas que al guardar.
+   */
+  var guia = document.getElementById('juego-guia');
+  var filaVista = 0, revision = null, revisando = false, temporizador = null, ultimaPeticion = '';
+
+  function ladoLleno(texto, img) { return String(texto || '').trim() !== '' || !!img; }
+  function filasCompletas() {
+    return estado.items.filter(function (p) {
+      return J.tipo === 'parejas'
+        ? ladoLleno(p.izquierda, p.imagen_izq) && ladoLleno(p.derecha, p.imagen_der)
+        : String(p.enunciado || '').trim() !== '' && p.opciones.filter(function (o) { return String(o).trim() !== ''; }).length >= 2;
+    });
+  }
+
+  function muestra(texto, img, clase) {
+    return '<span class="g-pieza ' + (clase || '') + '">' +
+      (img ? '<img src="' + esc(img) + '" alt="">' : '') +
+      (String(texto || '').trim() ? '<span>' + esc(texto) + '</span>' : (img ? '' : '<span class="g-vacio">…</span>')) +
+      '</span>';
+  }
+
+  function bloqueComo() {
+    if (J.tipo !== 'parejas') {
+      return '<section class="guia-bloque"><h2>Cómo se arma</h2>' +
+        '<p>Escribe la pregunta y sus respuestas, y toca la letra de la correcta.</p>' +
+        '<p>' + (J.imagenes ? 'Con 🖼 pones una imagen junto a la pregunta: sale arriba, en el cartel del juego.' : '🔒 Las imágenes son de los planes de pago.') + '</p></section>';
+    }
+    var ej = [
+      ['perro', '', 'cachorro', '', 'Palabra con palabra'],
+      ['correr', '', '', '🏃', 'Palabra con imagen: toca 🖼 dentro de la casilla de la <b>derecha</b>'],
+      ['', '🏃', 'correr', '', 'Imagen con palabra: toca 🖼 dentro de la casilla de la <b>izquierda</b>']
+    ];
+    return '<section class="guia-bloque"><h2>Cómo se arma</h2>' +
+      '<p>Cada fila es una pareja: lo de la <b>izquierda</b> es lo que se pregunta o se busca; lo de la <b>derecha</b>, su respuesta.</p>' +
+      '<ul class="guia-ejemplos">' + ej.map(function (e) {
+        return '<li><span class="g-fila">' +
+          (e[1] ? '<span class="g-pieza g-ej-img">' + e[1] + '</span>' : '<span class="g-pieza">' + e[0] + '</span>') +
+          '<span class="g-flecha">→</span>' +
+          (e[3] ? '<span class="g-pieza g-ej-img">' + e[3] + '</span>' : '<span class="g-pieza">' + e[2] + '</span>') +
+          '</span><small>' + e[4] + '</small></li>';
+      }).join('') + '</ul>' +
+      (J.imagenes
+        ? '<p class="guia-tip">💡 Una imagen <b>sin nombre</b> sirve en Memoria y Relacionar. Si le escribes su nombre al lado, sirve en <b>todos</b> los juegos.</p>'
+        : '<p class="guia-tip">🔒 Las imágenes son de los planes Estándar y Pro. En el gratis, palabra con palabra.</p>') +
+      '<p class="guia-tip">⇄ <b>Intercambiar columnas</b> pasa todo de un lado al otro, por si lo escribiste al revés.</p></section>';
+  }
+
+  function bloqueVista() {
+    var i = Math.min(filaVista, estado.items.length - 1), p = estado.items[i];
+    if (!p) return '';
+    var cuerpo;
+    if (J.tipo === 'parejas') {
+      var vacia = !ladoLleno(p.izquierda, p.imagen_izq) && !ladoLleno(p.derecha, p.imagen_der);
+      var derSinTexto = !String(p.derecha || '').trim() && p.imagen_der;
+      cuerpo = vacia ? '<p class="hint">Escribe algo en la fila ' + (i + 1) + ' y aquí verás cómo queda.</p>' :
+        '<p class="g-sub">🃏 En Memoria y Relacionar</p>' +
+        '<div class="g-cartas">' + muestra(p.izquierda, p.imagen_izq, 'g-carta') + muestra(p.derecha, p.imagen_der, 'g-carta') + '</div>' +
+        '<p class="g-sub">✈️ En los juegos de acción y el Quiz</p>' +
+        '<div class="g-arcade"><div class="g-cartel">' + muestra(p.izquierda, p.imagen_izq, 'g-en-cartel') + '</div>' +
+        (derSinTexto
+          ? '<p class="g-aviso">⚠ La respuesta es una imagen sin nombre: estos juegos necesitan leerla. Escríbele un nombre.</p>'
+          : '<div class="g-opciones"><span class="g-op ok">' + esc(p.derecha || '…') + '</span><span class="g-op">otra</span><span class="g-op">otra</span></div>' +
+            '<p class="hint">Las opciones falsas salen de las otras parejas.</p>') + '</div>';
+    } else {
+      cuerpo = '<div class="g-arcade"><div class="g-cartel">' + muestra(p.enunciado, p.imagen, 'g-en-cartel') + '</div>' +
+        '<div class="g-opciones">' + p.opciones.filter(function (o) { return String(o).trim(); }).map(function (o, j) {
+          return '<span class="g-op' + (p.opciones.indexOf(o) === p.correcta ? ' ok' : '') + '">' + esc(o) + '</span>';
+        }).join('') + '</div></div>';
+    }
+    return '<section class="guia-bloque"><h2>Así se ve la fila ' + (i + 1) + '</h2>' + cuerpo + '</section>';
+  }
+
+  function bloqueJuegos() {
+    var cabeza = '<section class="guia-bloque guia-juegos"><h2>En qué juegos sale</h2>';
+    var completas = filasCompletas().length;
+    if (J.tipo === 'parejas' && completas < J.min) {
+      return cabeza + '<p class="hint">Escribe al menos ' + J.min + ' parejas completas (llevas ' + completas + ') y aquí verás en qué juegos se puede jugar.</p></section>';
+    }
+    if (!revision) return cabeza + '<p class="hint">Revisando…</p></section>';
+    if (!revision.valido) return cabeza + '<p class="g-aviso">' + esc(revision.error) + '</p></section>';
+    var grupos = { ok: [], no: [], plan: [] };
+    revision.plantillas.forEach(function (p) { (grupos[p.estado] || grupos.no).push(p); });
+    function chip(p) {
+      return '<li class="g-juego' + (p.clave === J.plantilla ? ' actual' : '') + '"><span aria-hidden="true">' + p.icono + '</span> ' + esc(p.nombre) + '</li>';
+    }
+    return cabeza + (revisando ? '<p class="hint g-revisando">Revisando…</p>' : '') +
+      '<h3 class="g-si">✓ Se puede jugar en ' + grupos.ok.length + '</h3><ul class="g-juegos">' + grupos.ok.map(chip).join('') + '</ul>' +
+      (grupos.no.length ? '<h3 class="g-no">✗ No sale en ' + grupos.no.length + '</h3><ul class="g-no-lista">' + grupos.no.map(function (p) {
+        return '<li><b><span aria-hidden="true">' + p.icono + '</span> ' + esc(p.nombre) + '</b><span>' + esc(p.motivo) + '</span></li>';
+      }).join('') + '</ul>' : '') +
+      (grupos.plan.length ? '<h3 class="g-plan">🔒 En los planes de pago: ' + grupos.plan.length + '</h3><ul class="g-juegos g-bloqueados">' + grupos.plan.map(chip).join('') + '</ul>' : '') +
+      '<p class="hint">Después de guardar cambias de juego con un clic, sin reescribir nada.</p></section>';
+  }
+
+  function pintarGuia() {
+    if (!guia) return;
+    guia.innerHTML = bloqueComo() + bloqueVista() + bloqueJuegos();
+  }
+
+  function revisar() {
+    var cuerpo = JSON.stringify({ tipo: J.tipo, contenido: { items: filasCompletas() } });
+    if (cuerpo === ultimaPeticion) { pintarGuia(); return; }
+    if (J.tipo === 'parejas' && filasCompletas().length < J.min) { ultimaPeticion = ''; revision = null; pintarGuia(); return; }
+    ultimaPeticion = cuerpo;
+    revisando = true;
+    pintarGuia();
+    fetch(window.LudiaRutas.api('juego-revisar.php'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF': J.csrf }, body: cuerpo
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (cuerpo !== ultimaPeticion) return;   // llegó tarde: ya hay otra
+        revisando = false;
+        if (d.ok) revision = d;
+        pintarGuia();
+      })
+      .catch(function () { revisando = false; pintarGuia(); });
+  }
+
+  function cambio() {
+    pintarGuia();
+    clearTimeout(temporizador);
+    temporizador = setTimeout(revisar, 450);
+  }
+
+  if (guia) {
+    raiz.addEventListener('input', cambio);
+    raiz.addEventListener('change', cambio);
+    raiz.addEventListener('focusin', function (ev) {
+      var c = ev.target.getAttribute('data-campo') || ev.target.getAttribute('data-opcion') || ev.target.getAttribute('data-subir-img');
+      if (!c) return;
+      var i = +c.split('.')[0];
+      if (i !== filaVista) { filaVista = i; pintarGuia(); }
+    });
+    var pintarEditor = pintar;
+    pintar = function (enfocar) { pintarEditor(enfocar); cambio(); };
   }
 
   pintar(J.tipo === 'parejas' ? (J.id ? null : '0.izquierda') : (J.id ? null : '0.enunciado'));

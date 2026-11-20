@@ -64,8 +64,12 @@ $respuesta = [
         'por_equipos'       => (bool) $sesion['por_equipos'],
         // Todo es para mirar (ruleta, cajas, diapositivas): el docente puede
         // empezar aunque nadie haya entrado con el celular.
-        'solo_lectura'      => $contenido !== [] && array_reduce($contenido, static fn (bool $todo, $a): bool =>
-            $todo && is_array($a) && juego_es_lectura((string) ($a['tipo'] ?? '')), true),
+        // En un juego en vivo con varias formas basta con que haya una para
+        // mirar (ruleta, cajas): el docente puede empezar por ella.
+        'solo_lectura'      => $contenido !== [] && (!empty($sesion['eleccion_libre']) && $modo === 'vivo'
+            ? (bool) array_filter($contenido, static fn ($a): bool => is_array($a) && juego_es_lectura((string) ($a['tipo'] ?? '')))
+            : array_reduce($contenido, static fn (bool $todo, $a): bool =>
+                $todo && is_array($a) && juego_es_lectura((string) ($a['tipo'] ?? '')), true)),
     ],
     'participantes' => $participantes,
     // Los equipos viajan siempre: la sala los pinta mientras se arman y el
@@ -112,6 +116,20 @@ function bloque_actividad(array $contenido, string $codigo, int $a, int $i, ?str
         $bloque['clave'] = $actividad['items'][$i] ?? [];
     }
     return $bloque;
+}
+
+/* ---------- Juego en vivo: el docente elige qué forma proyectar ---------- */
+if ($modo === 'vivo' && !empty($sesion['eleccion_libre']) && $esAnfitrion) {
+    require_once __DIR__ . '/../includes/Juegos.php';
+    $respuesta['juegos'] = array_map(static function (int $a) use ($contenido): array {
+        $tipo = (string) ($contenido[$a]['tipo'] ?? '');
+        return [
+            'indice' => $a,
+            'nombre' => JUEGO_PLANTILLAS[$tipo]['nombre'] ?? $tipo,
+            'icono'  => JUEGO_PLANTILLAS[$tipo]['icono'] ?? '🎮',
+            'items'  => count($contenido[$a]['items'] ?? []),
+        ];
+    }, array_keys($contenido));
 }
 
 /* ---------- Juego enviado: el estudiante elige cómo jugar ---------- */
@@ -204,6 +222,11 @@ if ($modo === 'vivo' && $sesion['estado'] === 'en_curso') {
         (int) ($sesion['pregunta_abierta'] ?? 1) === 1, true);
 
     if ($bloque) {
+        // En un juego en vivo, la última pregunta es la de la forma en curso:
+        // no hay «siguiente actividad» en fila (la elige el docente).
+        if (!empty($sesion['eleccion_libre'])) {
+            $bloque['es_ultima'] = $i >= $bloque['total_items'] - 1;
+        }
         $respuesta['actividad'] = $bloque;
 
         $recibidas = juego_respuestas_item($sesionId, $a, $i);

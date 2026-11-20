@@ -1450,23 +1450,31 @@ window.LudiaArcade = (function () {
     var ancla = function () { return { x: Math.max(b.W * 0.17, maxTiro() + radio() + 6), y: suelo() - b.H * 0.26 }; };
     var gravedad = function () { return b.H * 1.5; };
     // La mayor tensión alcanza un poco más allá del cartel más lejano.
-    var fuerza = function () { return Math.sqrt(gravedad() * b.W * 1.05) / maxTiro(); };
+    // Con margen: el cartel más alto de la torre se alcanza sin tensar al tope.
+    var fuerza = function () { return Math.sqrt(gravedad() * b.W * 1.4) / maxTiro(); };
 
     var carteles = [], bola = null, tirando = null, intentos = 0, avisoFallo = 0, festejo = 0;
     // Cuánto se amplifica el arrastre del dedo: con poco recorrido se tensa del todo.
     var SENSIBLE = 1.6;
 
+    /*
+     * Los carteles van en UNA torre a la derecha, cada uno a su altura. Antes
+     * iban en dos columnas y los de adelante tapaban a los de atrás: el tiro
+     * tropezaba o no llegaba. Así cualquier cartel se alcanza de frente:
+     * el tiro llega a la torre a la altura del cartel que se apunta.
+     */
+    var torre = { x: 0, arriba: 0 };
     function armar() {
       var n = b.opciones.length;
-      var columnas = n <= 2 ? n : 2, filas = Math.ceil(n / columnas);
-      var x0 = b.W * 0.36, ancho = b.W - x0 - 8;
-      var w = Math.min(150, ancho / columnas - 8), h = Math.min(56, b.H * 0.15);
-      var alto = suelo() - b.H * 0.12;
+      var w = Math.min(170, Math.max(110, b.W * 0.36));
+      var arriba = b.H * 0.06, abajo = suelo() - b.H * 0.04;
+      var paso = (abajo - arriba) / n;
+      var h = Math.max(30, Math.min(52, paso - 10));
+      var x = b.W - w - Math.max(10, b.W * 0.04);
+      torre = { x: x + w / 2, arriba: arriba + (paso - h) / 2 };
       carteles = barajar(b.opciones).map(function (o, i) {
-        var c = i % columnas, f = Math.floor(i / columnas);
-        var x = x0 + (ancho / columnas) * (c + 0.5) - w / 2;
-        var y = b.H * 0.1 + (alto / filas) * f + (c % 2 ? alto / filas * 0.35 : 0);
-        return { op: o, x: x, y: y, w: w, h: h, texto: b.ajustar(o.texto, w - 44, h - 10, 2, 14) };
+        var y = arriba + paso * i + (paso - h) / 2;
+        return { op: o, x: x, y: y, w: w, h: h, texto: b.ajustar(o.texto, w - 44, h - 8, 2, 14) };
       });
     }
     armar();
@@ -1536,15 +1544,14 @@ window.LudiaArcade = (function () {
       return ps;
     }
 
-    function isla(x, y, w) {
+    function dibujarTorre() {
+      // Poste de madera con travesaños: los carteles cuelgan de él.
+      ctx.fillStyle = '#8A5A35';
+      ctx.fillRect(torre.x - 5, torre.arriba, 10, suelo() - torre.arriba);
       ctx.fillStyle = '#A0703F';
-      ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + w + 6, y); ctx.lineTo(x + w * 0.6, y + 26); ctx.lineTo(x + w * 0.35, y + 30); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#1FA98A'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x - 8, y - 6, w + 16, 10, 5); else ctx.rect(x - 8, y - 6, w + 16, 10); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(torre.x, suelo() + 2, 34, 9, 0, 0, 7); ctx.fill();
     }
-
     function dibujarCartel(c) {
-      isla(c.x, c.y + c.h + 10, c.w);
-      ctx.fillStyle = '#8A5A35'; ctx.fillRect(c.x + c.w / 2 - 3, c.y + c.h, 6, 12);
       ctx.save(); ctx.shadowColor = 'rgba(42,33,64,.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
       ctx.fillStyle = '#FFFFFF';
       ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(c.x, c.y, c.w, c.h, 12); else ctx.rect(c.x, c.y, c.w, c.h); ctx.fill();
@@ -1592,6 +1599,7 @@ window.LudiaArcade = (function () {
       b.nubesFondo(dt, b.W * 0.02);
       b.colinas(0, b.H * 0.16, '#8FD9B6', 160);
       ctx.fillStyle = '#7ED98C'; ctx.fillRect(0, suelo(), b.W, b.H - suelo());
+      dibujarTorre();
       carteles.forEach(dibujarCartel);
       var a = dibujarHonda();
       if ((tirando || porTeclado) && bola && !bola.vuela) {
